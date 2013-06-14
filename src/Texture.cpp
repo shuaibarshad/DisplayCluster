@@ -40,6 +40,9 @@
 #include "main.h"
 #include "log.h"
 
+#include <QtWebKit/QWebFrame>
+#include <QtWebKit/QWebView>
+
 Texture::Texture(std::string uri)
 {
     // defaults
@@ -48,7 +51,23 @@ Texture::Texture(std::string uri)
     // assign values
     uri_ = uri;
 
-    QImage image(uri_.c_str());
+    QImage image;
+    uri = "https://github.com/Eyescale";
+    const QUrl url(  QString::fromStdString( uri ));
+    if(url.isValid() && !url.isLocalFile())
+    {
+        QWebView* view = new QWebView;
+        view->load( url );
+        sleep(7);
+        QWebPage* page = view->page();
+        image = QImage( view->size(), QImage::Format_ARGB32_Premultiplied );
+        image.fill( Qt::transparent );
+        QPainter painter(&image);
+        page->mainFrame()->render(&painter);
+        painter.end();
+    }
+    else
+        image = QImage(uri_.c_str());
 
     if(image.isNull() == true)
     {

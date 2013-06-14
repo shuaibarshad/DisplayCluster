@@ -165,8 +165,15 @@ void Content::render(boost::shared_ptr<ContentWindowManager> window)
 
 boost::shared_ptr<Content> Content::getContent(std::string uri)
 {
+    const QUrl url( QString::fromStdString( uri ));
+    if(url.isValid() && !url.isLocalFile())
+    {
+        boost::shared_ptr<Content> c(new TextureContent(uri));
+        return c;
+    }
+
     // make sure file exists; otherwise use error image
-    if(QFile::exists(uri.c_str()) != true)
+    if(!QFile::exists(uri.c_str()))
     {
         put_flog(LOG_ERROR, "could not find file %s", uri.c_str());
 
@@ -186,10 +193,10 @@ boost::shared_ptr<Content> Content::getContent(std::string uri)
     if(fileTypeString.endsWith(".svg"))
     {
         boost::shared_ptr<Content> c(new SVGContent(uri));
-
         return c;
     }
-    else if(imageReader.canRead() == true)
+
+    if(imageReader.canRead())
     {
         // get its size
         QSize size = imageReader.size();
@@ -216,16 +223,22 @@ boost::shared_ptr<Content> Content::getContent(std::string uri)
 
         return c;
     }
+
     // see if this is a movie
     // todo: need a better way to determine file type
-    else if(fileTypeString.endsWith(".mov") || fileTypeString.endsWith(".avi") || fileTypeString.endsWith(".mp4") || fileTypeString.endsWith(".mkv") || fileTypeString.endsWith(".mpg") || fileTypeString.endsWith(".flv") || fileTypeString.endsWith(".wmv"))
+    if(fileTypeString.endsWith(".mov") || fileTypeString.endsWith(".avi") ||
+       fileTypeString.endsWith(".mp4") || fileTypeString.endsWith(".mkv") ||
+       fileTypeString.endsWith(".mpg") || fileTypeString.endsWith(".flv") ||
+       fileTypeString.endsWith(".wmv"))
     {
         boost::shared_ptr<Content> c(new MovieContent(uri));
 
         return c;
     }
+
+
     // see if this is an image pyramid
-    else if(fileTypeString.endsWith(".pyr"))
+    if(fileTypeString.endsWith(".pyr"))
     {
         boost::shared_ptr<Content> c(new DynamicTextureContent(uri));
 
