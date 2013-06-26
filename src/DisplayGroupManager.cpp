@@ -75,7 +75,7 @@ DisplayGroupManager::DisplayGroupManager()
 #endif
 }
 
-boost::shared_ptr<Options> DisplayGroupManager::getOptions()
+boost::shared_ptr<Options> DisplayGroupManager::getOptions() const
 {
     return options_;
 }
@@ -96,19 +96,17 @@ boost::shared_ptr<Marker> DisplayGroupManager::getNewMarker()
     return marker;
 }
 
-std::vector<boost::shared_ptr<Marker> > DisplayGroupManager::getMarkers()
+const std::vector<boost::shared_ptr<Marker> >& DisplayGroupManager::getMarkers() const
 {
     return markers_;
 }
 
-boost::shared_ptr<boost::posix_time::ptime> DisplayGroupManager::getTimestamp()
+boost::posix_time::ptime DisplayGroupManager::getTimestamp() const
 {
     // rank 0 will return a timestamp calibrated to rank 1's clock
     if(g_mpiRank == 0)
     {
-        boost::shared_ptr<boost::posix_time::ptime> timestamp(new boost::posix_time::ptime(boost::posix_time::microsec_clock::universal_time() + timestampOffset_));
-
-        return timestamp;
+        return boost::posix_time::ptime(boost::posix_time::microsec_clock::universal_time() + timestampOffset_);
     }
     else
     {
@@ -384,6 +382,9 @@ bool DisplayGroupManager::loadStateXMLFile(std::string filename)
             put_flog(LOG_DEBUG, "found content window with URI %s", uri.c_str());
         }
 
+        if(uri.empty())
+            continue;
+
         double x, y, w, h, centerX, centerY, zoom;
         x = y = w = h = centerX = centerY = zoom = -1.;
 
@@ -453,41 +454,37 @@ bool DisplayGroupManager::loadStateXMLFile(std::string filename)
             selected = (bool)qstring.toInt();
         }
 
-        // add the window if we have a valid URI
-        if(uri.empty() == false)
+        boost::shared_ptr<Content> c = Content::getContent(uri);
+
+        if(c != NULL)
         {
-            boost::shared_ptr<Content> c = Content::getContent(uri);
+            boost::shared_ptr<ContentWindowManager> cwm(new ContentWindowManager(c));
 
-            if(c != NULL)
+            contentWindowManagers.push_back(cwm);
+
+            // now, apply settings if we got them from the XML file
+            if(x != -1. || y != -1.)
             {
-                boost::shared_ptr<ContentWindowManager> cwm(new ContentWindowManager(c));
-
-                contentWindowManagers.push_back(cwm);
-
-                // now, apply settings if we got them from the XML file
-                if(x != -1. || y != -1.)
-                {
-                    cwm->setPosition(x, y);
-                }
-
-                if(w != -1. || h != -1.)
-                {
-                    cwm->setSize(w, h);
-                }
-
-                // zoom needs to be set before center because of clamping
-                if(zoom != -1.)
-                {
-                    cwm->setZoom(zoom);
-                }
-
-                if(centerX != -1. || centerY != -1.)
-                {
-                    cwm->setCenter(centerX, centerY);
-                }
-
-                cwm->setSelected(selected);
+                cwm->setPosition(x, y);
             }
+
+            if(w != -1. || h != -1.)
+            {
+                cwm->setSize(w, h);
+            }
+
+            // zoom needs to be set before center because of clamping
+            if(zoom != -1.)
+            {
+                cwm->setZoom(zoom);
+            }
+
+            if(centerX != -1. || centerY != -1.)
+            {
+                cwm->setCenter(centerX, centerY);
+            }
+
+            cwm->setSelected(selected);
         }
     }
 
@@ -729,6 +726,7 @@ void DisplayGroupManager::sendPixelStreams()
                 boost::shared_ptr<Content> c = cwm->getContent();
 
                 c->setDimensions(pixelStreamWidth, pixelStreamHeight);
+                cwm->adjustSize( SIZE_1TO1 );
             }
         }
     }
@@ -769,9 +767,11 @@ void DisplayGroupManager::sendParallelPixelStreams()
         {
             // make sure Content/ContentWindowManager exists for the URI
 
+            const bool initial = !getContentWindowManager(uri, CONTENT_TYPE_PARALLEL_PIXEL_STREAM);
+
             // todo: this means as long as the parallel pixel stream is updating, we'll have a window for it
             // closing a window therefore will not terminate the parallel pixel stream
-            if(getContentWindowManager(uri, CONTENT_TYPE_PARALLEL_PIXEL_STREAM) == NULL)
+            if(initial)
             {
                 put_flog(LOG_DEBUG, "adding parallel pixel stream: %s", uri.c_str());
 
@@ -829,6 +829,9 @@ void DisplayGroupManager::sendParallelPixelStreams()
                 {
                     c->setDimensions(newWidth, newHeight);
                 }
+
+                if( initial )
+                    cwm->adjustSize( SIZE_1TO1 );
             }
         }
     }
@@ -888,6 +891,7 @@ void DisplayGroupManager::sendSVGStreams()
                 if(newWidth != oldWidth || newHeight != oldHeight)
                 {
                     c->setDimensions(newWidth, newHeight);
+                    cwm->adjustSize( SIZE_1TO1 );
                 }
             }
 
@@ -923,7 +927,7 @@ void DisplayGroupManager::sendFrameClockUpdate()
         return;
     }
 
-    boost::shared_ptr<boost::posix_time::ptime> timestamp(new boost::posix_time::ptime(boost::posix_time::microsec_clock::universal_time()));
+    boost::posix_time::ptime timestamp(boost::posix_time::microsec_clock::universal_time());
 
     // serialize state
     std::ostringstream oss(std::ostringstream::binary);
@@ -990,17 +994,11 @@ void DisplayGroupManager::receiveFrameClockUpdate()
         exit(-1);
     }
 
-    // read to a new timestamp
-    boost::shared_ptr<boost::posix_time::ptime> timestamp;
-
     boost::archive::binary_iarchive ia(iss);
-    ia >> timestamp;
+    ia >> timestamp_;
 
     // free mpi buffer
     delete [] buf;
-
-    // update timestamp
-    timestamp_ = timestamp;
 }
 
 void DisplayGroupManager::sendQuit()

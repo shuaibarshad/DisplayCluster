@@ -49,18 +49,8 @@ ContentWindowManager::ContentWindowManager(boost::shared_ptr<Content> content)
     // content dimensions
     content->getDimensions(contentWidth_, contentHeight_);
 
-    const double contentAR = contentHeight_ == 0 ? 16./9 :
-                                 double(contentWidth_) / double(contentHeight_);
-    const double configAR = double(g_configuration->getTotalHeight()) /
-                            double(g_configuration->getTotalWidth());
-
-    // full height and centered
-    h_ = contentHeight_ == 0 ? 1. : double(contentHeight_) /
-                                    double(g_configuration->getTotalHeight());
-    h_ = std::min( h_, 1. );
-    y_ = (1. - h_) * .5;
-    w_ = configAR * contentAR * h_;
-    x_ = (1. - w_) * .5;
+    // 1:1 screen
+    adjustSize( SIZE_1TO1 );
 
     // default to centered
     centerX_ = 0.5;
@@ -71,6 +61,8 @@ ContentWindowManager::ContentWindowManager(boost::shared_ptr<Content> content)
 
     // default window state
     selected_ = false;
+
+    controlState_ = STATE_LOOP;
 
     // set content object
     content_ = content;

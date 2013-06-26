@@ -57,6 +57,8 @@ ContentWindowInterface::ContentWindowInterface(boost::shared_ptr<ContentWindowMa
         centerY_ = contentWindowManager->centerY_;
         zoom_ = contentWindowManager->zoom_;
         selected_ = contentWindowManager->selected_;
+        sizeState_ = contentWindowManager->sizeState_;
+        controlState_ = contentWindowManager->controlState_;
     }
 
     // connect signals from this to slots on the ContentWindowManager
@@ -138,7 +140,7 @@ bool ContentWindowInterface::getSelected()
 
 bool ContentWindowInterface::getHighlighted()
 {
-    long dtMilliseconds = (*(g_displayGroupManager->getTimestamp()) - highlightedTimestamp_).total_milliseconds();
+    long dtMilliseconds = (g_displayGroupManager->getTimestamp() - highlightedTimestamp_).total_milliseconds();
 
     if(dtMilliseconds > HIGHLIGHT_TIMEOUT_MILLISECONDS || dtMilliseconds % (HIGHLIGHT_BLINK_INTERVAL*2) < HIGHLIGHT_BLINK_INTERVAL)
     {
@@ -148,6 +150,11 @@ bool ContentWindowInterface::getHighlighted()
     {
         return true;
     }
+}
+
+SizeState ContentWindowInterface::getSizeState() const
+{
+    return sizeState_;
 }
 
 void ContentWindowInterface::getButtonDimensions(float &width, float &height)
@@ -212,6 +219,53 @@ void ContentWindowInterface::fixAspectRatio(ContentWindowInterface * source)
     }
 }
 
+void ContentWindowInterface::adjustSize( const SizeState state,
+                                         ContentWindowInterface * source )
+{
+    sizeState_ = state;
+
+    const double contentAR = contentHeight_ == 0 ? 16./9 :
+                                 double(contentWidth_) / double(contentHeight_);
+    const double configAR = double(g_configuration->getTotalHeight()) /
+                            double(g_configuration->getTotalWidth());
+
+    double h = contentHeight_ == 0 ? 1. : double(contentHeight_) /
+                                    double(g_configuration->getTotalHeight());
+    double w = contentWidth_ == 0 ? configAR * contentAR * h :
+                                    double(contentWidth_) /
+                                       double(g_configuration->getTotalWidth());
+
+    switch( state )
+    {
+    case SIZE_FULLSCREEN:
+        {
+            const double resize = std::min( 1. / h, 1. / w );
+            h *= resize;
+            w *= resize;
+        } break;
+
+    case SIZE_1TO1:
+        h = std::min( h, 1. );
+        w = configAR * contentAR * h;
+        if( w > 1. )
+        {
+            h /= w;
+            w /= w;
+        }
+        break;
+
+    case SIZE_CUSTOM:
+    default:
+        return;
+    }
+
+    // center on the wall
+    const double y = (1. - h) * .5;
+    const double x = (1. - w) * .5;
+
+    setCoordinates( x, y, w, h, source );
+}
+
 void ContentWindowInterface::setContentDimensions(int contentWidth, int contentHeight, ContentWindowInterface * source)
 {
     if(source == this)
@@ -221,8 +275,6 @@ void ContentWindowInterface::setContentDimensions(int contentWidth, int contentH
 
     contentWidth_ = contentWidth;
     contentHeight_ = contentHeight;
-
-    fixAspectRatio(this);
 
     if(source == NULL || dynamic_cast<ContentWindowManager *>(this) != NULL)
     {
@@ -252,14 +304,14 @@ void ContentWindowInterface::setCoordinates(double x, double y, double w, double
         h_ = h;
     }
 
-    fixAspectRatio(this);
-
     if(source == NULL || dynamic_cast<ContentWindowManager *>(this) != NULL)
     {
         if(source == NULL)
         {
             source = this;
         }
+
+        fixAspectRatio(source);
 
         emit(coordinatesChanged(x_, y_, w_, h_, source));
     }
@@ -300,14 +352,14 @@ void ContentWindowInterface::setSize(double w, double h, ContentWindowInterface 
         h_ = h;
     }
 
-    fixAspectRatio(this);
-
     if(source == NULL || dynamic_cast<ContentWindowManager *>(this) != NULL)
     {
         if(source == NULL)
         {
             source = this;
         }
+
+        fixAspectRatio(source);
 
         emit(sizeChanged(w_, h_, source));
     }
@@ -474,7 +526,7 @@ void ContentWindowInterface::highlight(ContentWindowInterface * source)
     }
 
     // set highlighted timestamp
-    highlightedTimestamp_ = *(g_displayGroupManager->getTimestamp());
+    highlightedTimestamp_ = g_displayGroupManager->getTimestamp();
 
     if(source == NULL || dynamic_cast<ContentWindowManager *>(this) != NULL)
     {

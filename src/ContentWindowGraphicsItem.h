@@ -52,32 +52,37 @@ class ContentWindowGraphicsItem : public QGraphicsRectItem, public ContentWindow
         ContentWindowGraphicsItem(boost::shared_ptr<ContentWindowManager> contentWindowManager);
 
         // QGraphicsRectItem painting
-        void paint(QPainter * painter, const QStyleOptionGraphicsItem * option, QWidget * widget=0);
+        virtual void paint(QPainter * painter, const QStyleOptionGraphicsItem * option, QWidget * widget=0);
 
         // re-implemented ContentWindowInterface slots
-        void setCoordinates(double x, double y, double w, double h, ContentWindowInterface * source=NULL);
-        void setPosition(double x, double y, ContentWindowInterface * source=NULL);
-        void setSize(double w, double h, ContentWindowInterface * source=NULL);
-        void setCenter(double centerX, double centerY, ContentWindowInterface * source=NULL);
-        void setZoom(double zoom, ContentWindowInterface * source=NULL);
-        void setSelected(bool selected, ContentWindowInterface * source=NULL);
+        virtual void adjustSize( const SizeState state, ContentWindowInterface * source=NULL );
+        virtual void setCoordinates(double x, double y, double w, double h, ContentWindowInterface * source=NULL);
+        virtual void setPosition(double x, double y, ContentWindowInterface * source=NULL);
+        virtual void setSize(double w, double h, ContentWindowInterface * source=NULL);
+        virtual void setCenter(double centerX, double centerY, ContentWindowInterface * source=NULL);
+        virtual void setZoom(double zoom, ContentWindowInterface * source=NULL);
+        virtual void setSelected(bool selected, ContentWindowInterface * source=NULL);
 
         // increment the Z value of this item
         void setZToFront();
 
     protected:
 
+        QVariant itemChange(GraphicsItemChange change, const QVariant &value);
+
         // QGraphicsRectItem events
-        void mouseMoveEvent(QGraphicsSceneMouseEvent * event);
-        void mousePressEvent(QGraphicsSceneMouseEvent * event);
-        void mouseDoubleClickEvent(QGraphicsSceneMouseEvent * event);
-        void mouseReleaseEvent(QGraphicsSceneMouseEvent * event);
-        void wheelEvent(QGraphicsSceneWheelEvent * event);
+        virtual void mouseMoveEvent(QGraphicsSceneMouseEvent * event);
+        virtual void mousePressEvent(QGraphicsSceneMouseEvent * event);
+        virtual void mouseDoubleClickEvent(QGraphicsSceneMouseEvent * event);
+        virtual void mouseReleaseEvent(QGraphicsSceneMouseEvent * event);
+        virtual void wheelEvent(QGraphicsSceneWheelEvent * event);
 
     private:
 
         // resizing state
         bool resizing_;
+
+        bool moving_;
 
         // counter used to determine stacking order in the UI
         static qreal zCounter_;
