@@ -42,7 +42,11 @@
 #include "FactoryObject.h"
 #include <QGLWidget>
 
-class Texture : public FactoryObject {
+class QWebView;
+
+class Texture : public QObject, public FactoryObject {
+
+    Q_OBJECT
 
     public:
 
@@ -52,7 +56,11 @@ class Texture : public FactoryObject {
         void getDimensions(int &width, int &height);
         void render(float tX, float tY, float tW, float tH);
 
+    private slots:
+        void gotContent() { gotContent_ = true; }
+
     private:
+        bool gotContent_;
 
         // image location
         std::string uri_;
@@ -64,6 +72,8 @@ class Texture : public FactoryObject {
         // texture information
         bool textureBound_;
         GLuint textureId_;
+
+        QWebView* webView_;
 };
 
 #endif

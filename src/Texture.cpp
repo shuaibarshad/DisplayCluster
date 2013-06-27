@@ -48,40 +48,40 @@ Texture::Texture(std::string uri)
     // defaults
     textureBound_ = false;
 
+    gotContent_ = false;
+
     // assign values
     uri_ = uri;
 
-    QImage image;
-    uri = "https://github.com/Eyescale";
+
+    uri = "http://www.greensock.com/gsap-js/";
     const QUrl url(  QString::fromStdString( uri ));
     if(url.isValid() && !url.isLocalFile())
     {
-        QWebView* view = new QWebView;
-        view->load( url );
-        sleep(7);
-        QWebPage* page = view->page();
-        image = QImage( view->size(), QImage::Format_ARGB32_Premultiplied );
-        image.fill( Qt::transparent );
-        QPainter painter(&image);
-        page->mainFrame()->render(&painter);
-        painter.end();
+        webView_ = new QWebView;
+        webView_->load( url );
+        connect( webView_->page(), SIGNAL(repaintRequested(QRect)), this, SLOT(gotContent()));
+        imageWidth_ = imageHeight_ = 0;
     }
     else
+    {
+        QImage image;
         image = QImage(uri_.c_str());
 
-    if(image.isNull() == true)
-    {
-        put_flog(LOG_ERROR, "error loading %s", uri_.c_str());
-        return;
+        if(image.isNull() == true)
+        {
+            put_flog(LOG_ERROR, "error loading %s", uri_.c_str());
+            return;
+        }
+
+        // save image dimensions
+        imageWidth_ = image.width();
+        imageHeight_ = image.height();
+
+        // generate new texture
+        textureId_ = g_mainWindow->getGLWindow()->bindTexture(image, GL_TEXTURE_2D, GL_RGBA, QGLContext::DefaultBindOption);
+        textureBound_ = true;
     }
-
-    // save image dimensions
-    imageWidth_ = image.width();
-    imageHeight_ = image.height();
-
-    // generate new texture
-    textureId_ = g_mainWindow->getGLWindow()->bindTexture(image, GL_TEXTURE_2D, GL_RGBA, QGLContext::DefaultBindOption);
-    textureBound_ = true;
 }
 
 Texture::~Texture()
@@ -104,6 +104,36 @@ void Texture::getDimensions(int &width, int &height)
 void Texture::render(float tX, float tY, float tW, float tH)
 {
     updateRenderedFrameCount();
+
+    if( webView_ && gotContent_ )
+    {
+        QWebPage* page = webView_->page();
+        page->setViewportSize( page->mainFrame()->contentsSize());
+        if( !page->viewportSize().isEmpty())
+        {
+            QImage image = QImage( page->viewportSize(), QImage::Format_RGB32 );
+
+            QPainter painter( &image );
+            page->mainFrame()->render( &painter );
+            painter.end();
+            if( !textureBound_ || imageWidth_ != image.width() || imageHeight_ != image.height() )
+            {
+                imageWidth_ = image.width();
+                imageHeight_ = image.height();
+                textureId_ = g_mainWindow->getGLWindow()->bindTexture(image, GL_TEXTURE_2D, GL_RGBA, QGLContext::InvertedYBindOption);
+                textureBound_ = true;
+            }
+            else
+            {
+                image = QGLWidget::convertToGLFormat(image);
+                glBindTexture( GL_TEXTURE_2D, textureId_ );
+                glTexSubImage2D( GL_TEXTURE_2D, 0, 0, 0, image.width(),
+                                 image.height(), GL_RGBA, GL_UNSIGNED_BYTE,
+                                 image.bits( ));
+            }
+            //gotContent_ = false;
+        }
+    }
 
     if(textureBound_ == true)
     {
