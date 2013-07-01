@@ -50,6 +50,7 @@
 #include "berkelium/Context.hpp"
 #endif
 
+#ifndef qtwebkit
 #define DEBUG_PAINT false
 
 bool mapOnPaintToTexture(
@@ -262,7 +263,6 @@ public:
         if (updated) {
             needs_full_refresh = false;
         }
-        texture->gotContent();
     }
 
     virtual void onAddressBarChanged(Berkelium::Window *win, Berkelium::URLString newURL) {
@@ -454,41 +454,36 @@ private:
     // Buffer used to store data for scrolling
     char* scroll_buffer;
 };
+#endif
 
-Texture::Texture(std::string uri)
+Texture::Texture( const std::string& uri )
 {
     // defaults
     textureBound_ = false;
-
-    gotContent_ = true;
 
     // assign values
     uri_ = uri;
     webView_ = 0;
 
-    const QUrl url(  QString::fromStdString( uri ));
-    if(url.isValid() && !url.isLocalFile() )
+    QImage image(uri_.c_str());
+
+    if(image.isNull())
     {
 #ifdef qtwebkit
+        const QUrl url(  QString::fromStdString( uri ));
         webView_ = new QWebView;
         webView_->load( url );
-        connect( webView_->page(), SIGNAL(repaintRequested(QRect)), this, SLOT(gotContent()));
         imageWidth_ = imageHeight_ = 0;
 #else
+        imageWidth_ = 1920;
+        imageHeight_ = 1200;
         webView_ = new GLTextureWindow( 1920, 1200, false, this );
         webView_->window()->navigateTo(Berkelium::URLString::point_to(uri.data(), uri.length()));
 #endif
     }
     else
     {
-        QImage image;
-        image = QImage(uri_.c_str());
-
-        if(image.isNull() == true)
-        {
-            put_flog(LOG_ERROR, "error loading %s", uri_.c_str());
-            return;
-        }
+        image = QGLWidget::convertToGLFormat(image);
 
         // save image dimensions
         imageWidth_ = image.width();
@@ -522,14 +517,14 @@ void Texture::render(float tX, float tY, float tW, float tH)
 {
     updateRenderedFrameCount();
 
-    if( webView_ && gotContent_ )
+    if( webView_ )
     {
 #ifdef qtwebkit
         QWebPage* page = webView_->page();
         page->setViewportSize( page->mainFrame()->contentsSize());
         if( !page->viewportSize().isEmpty())
         {
-            QImage image = QImage( page->viewportSize(), QImage::Format_RGB32 );
+            QImage image = QImage( page->viewportSize(), QImage::Format_ARGB32 );
 
             QPainter painter( &image );
             page->mainFrame()->render( &painter );
@@ -543,13 +538,11 @@ void Texture::render(float tX, float tY, float tW, float tH)
             }
             else
             {
-                image = QGLWidget::convertToGLFormat(image);
                 glBindTexture( GL_TEXTURE_2D, textureId_ );
                 glTexSubImage2D( GL_TEXTURE_2D, 0, 0, 0, image.width(),
                                  image.height(), GL_RGBA, GL_UNSIGNED_BYTE,
                                  image.bits( ));
             }
-            //gotContent_ = false;
         }
 #else
         Berkelium::update();
@@ -591,12 +584,11 @@ void Texture::render(float tX, float tY, float tW, float tH)
         glPopAttrib();
     }
 
-    if( webView_ && gotContent_ )
+    if( webView_ )
     {
 #ifndef qtwebkit
         webView_->release();
         textureBound_ = false;
-        //gotContent_ = false;
 #endif
     }
 }

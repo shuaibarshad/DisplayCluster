@@ -165,21 +165,10 @@ void Content::render(boost::shared_ptr<ContentWindowManager> window)
 
 boost::shared_ptr<Content> Content::getContent(std::string uri)
 {
-    const QUrl url( QString::fromStdString( uri ));
-    if(url.isValid() && !url.isLocalFile())
-    {
-        boost::shared_ptr<Content> c(new TextureContent(uri));
-        return c;
-    }
-
-    // make sure file exists; otherwise use error image
+    // make sure file exists; otherwise use browser
     if(!QFile::exists(uri.c_str()))
     {
-        put_flog(LOG_ERROR, "could not find file %s", uri.c_str());
-
-        std::string errorImageFilename = std::string(g_displayClusterDir) + std::string("/data/") + std::string(ERROR_IMAGE_FILENAME);
-        boost::shared_ptr<Content> c(new TextureContent(errorImageFilename));
-
+        boost::shared_ptr<Content> c(new TextureContent(uri));
         return c;
     }
 

@@ -42,29 +42,24 @@
 #include "FactoryObject.h"
 #include <QGLWidget>
 
+//#define qtwebkit
 #ifdef qtwebkit
 class QWebView;
 #else
 class GLTextureWindow;
 #endif
 
-class Texture : public QObject, public FactoryObject {
-
-    Q_OBJECT
+class Texture : public FactoryObject {
 
     public:
 
-        Texture(std::string uri);
+        Texture( const std::string& uri );
         ~Texture();
 
         void getDimensions(int &width, int &height);
         void render(float tX, float tY, float tW, float tH);
 
-    private slots:
-        void gotContent() { gotContent_ = true; }
-
     private:
-        bool gotContent_;
 
         // image location
         std::string uri_;

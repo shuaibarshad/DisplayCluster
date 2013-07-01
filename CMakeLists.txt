@@ -198,7 +198,6 @@ if(OPENGL_FOUND AND MPI_FOUND AND FFMPEG_FOUND)
         src/NetworkListener.h
         src/NetworkListenerThread.h
         src/Options.h
-        src/Texture.h
     )
 
     # add OPTIONS hacks for Qt's MOC processing of Boost headers, for compiler errors with some versions of Boost

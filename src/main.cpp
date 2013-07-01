@@ -147,10 +147,11 @@ int main(int argc, char * argv[])
         }
     }
 #endif
-Berkelium::init( Berkelium::FileString::empty( ));
-    if(g_mpiRank == 1)
-    {
 
+    Berkelium::init( Berkelium::FileString::empty( ));
+
+    if(g_mpiRank == 0)
+    {
         g_networkListener = new NetworkListener();
     }
 
@@ -178,8 +179,7 @@ Berkelium::init( Berkelium::FileString::empty( ));
     // clean up the MPI environment after the Qt event loop exits
     MPI_Finalize();
 
-    //if(g_mpiRank == 1)
-        Berkelium::destroy();
+    Berkelium::destroy();
 
     return 0;
 }

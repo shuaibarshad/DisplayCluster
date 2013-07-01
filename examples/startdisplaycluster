@@ -17,6 +17,8 @@ dcPath = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # set an environment variable for the base DisplayCluster directory
 os.environ['DISPLAYCLUSTER_DIR'] = dcPath
 
+os.environ['LD_LIBRARY_PATH'] += '/home/nachbaur/Downloads/berkelium-linux64/lib'
+
 # set the Python path so the pydc module can be found
 if 'PYTHONPATH' not in os.environ:
     os.environ['PYTHONPATH'] = dcPath + '/python'
@@ -66,7 +68,7 @@ mpinameCommand = distutils.spawn.find_executable('mpiname')
 if mpinameCommand:
     startCommand = mpirunCommand + ' -env MV2_ENABLE_AFFINITY 0 -env IPATH_NO_CPUAFFINITY 1 -genvlist DISPLAYCLUSTER_DIR,PYTHONPATH -hosts ' + hostListString + ' ' + dcPath + '/bin/displaycluster.py'
 else:
-    startCommand = mpirunCommand + ' -x DISPLAYCLUSTER_DIR -x PYTHONPATH -host ' + hostListString + ' ' + dcPath + '/bin/displaycluster.py'
+    startCommand = mpirunCommand + ' -x DISPLAYCLUSTER_DIR -x LD_LIBRARY_PATH -x DISPLAYCLUSTER_DIR -x PYTHONPATH -host ' + hostListString + ' ' + dcPath + '/bin/displaycluster.py'
 
 print 'launching with command: ' + startCommand
 

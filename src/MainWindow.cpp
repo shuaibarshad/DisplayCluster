@@ -395,7 +395,7 @@ void MainWindow::openContent()
 
 void MainWindow::openBrowser()
 {
-    const std::string uri = "http://css-3d.org/";
+    const std::string uri = "http://get.webgl.org/";
     boost::shared_ptr<Content> c = Content::getContent( uri );
     if( !c )
     {
