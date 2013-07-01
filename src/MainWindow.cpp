@@ -90,6 +90,11 @@ MainWindow::MainWindow()
         openContentAction->setStatusTip("Open content");
         connect(openContentAction, SIGNAL(triggered()), this, SLOT(openContent()));
 
+        // open browser action
+        QAction * openBrowserAction = new QAction("Open Browser", this);
+        openBrowserAction->setStatusTip("Open browser");
+        connect(openBrowserAction, SIGNAL(triggered()), this, SLOT(openBrowser()));
+
         // open contents directory action
         QAction * openContentsDirectoryAction = new QAction("Open Contents Directory", this);
         openContentsDirectoryAction->setStatusTip("Open contents directory");
@@ -219,6 +224,7 @@ MainWindow::MainWindow()
         // add actions to menus
         fileMenu->addAction(openContentAction);
         fileMenu->addAction(openContentsDirectoryAction);
+        fileMenu->addAction(openBrowserAction);
         fileMenu->addAction(clearContentsAction);
         fileMenu->addAction(saveStateAction);
         fileMenu->addAction(loadStateAction);
@@ -247,6 +253,7 @@ MainWindow::MainWindow()
         // add actions to toolbar
         toolbar->addAction(openContentAction);
         toolbar->addAction(openContentsDirectoryAction);
+        toolbar->addAction(openBrowserAction);
         toolbar->addAction(clearContentsAction);
         toolbar->addAction(saveStateAction);
         toolbar->addAction(loadStateAction);
@@ -384,6 +391,22 @@ void MainWindow::openContent()
             messageBox.exec();
         }
     }
+}
+
+void MainWindow::openBrowser()
+{
+    const std::string uri = "http://www.google.com";
+    boost::shared_ptr<Content> c = Content::getContent( uri );
+    if( !c )
+    {
+        QMessageBox messageBox;
+        messageBox.setText( "Unsupported URI" );
+        messageBox.exec();
+        return;
+    }
+
+    boost::shared_ptr<ContentWindowManager> cwm( new ContentWindowManager( c ));
+    g_displayGroupManager->addContentWindowManager( cwm );
 }
 
 void MainWindow::openContentsDirectory()

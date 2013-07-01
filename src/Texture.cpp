@@ -53,8 +53,6 @@ Texture::Texture(std::string uri)
     // assign values
     uri_ = uri;
 
-
-    uri = "http://www.greensock.com/gsap-js/";
     const QUrl url(  QString::fromStdString( uri ));
     if(url.isValid() && !url.isLocalFile())
     {

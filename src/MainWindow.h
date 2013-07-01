@@ -64,6 +64,7 @@ class MainWindow : public QMainWindow {
     public slots:
 
         void openContent();
+        void openBrowser();
         void openContentsDirectory();
         void clearContents();
         void saveState();
