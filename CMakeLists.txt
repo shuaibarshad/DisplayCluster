@@ -61,6 +61,10 @@ if(WIN32)
   set(QT_USE_QTMAIN TRUE)
 endif()
 
+include_directories("/home/nachbaur/Downloads/berkelium-linux64/include")
+link_directories("/home/nachbaur/Downloads/berkelium-linux64/lib")
+list(APPEND LIBS libberkelium)
+
 find_package(Qt4 REQUIRED)
 include(${QT_USE_FILE})
 list(APPEND LIBS ${QT_LIBRARIES})

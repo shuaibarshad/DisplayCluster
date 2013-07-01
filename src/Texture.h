@@ -42,7 +42,11 @@
 #include "FactoryObject.h"
 #include <QGLWidget>
 
+#ifdef qtwebkit
 class QWebView;
+#else
+class GLTextureWindow;
+#endif
 
 class Texture : public QObject, public FactoryObject {
 
@@ -73,7 +77,12 @@ class Texture : public QObject, public FactoryObject {
         bool textureBound_;
         GLuint textureId_;
 
+#ifdef qtwebkit
         QWebView* webView_;
+#else
+        GLTextureWindow* webView_;
+        friend class GLTextureWindow;
+#endif
 };
 
 #endif

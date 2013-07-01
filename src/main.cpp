@@ -41,6 +41,7 @@
 #include "log.h"
 #include <mpi.h>
 #include <unistd.h>
+#include "berkelium/Berkelium.hpp"
 
 #if ENABLE_TUIO_TOUCH_LISTENER
     #include "TouchListener.h"
@@ -146,9 +147,10 @@ int main(int argc, char * argv[])
         }
     }
 #endif
-
-    if(g_mpiRank == 0)
+Berkelium::init( Berkelium::FileString::empty( ));
+    if(g_mpiRank == 1)
     {
+
         g_networkListener = new NetworkListener();
     }
 
@@ -175,6 +177,9 @@ int main(int argc, char * argv[])
 
     // clean up the MPI environment after the Qt event loop exits
     MPI_Finalize();
+
+    //if(g_mpiRank == 1)
+        Berkelium::destroy();
 
     return 0;
 }
