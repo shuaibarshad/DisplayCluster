@@ -473,6 +473,7 @@ Texture::Texture( const std::string& uri )
 #ifdef qtwebkit
         const QUrl url(  QString::fromStdString( uri ));
         webView_ = new QWebView;
+        webView_->page()->setViewportSize( QSize( 1920, 1200 ));
         webView_->load( url );
         imageWidth_ = imageHeight_ = 0;
 #else
@@ -522,7 +523,6 @@ void Texture::render(float tX, float tY, float tW, float tH)
     {
 #ifdef qtwebkit
         QWebPage* page = webView_->page();
-        page->setViewportSize( page->mainFrame()->contentsSize());
         if( !page->viewportSize().isEmpty())
         {
             QImage image = QImage( page->viewportSize(), QImage::Format_ARGB32 );
@@ -534,14 +534,14 @@ void Texture::render(float tX, float tY, float tW, float tH)
             {
                 imageWidth_ = image.width();
                 imageHeight_ = image.height();
-                textureId_ = g_mainWindow->getGLWindow()->bindTexture(image, GL_TEXTURE_2D, GL_RGBA, QGLContext::InvertedYBindOption);
+                textureId_ = g_mainWindow->getGLWindow()->bindTexture(image, GL_TEXTURE_2D, GL_RGBA, QGLContext::InvertedYBindOption|QGLContext::LinearFilteringBindOption);
                 textureBound_ = true;
             }
             else
             {
                 glBindTexture( GL_TEXTURE_2D, textureId_ );
                 glTexSubImage2D( GL_TEXTURE_2D, 0, 0, 0, image.width(),
-                                 image.height(), GL_RGBA, GL_UNSIGNED_BYTE,
+                                 image.height(), GL_BGRA, GL_UNSIGNED_BYTE,
                                  image.bits( ));
             }
         }

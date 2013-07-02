@@ -42,7 +42,7 @@
 #include "FactoryObject.h"
 #include <QGLWidget>
 
-//#define qtwebkit
+#define qtwebkit
 #ifdef qtwebkit
 class QWebView;
 #else
