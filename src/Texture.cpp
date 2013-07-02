@@ -48,6 +48,7 @@
 #include "berkelium/Window.hpp"
 #include "berkelium/WindowDelegate.hpp"
 #include "berkelium/Context.hpp"
+#include "berkelium/ScriptUtil.hpp"
 #endif
 
 #ifndef qtwebkit
@@ -214,7 +215,7 @@ public:
 
         Berkelium::Context *context = Berkelium::Context::create();
         bk_window = Berkelium::Window::create(context);
-        delete context;
+        context->destroy();
         bk_window->setDelegate(this);
         bk_window->resize(width, height);
         bk_window->setTransparent(_usetrans);
@@ -392,24 +393,24 @@ public:
             std::wcout << L"        Selected Text: " << args.selectedText << std::endl;
     }
 
-//    virtual void onJavascriptCallback(Berkelium::Window *win, void* replyMsg, Berkelium::URLString url, Berkelium::WideString funcName, Berkelium::Script::Variant *args, size_t numArgs) {
-//        std::cout << "*** onJavascriptCallback at URL " << url << ", "
-//                  << (replyMsg?"synchronous":"async") << std::endl;
-//        std::wcout << L"    Function name: " << funcName << std::endl;
-//        for (size_t i = 0; i < numArgs; i++) {
-//            Berkelium::WideString jsonStr = Berkelium::toJSON(args[i]);
-//            std::wcout << L"    Argument " << i << ": ";
-//            if (args[i].type() == Berkelium::Script::Variant::JSSTRING) {
-//                std::wcout << L"(string) " << args[i].toString() << std::endl;
-//            } else {
-//                std::wcout << jsonStr << std::endl;
-//            }
-//            Berkelium::Script::toJSON_free(jsonStr);
-//        }
-//        if (replyMsg) {
-//            win->synchronousScriptReturn(replyMsg, numArgs ? args[0] : Berkelium::Script::Variant());
-//        }
-//    }
+    virtual void onJavascriptCallback(Berkelium::Window *win, void* replyMsg, Berkelium::URLString url, Berkelium::WideString funcName, Berkelium::Script::Variant *args, size_t numArgs) {
+        std::cout << "*** onJavascriptCallback at URL " << url << ", "
+                  << (replyMsg?"synchronous":"async") << std::endl;
+        std::wcout << L"    Function name: " << funcName << std::endl;
+        for (size_t i = 0; i < numArgs; i++) {
+            Berkelium::WideString jsonStr = Berkelium::Script::toJSON(args[i]);
+            std::wcout << L"    Argument " << i << ": ";
+            if (args[i].type() == Berkelium::Script::Variant::JSSTRING) {
+                std::wcout << L"(string) " << args[i].toString() << std::endl;
+            } else {
+                std::wcout << jsonStr << std::endl;
+            }
+            Berkelium::Script::toJSON_free(jsonStr);
+        }
+        if (replyMsg) {
+            win->synchronousScriptReturn(replyMsg, numArgs ? args[0] : Berkelium::Script::Variant());
+        }
+    }
 
     /** Display a file chooser dialog, if necessary. The value to be returned should go ______.
      * \param win  Window instance that fired this event.
