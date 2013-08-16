@@ -47,6 +47,7 @@
 #include "ParallelPixelStreamContent.h"
 #include "SVGStreamSource.h"
 #include "SVGContent.h"
+#include "Dock.h"
 #include <sstream>
 #include <boost/serialization/vector.hpp>
 #include <boost/serialization/shared_ptr.hpp>
@@ -65,6 +66,9 @@ DisplayGroupManager::DisplayGroupManager()
 
     // make Options trigger sendDisplayGroup() when it is updated
     connect(options_.get(), SIGNAL(updated()), this, SLOT(sendDisplayGroup()), Qt::QueuedConnection);
+
+    // register Interactionstate in Qt
+    qRegisterMetaType<InteractionState>("InteractionState");
 
     // register types for use in signals/slots
     qRegisterMetaType<boost::shared_ptr<ContentWindowManager> >("boost::shared_ptr<ContentWindowManager>");
@@ -237,6 +241,16 @@ void DisplayGroupManager::calibrateTimestampOffset()
     }
 }
 
+boost::shared_ptr<DisplayGroupInterface> DisplayGroupManager::getDisplayGroupInterface(QThread * thread)
+{
+    boost::shared_ptr<DisplayGroupInterface> dgi(new DisplayGroupInterface(shared_from_this()));
+
+    // push it to the other thread
+    dgi.get()->moveToThread(thread);
+
+    return dgi;
+}
+
 bool DisplayGroupManager::saveStateXMLFile(std::string filename)
 {
     // get contents vector
@@ -266,8 +280,6 @@ bool DisplayGroupManager::saveStateXMLFile(std::string filename)
         contentWindowManagers[i]->getCenter(centerX, centerY);
 
         double zoom = contentWindowManagers[i]->getZoom();
-
-        bool selected = contentWindowManagers[i]->getSelected();
 
         // add the XML node with these values
         QDomElement cwmNode = doc.createElement("ContentWindow");
@@ -303,10 +315,6 @@ bool DisplayGroupManager::saveStateXMLFile(std::string filename)
 
         n = doc.createElement("zoom");
         n.appendChild(doc.createTextNode(QString::number(zoom)));
-        cwmNode.appendChild(n);
-
-        n = doc.createElement("selected");
-        n.appendChild(doc.createTextNode(QString::number(selected)));
         cwmNode.appendChild(n);
     }
 
@@ -388,8 +396,6 @@ bool DisplayGroupManager::loadStateXMLFile(std::string filename)
         double x, y, w, h, centerX, centerY, zoom;
         x = y = w = h = centerX = centerY = zoom = -1.;
 
-        bool selected = false;
-
         sprintf(string, "string(//state/ContentWindow[%i]/x)", i);
         query.setQuery(string);
 
@@ -446,14 +452,6 @@ bool DisplayGroupManager::loadStateXMLFile(std::string filename)
             zoom = qstring.toDouble();
         }
 
-        sprintf(string, "string(//state/ContentWindow[%i]/selected)", i);
-        query.setQuery(string);
-
-        if(query.evaluateTo(&qstring) == true)
-        {
-            selected = (bool)qstring.toInt();
-        }
-
         boost::shared_ptr<Content> c = Content::getContent(uri);
 
         if(c != NULL)
@@ -483,8 +481,6 @@ bool DisplayGroupManager::loadStateXMLFile(std::string filename)
             {
                 cwm->setCenter(centerX, centerY);
             }
-
-            cwm->setSelected(selected);
         }
     }
 
@@ -831,7 +827,16 @@ void DisplayGroupManager::sendParallelPixelStreams()
                 }
 
                 if( initial )
+                {
                     cwm->adjustSize( SIZE_1TO1 );
+                    if( c->isDock( ))
+                    {
+                        double w, h;
+                        cwm->getSize( w, h );
+                        cwm->setPosition( g_dock->getPos().x() - w/2.,
+                                          g_dock->getPos().y() - h/2. );
+                    }
+                }
             }
         }
     }
@@ -1006,6 +1011,10 @@ void DisplayGroupManager::sendQuit()
     // send the header and the message
     MessageHeader mh;
     mh.type = MESSAGE_TYPE_QUIT;
+
+    // will send EVT_CLOSE through InteractionState
+    std::vector<boost::shared_ptr<ContentWindowManager> > contentWindowManagers;
+    setContentWindowManagers( contentWindowManagers );
 
     // the header is sent via a send, so that we can probe it on the render processes
     for(int i=1; i<g_mpiSize; i++)

@@ -36,35 +36,80 @@
 /* or implied, of The University of Texas at Austin.                 */
 /*********************************************************************/
 
-#ifndef DISPLAY_GROUP_GRAPHICS_SCENE_H
-#define DISPLAY_GROUP_GRAPHICS_SCENE_H
+#ifndef DC_SOCKET_H
+#define DC_SOCKET_H
 
-#include <QtGui>
-#include <boost/shared_ptr.hpp>
-#include <vector>
+#include "../MessageHeader.h"
+#include "../InteractionState.h"
+#include <QtCore>
+#include <queue>
 
-class Marker;
+class QTcpSocket;
 
-class DisplayGroupGraphicsScene : public QGraphicsScene {
+// we can't use the signal / slot model for handling threads without a Qt event
+// loop. so, we make our own thread class and override run()...
+
+class DcSocket : public QThread {
 
     public:
 
-        DisplayGroupGraphicsScene();
+        DcSocket(const char * hostname, bool async = true );
+        ~DcSocket();
 
-        void refreshTileRects();
+        bool isConnected();
+
+        // queue a message to be sent (non-blocking)
+        bool queueMessage(QByteArray message);
+
+        // wait for count acks to be received
+        void waitForAck(int count=1);
+
+        // -1 for no reply yet, 0 for not bound (if exclusive mode),
+        // 1 for successful bound
+        int hasInteraction();
+
+        InteractionState getInteractionState();
+
+        int socketDescriptor() const;
+
+        // for synchronous read operations (non-blocking)
+        bool hasNewInteractionState();
 
     protected:
 
-        bool event(QEvent *event);
-        void mouseMoveEvent(QGraphicsSceneMouseEvent * event);
-        void mousePressEvent(QGraphicsSceneMouseEvent * event);
-        void mouseReleaseEvent(QGraphicsSceneMouseEvent * event);
+        bool async_;
+        QTcpSocket * socket_;
 
-    private:
+        // mutex and queue for messages to send
+        QMutex sendMessagesQueueMutex_;
+        std::queue<QByteArray> sendMessagesQueue_;
 
-        std::vector< boost::shared_ptr<Marker> > markers_;
+        // semaphore for ack count
+        QSemaphore ackSemaphore_;
 
-        std::vector<QGraphicsRectItem *> tileRects_;
+        // mutex and flag to trigger socket thread to disconnect
+        QMutex disconnectFlagMutex_;
+        bool disconnectFlag_;
+
+        // current interaction state
+        QMutex interactionStateMutex_;
+        InteractionState interactionState_;
+
+        QAtomicInt interactionReply_;
+
+        // socket connections
+        bool connect(const char * hostname);
+        void disconnect();
+
+        // thread execution
+        void run();
+
+        // these are only called in the thread execution
+        bool socketSendMessage(QByteArray message);
+        bool socketReceiveMessage(MessageHeader & messageHeader, QByteArray & message);
+
+        bool sendMessage_();
+        bool receiveMessage_( MESSAGE_TYPE& type );
 };
 
 #endif

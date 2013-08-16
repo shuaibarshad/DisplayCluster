@@ -1,5 +1,5 @@
 /*********************************************************************/
-/* Copyright (c) 2011 - 2012, The University of Texas at Austin.     */
+/* Copyright (c) 2013, The University of Texas at Austin.            */
 /* All rights reserved.                                              */
 /*                                                                   */
 /* Redistribution and use in source and binary forms, with or        */
@@ -36,35 +36,88 @@
 /* or implied, of The University of Texas at Austin.                 */
 /*********************************************************************/
 
-#ifndef DISPLAY_GROUP_GRAPHICS_SCENE_H
-#define DISPLAY_GROUP_GRAPHICS_SCENE_H
+#ifndef DOCK_H
+#define DOCK_H
 
-#include <QtGui>
-#include <boost/shared_ptr.hpp>
-#include <vector>
+#include <QtCore/QDir>
+#include <QtCore/QObject>
+#include <QtCore/QThread>
+#include <QtCore/QHash>
+#include <QtGui/QImage>
+#include <dcStream.h>
 
-class Marker;
+class PictureFlow;
 
-class DisplayGroupGraphicsScene : public QGraphicsScene {
 
-    public:
+class ImageStreamer : public QObject
+{
+    Q_OBJECT
 
-        DisplayGroupGraphicsScene();
+    DcSocket* dcSocket;
 
-        void refreshTileRects();
+public:
+    ImageStreamer();
+    ~ImageStreamer();
 
-    protected:
+public slots:
+    void connect();
+    void disconnect();
+    void send( const QImage& image );
+};
 
-        bool event(QEvent *event);
-        void mouseMoveEvent(QGraphicsSceneMouseEvent * event);
-        void mousePressEvent(QGraphicsSceneMouseEvent * event);
-        void mouseReleaseEvent(QGraphicsSceneMouseEvent * event);
+class ImageLoader : public QObject
+{
+    Q_OBJECT
 
-    private:
+    PictureFlow* flow_;
 
-        std::vector< boost::shared_ptr<Marker> > markers_;
+public:
+    ImageLoader( PictureFlow* flow );
+    ~ImageLoader();
 
-        std::vector<QGraphicsRectItem *> tileRects_;
+public slots:
+    void loadImage( const QString& fileName, const int index );
+};
+
+
+class Dock : public QObject
+{
+    Q_OBJECT
+
+public:
+    Dock();
+    ~Dock();
+    PictureFlow* getFlow() const;
+
+    void open();
+    void close();
+
+    void onItem();
+
+    void setPos( const QPointF& pos ) { pos_ = pos; }
+    QPointF getPos() const { return pos_; }
+
+Q_SIGNALS:
+    void started();
+    void finished();
+    void renderPreview( const QString& fileName, const int index );
+
+private:
+    void changeDirectory( const QString& dir );
+    QThread streamThread_;
+    QThread loadThread_;
+    PictureFlow* flow_;
+    ImageStreamer* streamer_;
+    ImageLoader* loader_;
+    QDir currentDir_;
+    QPointF pos_;
+    QStringList filters_;
+    QHash< QString, int > slideIndex_;
+
+    void addSlide_( const QString& fileName, const QString& shortName,
+                    const bool isDir, const QColor& bgcolor1,
+                    const QColor& bgcolor2 );
+
 };
 
 #endif

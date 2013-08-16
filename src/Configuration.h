@@ -60,6 +60,7 @@ class Configuration {
 
         std::string getMyHost();
         std::string getMyDisplay();
+        QString getDockStartDir() const;
 
         int getMyNumTiles();
         int getTileX(int i);
@@ -81,6 +82,7 @@ class Configuration {
 
         std::string host_;
         std::string display_;
+        QString dockStartDir_;
 
         int myNumTiles_;
         std::vector<int> tileX_;

@@ -44,8 +44,10 @@
 #include <boost/shared_ptr.hpp>
 
 class ContentWindowManager;
+class PanGesture;
+class DoubleTapGesture;
 
-class ContentWindowGraphicsItem : public QGraphicsRectItem, public ContentWindowInterface {
+class ContentWindowGraphicsItem : public QGraphicsObject, public ContentWindowInterface {
 
     public:
 
@@ -61,23 +63,35 @@ class ContentWindowGraphicsItem : public QGraphicsRectItem, public ContentWindow
         virtual void setSize(double w, double h, ContentWindowInterface * source=NULL);
         virtual void setCenter(double centerX, double centerY, ContentWindowInterface * source=NULL);
         virtual void setZoom(double zoom, ContentWindowInterface * source=NULL);
-        virtual void setSelected(bool selected, ContentWindowInterface * source=NULL);
+        virtual void setWindowState(ContentWindowInterface::WindowState windowState, ContentWindowInterface * source=NULL);
+        virtual void setInteractionState(InteractionState interactionState, ContentWindowInterface * source=NULL);
 
         // increment the Z value of this item
         void setZToFront();
 
     protected:
 
-        QVariant itemChange(GraphicsItemChange change, const QVariant &value);
+        QRectF boundingRect() const;
 
         // QGraphicsRectItem events
+        virtual bool sceneEvent(QEvent *event);
         virtual void mouseMoveEvent(QGraphicsSceneMouseEvent * event);
         virtual void mousePressEvent(QGraphicsSceneMouseEvent * event);
         virtual void mouseDoubleClickEvent(QGraphicsSceneMouseEvent * event);
         virtual void mouseReleaseEvent(QGraphicsSceneMouseEvent * event);
         virtual void wheelEvent(QGraphicsSceneWheelEvent * event);
+        virtual void keyPressEvent(QKeyEvent *event);
+        virtual void keyReleaseEvent(QKeyEvent *event);
 
     private:
+
+        void gestureEvent( QGestureEvent *event );
+        void swipe( QSwipeGesture *gesture );
+        void pan( PanGesture* gesture) ;
+        void pinch( QPinchGesture* gesture );
+        void doubleTap( DoubleTapGesture* gesture );
+        void tap( QTapGesture* gesture );
+        void tapAndHold( QTapAndHoldGesture* gesture );
 
         // resizing state
         bool resizing_;

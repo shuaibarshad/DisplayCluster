@@ -52,9 +52,10 @@ Content::Content(std::string uri)
     uri_ = uri;
     width_ = 0;
     height_ = 0;
+    blockAdvance_ = false;
 }
 
-std::string Content::getURI()
+const std::string& Content::getURI() const
 {
     return uri_;
 }
@@ -71,6 +72,11 @@ void Content::setDimensions(int width, int height)
     height_ = height;
 
     emit(dimensionsChanged(width_, height_));
+}
+
+bool Content::isDock() const
+{
+    return getURI() == "menu";
 }
 
 void Content::render(boost::shared_ptr<ContentWindowManager> window)

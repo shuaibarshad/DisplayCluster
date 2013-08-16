@@ -1,5 +1,6 @@
 /*********************************************************************/
-/* Copyright (c) 2011 - 2012, The University of Texas at Austin.     */
+/* Copyright (c) 2013, EPFL/Blue Brain Project                       */
+/*                     Daniel Nachbaur <daniel.nachbaur@epfl.ch>     */
 /* All rights reserved.                                              */
 /*                                                                   */
 /* Redistribution and use in source and binary forms, with or        */
@@ -36,35 +37,22 @@
 /* or implied, of The University of Texas at Austin.                 */
 /*********************************************************************/
 
-#ifndef DISPLAY_GROUP_GRAPHICS_SCENE_H
-#define DISPLAY_GROUP_GRAPHICS_SCENE_H
+#ifndef DC_VERSION_H
+#define DC_VERSION_H
 
-#include <QtGui>
-#include <boost/shared_ptr.hpp>
-#include <vector>
+/** The current version. */
+#define DISPLAYCLUSTER_VERSION @VERSION@
 
-class Marker;
+/** The current major version. */
+#define DISPLAYCLUSTER_VERSION_MAJOR @VERSION_MAJOR@
 
-class DisplayGroupGraphicsScene : public QGraphicsScene {
+/** The current minor version. */
+#define DISPLAYCLUSTER_VERSION_MINOR @VERSION_MINOR@
 
-    public:
+/** The current patch level. */
+#define DISPLAYCLUSTER_VERSION_PATCH @VERSION_PATCH@
 
-        DisplayGroupGraphicsScene();
+/** The current DSO binary revision. */
+#define DISPLAYCLUSTER_VERSION_ABI @VERSION_ABI@
 
-        void refreshTileRects();
-
-    protected:
-
-        bool event(QEvent *event);
-        void mouseMoveEvent(QGraphicsSceneMouseEvent * event);
-        void mousePressEvent(QGraphicsSceneMouseEvent * event);
-        void mouseReleaseEvent(QGraphicsSceneMouseEvent * event);
-
-    private:
-
-        std::vector< boost::shared_ptr<Marker> > markers_;
-
-        std::vector<QGraphicsRectItem *> tileRects_;
-};
-
-#endif
+#endif //DC_VERSION_H

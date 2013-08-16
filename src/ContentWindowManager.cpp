@@ -49,7 +49,6 @@ ContentWindowManager::ContentWindowManager(boost::shared_ptr<Content> content)
     // content dimensions
     content->getDimensions(contentWidth_, contentHeight_);
 
-    // 1:1 screen
     adjustSize( SIZE_1TO1 );
 
     // default to centered
@@ -60,7 +59,7 @@ ContentWindowManager::ContentWindowManager(boost::shared_ptr<Content> content)
     zoom_ = 1.;
 
     // default window state
-    selected_ = false;
+    windowState_ = UNSELECTED;
 
     controlState_ = STATE_LOOP;
 
@@ -103,7 +102,8 @@ void ContentWindowManager::setDisplayGroupManager(boost::shared_ptr<DisplayGroup
         connect(this, SIGNAL(sizeChanged(double, double, ContentWindowInterface *)), displayGroupManager.get(), SLOT(sendDisplayGroup()));
         connect(this, SIGNAL(centerChanged(double, double, ContentWindowInterface *)), displayGroupManager.get(), SLOT(sendDisplayGroup()));
         connect(this, SIGNAL(zoomChanged(double, ContentWindowInterface *)), displayGroupManager.get(), SLOT(sendDisplayGroup()));
-        connect(this, SIGNAL(selectedChanged(bool, ContentWindowInterface *)), displayGroupManager.get(), SLOT(sendDisplayGroup()));
+        connect(this, SIGNAL(windowStateChanged(ContentWindowInterface::WindowState, ContentWindowInterface *)), displayGroupManager.get(), SLOT(sendDisplayGroup()));
+        connect(this, SIGNAL(interactionStateChanged(InteractionState, ContentWindowInterface *)), displayGroupManager.get(), SLOT(sendDisplayGroup()));
 
         // we don't call sendDisplayGroup() on movedToFront() or destroyed() since it happens already
     }
@@ -143,7 +143,7 @@ void ContentWindowManager::render()
         showWindowBorders = dgm->getOptions()->getShowWindowBorders();
     }
 
-    if(showWindowBorders == true)
+    if(showWindowBorders || windowState_ != UNSELECTED )
     {
         double horizontalBorder = 5. / (double)g_configuration->getTotalHeight(); // 5 pixels
 
@@ -158,9 +158,17 @@ void ContentWindowManager::render()
         glPushAttrib(GL_CURRENT_BIT);
 
         // color the border based on window state
-        if(selected_ == true)
+        if(windowState_ == UNSELECTED)
+        {
+            glColor4f(1,1,1,1);
+        }
+        else if(windowState_ == SELECTED)
         {
             glColor4f(1,0,0,1);
+        }
+        else if(windowState_ == INTERACTION)
+        {
+            glColor4f(0,1,0,1);
         }
         else
         {
@@ -172,6 +180,7 @@ void ContentWindowManager::render()
         glPopAttrib();
     }
 
+#if 0	// not needed for multitouch
     glPushAttrib(GL_CURRENT_BIT);
 
     // render buttons if any of the markers are over the window
@@ -281,4 +290,5 @@ void ContentWindowManager::render()
     }
 
     glPopAttrib();
+#endif
 }

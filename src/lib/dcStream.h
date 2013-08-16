@@ -39,11 +39,11 @@
 #ifndef DC_STREAM_H
 #define DC_STREAM_H
 
+#include <InteractionState.h>
 #include <string>
 #include <vector>
 
-class QTcpSocket;
-typedef QTcpSocket DcSocket;
+class DcSocket;
 
 struct DcStreamParameters  {
     std::string name;
@@ -61,7 +61,7 @@ enum PIXEL_FORMAT { RGB=0, RGBA=1, ARGB=2, BGR=3, BGRA=4, ABGR=5 };
 // make a new connection to the DisplayCluster instance on hostname, and
 // returns a DcSocket. the user is responsible for closing the socket using
 // dcStreamDisconnect().
-extern DcSocket * dcStreamConnect(const char * hostname);
+extern DcSocket * dcStreamConnect(const char * hostname, bool async=true);
 
 // closes a previously opened connection, deleting the socket.
 extern void dcStreamDisconnect(DcSocket * socket);
@@ -73,7 +73,7 @@ extern void dcStreamReset(DcSocket * socket);
 // (width, height). the origin (x, y) is relative to the full window represented
 // by all streams corresponding to <name>. totalWidth and totalHeight give the
 // full dimensions of the window.
-extern DcStreamParameters dcStreamGenerateParameters(std::string name, int sourceIndex, int x, int y, int width, int height, int totalWidth, int totalHeight);
+extern DcStreamParameters dcStreamGenerateParameters(std::string name, int x, int y, int width, int height, int totalWidth, int totalHeight);
 
 // generates a vector of parameter objects corresponding to segments contained
 // in (x, y, width, height). the parameters' dimensions will be approximately
@@ -93,8 +93,9 @@ extern bool dcStreamSend(DcSocket * socket, unsigned char * imageBuffer, int ima
 extern bool dcStreamSend(DcSocket * socket, unsigned char * imageBuffer, int imageX, int imageY, int imageWidth, int imagePitch, int imageHeight, PIXEL_FORMAT pixelFormat, std::vector<DcStreamParameters> parameters);
 
 // sends a compressed JPEG image corresponding to parameters and sends it to a
-// DisplayCluster instance over socket.
-extern bool dcStreamSendJpeg(DcSocket * socket, DcStreamParameters parameters, const char * jpegData, int jpegSize);
+// DisplayCluster instance over socket. if waitForAck is true, this function
+// will block until an acknowledgment is received.
+extern bool dcStreamSendJpeg(DcSocket * socket, DcStreamParameters parameters, const char * jpegData, int jpegSize, bool waitForAck=true);
 
 // computes a compressed JPEG image corresponding to imageBuffer. results are
 // stored in jpegData and jpegSize.
@@ -108,5 +109,21 @@ extern void dcStreamIncrementFrameIndex();
 // socket. different from the pixel streaming capability, this allows for
 // streaming vector-based graphics.
 extern bool dcStreamSendSVG(DcSocket * socket, std::string name, const char * svgData, int svgSize);
+
+extern bool dcStreamBindInteraction(DcSocket * socket, std::string name);
+
+// exclusive binds only one stream source for the same name,
+// check status with dcStreamHasInteraction()
+extern bool dcStreamBindInteractionExclusive(DcSocket * socket, std::string name);
+
+extern InteractionState dcStreamGetInteractionState(DcSocket * socket);
+
+extern int dcSocketDescriptor(DcSocket * socket);
+
+// -1 for no reply yet, 0 for not bound (if exclusive mode),
+// 1 for successful bound
+extern int dcStreamHasInteraction(DcSocket * socket);
+
+extern bool dcHasNewInteractionState(DcSocket * socket);
 
 #endif

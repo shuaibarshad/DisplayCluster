@@ -42,6 +42,9 @@
 #include "DisplayGroupManager.h"
 #include "DisplayGroupGraphicsView.h"
 #include "main.h"
+#include "Gestures.h"
+#include "Dock.h"
+#include "Pictureflow.h"
 
 qreal ContentWindowGraphicsItem::zCounter_ = 0;
 
@@ -53,51 +56,59 @@ ContentWindowGraphicsItem::ContentWindowGraphicsItem(boost::shared_ptr<ContentWi
 
     // graphics items are movable
     setFlag(QGraphicsItem::ItemIsMovable, true);
-
-    // default fill color / opacity
-    setBrush(QBrush(QColor(0, 0, 0, 128)));
+    setFlag(QGraphicsItem::ItemIsFocusable, true);
 
     // border based on if we're selected or not
     // use the -1 argument to force an update but not emit signals
-    setSelected(selected_, (ContentWindowInterface *)-1);
-
-    // current coordinates
-    setPos(x_, y_);
-    setRect(x_, y_, w_, h_);
+    setWindowState(windowState_, (ContentWindowInterface *)-1);
 
     // new items at the front
     // we assume that interface items will be constructed in depth order so this produces the correct result...
     setZToFront();
+
+    grabGesture( Qt::PinchGesture );
+    grabGesture( PanGestureRecognizer::type( ));
+    grabGesture( DoubleTapGestureRecognizer::type( ));
+    //grabGesture( Qt::SwipeGesture );
+    grabGesture( Qt::TapAndHoldGesture );
+    grabGesture( Qt::TapGesture );
 }
 
-QVariant ContentWindowGraphicsItem::itemChange(GraphicsItemChange change,
-                                               const QVariant &value)
- {
-     if (change == ItemSceneHasChanged)
-         setRect(mapRectFromScene(x_, y_, w_, h_));
-     return QGraphicsItem::itemChange(change, value);
- }
+QRectF ContentWindowGraphicsItem::boundingRect() const
+{
+    return QRectF(x_, y_, w_, h_);
+}
 
 void ContentWindowGraphicsItem::paint(QPainter * painter, const QStyleOptionGraphicsItem * option, QWidget * widget)
 {
-    QGraphicsRectItem::paint(painter, option, widget);
-
     boost::shared_ptr<ContentWindowManager> contentWindowManager = getContentWindowManager();
 
     if(!contentWindowManager)
         return;
 
-    // default pen
     QPen pen;
+    if(windowState_ == UNSELECTED)
+        pen.setColor(QColor(0,0,0));
+    else if(windowState_ == SELECTED)
+        pen.setColor(QColor(255,0,0));
+    else if(windowState_ == INTERACTION)
+        pen.setColor(QColor(0,255,0));
+    else
+        pen.setColor(QColor(0,0,0));
+
+    // draw & fill rectangle
+    painter->setPen(pen);
+    painter->setBrush( QBrush(QColor(0, 0, 0, 128)));
+    painter->drawRect(boundingRect());
 
     // button dimensions
     float buttonWidth, buttonHeight;
     getButtonDimensions(buttonWidth, buttonHeight);
 
-    const qreal& x = rect().x();
-    const qreal& y = rect().y();
-    const qreal& w = rect().width();
-    const qreal& h = rect().height();
+    const qreal& x = x_;
+    const qreal& y = y_;
+    const qreal& w = w_;
+    const qreal& h = h_;
 
     // draw close button
     QRectF closeRect(x + w - buttonWidth, y, buttonWidth, buttonHeight);
@@ -123,14 +134,14 @@ void ContentWindowGraphicsItem::paint(QPainter * painter, const QStyleOptionGrap
         g_displayGroupManager->getOptions()->getShowMovieControls( ))
     {
         // play/pause
-        QRectF playPauseRect((x + w)/2 - buttonWidth, y + h - buttonHeight,
+        QRectF playPauseRect(x + w/2 - buttonWidth, y + h - buttonHeight,
                               buttonWidth, buttonHeight);
         pen.setColor(QColor(contentWindowManager->getControlState() & STATE_PAUSED ? 128 :200,0,0));
         painter->setPen(pen);
         painter->fillRect(playPauseRect, pen.color());
 
         // loop
-        QRectF loopRect((x + w)/2, y + h - buttonHeight,
+        QRectF loopRect(x + w/2, y + h - buttonHeight,
                         buttonWidth, buttonHeight);
         pen.setColor(QColor(0,contentWindowManager->getControlState() & STATE_LOOP ? 200 :128,0));
         painter->setPen(pen);
@@ -186,105 +197,84 @@ void ContentWindowGraphicsItem::paint(QPainter * painter, const QStyleOptionGrap
 
     painter->scale(0.5, 0.5);
 
-    textBoundingRect = QRectF(x / horizontalTextScale, y / verticalTextScale, w / horizontalTextScale, h / verticalTextScale);
+    textBoundingRect = QRectF((x+buttonWidth) / horizontalTextScale, y / verticalTextScale, (w-buttonWidth) / horizontalTextScale, h / verticalTextScale);
 
     QString coordinatesLabel = QString(" (") + QString::number(x_, 'f', 2) + QString(" ,") + QString::number(y_, 'f', 2) + QString(", ") + QString::number(w_, 'f', 2) + QString(", ") + QString::number(h_, 'f', 2) + QString(")\n");
     QString zoomCenterLabel = QString(" zoom = ") + QString::number(zoom_, 'f', 2) + QString(" @ (") + QString::number(centerX_, 'f', 2) + QString(", ") + QString::number(centerY_, 'f', 2) + QString(")");
+    QString interactionLabel = QString(" x: ") +
+            QString::number(interactionState_.mouseX, 'f', 2) +
+            QString(" y: ") + QString::number(interactionState_.mouseY, 'f', 2) +
+            QString(" mouseLeft: ") + QString::number((int) interactionState_.mouseLeft, 'b', 1) +
+            QString(" mouseMiddle: ") + QString::number((int) interactionState_.mouseMiddle, 'b', 1) +
+            QString(" mouseRight: ") + QString::number((int) interactionState_.mouseRight, 'b', 1);
 
-    QString windowInfoLabel = coordinatesLabel + zoomCenterLabel;
+    QString windowInfoLabel = coordinatesLabel + zoomCenterLabel + interactionLabel;
     painter->drawText(textBoundingRect, Qt::AlignLeft | Qt::AlignBottom, windowInfoLabel);
 }
 
 void ContentWindowGraphicsItem::adjustSize( const SizeState state,
                                             ContentWindowInterface * source )
 {
-    ContentWindowInterface::adjustSize( state, source );
-
     if(source != this)
-    {
-        setPos(x_, y_);
-        setRect(mapRectFromScene(x_, y_, w_, h_));
-    }
+        prepareGeometryChange();
+
+    ContentWindowInterface::adjustSize( state, source );
 }
 
 void ContentWindowGraphicsItem::setCoordinates(double x, double y, double w, double h, ContentWindowInterface * source)
 {
-    ContentWindowInterface::setCoordinates(x, y, w, h, source);
-
     if(source != this)
-    {
-        setPos(x_, y_);
-        setRect(mapRectFromScene(x_, y_, w_, h_));
-    }
+        prepareGeometryChange();
+
+    ContentWindowInterface::setCoordinates(x, y, w, h, source);
 }
 
 void ContentWindowGraphicsItem::setPosition(double x, double y, ContentWindowInterface * source)
 {
-    ContentWindowInterface::setPosition(x, y, source);
-
     if(source != this)
-    {
-        setPos(x_, y_);
-        setRect(mapRectFromScene(x_, y_, w_, h_));
-    }
+        prepareGeometryChange();
+
+    ContentWindowInterface::setPosition(x, y, source);
 }
 
 void ContentWindowGraphicsItem::setSize(double w, double h, ContentWindowInterface * source)
 {
-    ContentWindowInterface::setSize(w, h, source);
-
     if(source != this)
-    {
-        setPos(x_, y_);
-        setRect(mapRectFromScene(x_, y_, w_, h_));
-    }
+        prepareGeometryChange();
+
+    ContentWindowInterface::setSize(w, h, source);
 }
 
 void ContentWindowGraphicsItem::setCenter(double centerX, double centerY, ContentWindowInterface * source)
 {
-    ContentWindowInterface::setCenter(centerX, centerY, source);
-
     if(source != this)
-    {
-        // force a redraw to update window info label
-        update();
-    }
+        prepareGeometryChange();
+
+    ContentWindowInterface::setCenter(centerX, centerY, source);
 }
 
 void ContentWindowGraphicsItem::setZoom(double zoom, ContentWindowInterface * source)
 {
-    ContentWindowInterface::setZoom(zoom, source);
-
     if(source != this)
-    {
-        // force a redraw to update window info label
-        update();
-    }
+        prepareGeometryChange();
+
+    ContentWindowInterface::setZoom(zoom, source);
 }
 
-void ContentWindowGraphicsItem::setSelected(bool selected, ContentWindowInterface * source)
+void ContentWindowGraphicsItem::setWindowState(ContentWindowInterface::WindowState windowState, ContentWindowInterface * source)
 {
-    ContentWindowInterface::setSelected(selected, source);
-
     if(source != this)
-    {
-        // set the pen
-        QPen p = pen();
+        prepareGeometryChange();
 
-        if(selected_ == true)
-        {
-            p.setColor(QColor(255,0,0));
-        }
-        else
-        {
-            p.setColor(QColor(0,0,0));
-        }
+    ContentWindowInterface::setWindowState(windowState, source);
+}
 
-        setPen(p);
+void ContentWindowGraphicsItem::setInteractionState(InteractionState interactionState, ContentWindowInterface * source)
+{
+    if(source != this)
+        prepareGeometryChange();
 
-        // force a redraw
-        update();
-    }
+    ContentWindowInterface::setInteractionState(interactionState, source);
 }
 
 void ContentWindowGraphicsItem::setZToFront()
@@ -293,10 +283,271 @@ void ContentWindowGraphicsItem::setZToFront()
     setZValue(zCounter_);
 }
 
+bool ContentWindowGraphicsItem::sceneEvent( QEvent* event )
+{
+    switch( event->type( ))
+    {
+    case QEvent::Gesture:
+        gestureEvent( static_cast< QGestureEvent* >( event ));
+        return true;
+    default:
+        return QGraphicsObject::sceneEvent( event );
+    }
+}
+
+void ContentWindowGraphicsItem::gestureEvent( QGestureEvent* event )
+{
+    if( !getContentWindowManager( ))
+        return;
+
+    moveToFront();
+
+    if( QGesture *gesture = event->gesture( Qt::SwipeGesture ))
+    {
+        event->accept( Qt::SwipeGesture );
+        swipe( static_cast< QSwipeGesture* >( gesture ));
+    }
+    else if(QGesture* gesture = event->gesture( PanGestureRecognizer::type( )))
+    {
+        event->accept( PanGestureRecognizer::type( ));
+        pan( static_cast< PanGesture* >( gesture ));
+    }
+    else if(QGesture* gesture = event->gesture( Qt::PinchGesture ))
+    {
+        event->accept( Qt::PinchGesture );
+        pinch( static_cast< QPinchGesture* >( gesture ));
+    }
+    else if( QGesture* gesture = event->gesture( DoubleTapGestureRecognizer::type( )))
+    {
+        event->accept( DoubleTapGestureRecognizer::type( ));
+        doubleTap( static_cast< DoubleTapGesture* >( gesture ));
+    }
+    else if( QGesture* gesture = event->gesture( Qt::TapGesture ))
+    {
+        event->accept( Qt::TapGesture );
+        tap( static_cast< QTapGesture* >( gesture ));
+    }
+    else if( QGesture* gesture = event->gesture( Qt::TapAndHoldGesture ))
+    {
+        event->accept( Qt::TapAndHoldGesture );
+        tapAndHold( static_cast< QTapAndHoldGesture* >( gesture ));
+    }
+}
+
+void ContentWindowGraphicsItem::swipe( QSwipeGesture* gesture )
+{
+    std::cout << "SWIPE " << gesture->state() << std::endl;
+}
+
+void ContentWindowGraphicsItem::pan( PanGesture* gesture )
+{
+    const QPointF& delta = gesture->delta();
+    const double dx = delta.x() / g_configuration->getTotalWidth();
+    const double dy = delta.y() / g_configuration->getTotalHeight();
+
+    if( getContentWindowManager()->getContent()->isDock( ))
+    {
+        const int offs = delta.x()/4;
+        g_dock->getFlow()->showSlide( g_dock->getFlow()->centerIndex() + offs );
+        return;
+    }
+
+    if( windowState_ == SELECTED )
+    {
+        const double centerX = centerX_ - 2.*dx / zoom_;
+        const double centerY = centerY_ - 2.*dy / zoom_;
+        setCenter(centerX, centerY);
+        return;
+    }
+
+    if( windowState_ == INTERACTION )
+    {
+        InteractionState interactionState = interactionState_;
+
+        interactionState.mouseX = gesture->position().x();
+        interactionState.mouseY = gesture->position().y();
+        interactionState.mouseLeft = true;
+        switch( gesture->state( ))
+        {
+        case Qt::GestureStarted:
+            interactionState.type = InteractionState::EVT_PRESS;
+            break;
+        case Qt::GestureUpdated:
+            interactionState.type = InteractionState::EVT_MOVE;
+            break;
+        case Qt::GestureFinished:
+            interactionState.type = InteractionState::EVT_RELEASE;
+            break;
+        case Qt::NoGesture:
+        case Qt::GestureCanceled:
+        default:
+            break;
+        }
+
+        setInteractionState(interactionState);
+        return;
+    }
+
+    if( gesture->state() == Qt::GestureStarted )
+        getContentWindowManager()->getContent()->blockAdvance( true );
+
+    const double x = x_ + dx;
+    const double y = y_ + dy;
+    setPosition( x, y );
+
+    if( gesture->state() == Qt::GestureCanceled ||
+        gesture->state() == Qt::GestureFinished )
+    {
+        getContentWindowManager()->getContent()->blockAdvance( false );
+    }
+}
+
+void ContentWindowGraphicsItem::pinch( QPinchGesture* gesture )
+{
+    if( getContentWindowManager()->getContent()->isDock( ))
+        return;
+
+    const qreal factor = (gesture->scaleFactor() - 1.) * 0.2f + 1.f;
+    if( std::isnan( factor ) || std::isinf( factor ))
+        return;
+
+    if( windowState_ == SELECTED )
+    {
+        setZoom( getZoom() * factor );
+        return;
+    }
+
+    if( windowState_ == INTERACTION )
+    {
+        InteractionState interactionState = interactionState_;
+        interactionState.dy = factor - 1.f;
+        interactionState.type = InteractionState::EVT_WHEEL;
+
+        setInteractionState(interactionState);
+        return;
+    }
+
+    if( gesture->state() == Qt::GestureStarted )
+        getContentWindowManager()->getContent()->blockAdvance( true );
+
+    scaleSize( factor );
+
+    if( gesture->state() == Qt::GestureCanceled ||
+        gesture->state() == Qt::GestureFinished )
+    {
+        getContentWindowManager()->getContent()->blockAdvance( false );
+    }
+}
+
+void ContentWindowGraphicsItem::tap( QTapGesture* gesture )
+{
+//    if( windowState_ == INTERACTION && gesture->state() != Qt::GestureCanceled )
+//    {
+//        InteractionState interactionState = interactionState_;
+
+//        interactionState.mouseX = gesture->position().x() / w_;
+//        interactionState.mouseY = gesture->position().y() / h_;
+//        interactionState.mouseLeft = true;
+//        interactionState.type = gesture->state() == Qt::GestureStarted ?
+//                    InteractionState::EVT_PRESS : InteractionState::EVT_RELEASE;
+
+//        setInteractionState(interactionState);
+//        return;
+//    }
+
+    if( gesture->state() != Qt::GestureFinished )
+        return;
+
+    if( !getContentWindowManager()->getContent()->isDock( ))
+        return;
+
+    const int xPos = gesture->position().x() - (x_*g_configuration->getTotalWidth());
+    const int mid = (w_*g_configuration->getTotalWidth())/2;
+    const int slideMid = g_dock->getFlow()->slideSize().width()/2;
+
+    if( xPos > mid-slideMid && xPos < mid+slideMid )
+    {
+        g_dock->onItem();
+        return;
+    }
+
+    if( xPos > mid )
+      g_dock->getFlow()->showNext();
+    else
+      g_dock->getFlow()->showPrevious();
+}
+
+void ContentWindowGraphicsItem::doubleTap( DoubleTapGesture* gesture )
+{
+    if( getContentWindowManager()->getContent()->isDock( ))
+        return;
+
+    if( windowState_ != UNSELECTED )
+        return;
+
+    if( gesture->state() == Qt::GestureFinished )
+        adjustSize( getSizeState() == SIZE_FULLSCREEN ? SIZE_1TO1 :
+                                                        SIZE_FULLSCREEN );
+}
+
+void ContentWindowGraphicsItem::tapAndHold( QTapAndHoldGesture* gesture )
+{
+    if( getContentWindowManager()->getContent()->isDock( ))
+        return;
+
+    if( gesture->state() != Qt::GestureFinished )
+        return;
+
+    // move to next state
+    switch( windowState_ )
+    {
+    case UNSELECTED:
+        windowState_ = SELECTED;
+        break;
+    case SELECTED:
+        windowState_ = INTERACTION;
+        break;
+    case INTERACTION:
+        windowState_ = UNSELECTED;
+        break;
+    }
+
+    setWindowState( windowState_ );
+}
+
 void ContentWindowGraphicsItem::mouseMoveEvent(QGraphicsSceneMouseEvent * event)
 {
     // handle mouse movements differently depending on selected mode of item
-    if(selected_)
+    if(windowState_ == UNSELECTED)
+    {
+        if(event->buttons().testFlag(Qt::LeftButton) == true)
+        {
+            if(resizing_ == true)
+            {
+                QRectF r = boundingRect();
+                QPointF eventPos = event->pos();
+
+                r.setBottomRight(eventPos);
+
+                QRectF sceneRect = mapRectToScene(r);
+
+                double w = sceneRect.width();
+                double h = sceneRect.height();
+
+                setSize(w, h);
+            }
+            else
+            {
+                QPointF delta = event->pos() - event->lastPos();
+
+                double x = x_ + delta.x();
+                double y = y_ + delta.y();
+
+                setPosition(x, y);
+            }
+        }
+    }
+    else if(windowState_ == SELECTED)
     {
         // handle zooms / pans
         QPointF delta = event->scenePos() - event->lastScenePos();
@@ -334,34 +585,26 @@ void ContentWindowGraphicsItem::mouseMoveEvent(QGraphicsSceneMouseEvent * event)
 
         // force a redraw to update window info label
         update();
-        return;
     }
-
-    if(event->buttons().testFlag(Qt::LeftButton) == true)
+    else if(windowState_ == INTERACTION)
     {
-        if( resizing_ )
-        {
-            QRectF r = rect();
-            QPointF eventPos = event->pos();
+        QRectF r = boundingRect();
+        QPointF eventPos = event->pos();
 
-            r.setBottomRight(eventPos);
+        InteractionState interactionState = interactionState_;
 
-            QRectF sceneRect = mapRectToScene(r);
+        interactionState.mouseX = (eventPos.x() - r.x()) / r.width();
+        interactionState.mouseY = (eventPos.y() - r.y()) / r.height();
 
-            double w = sceneRect.width();
-            double h = sceneRect.height();
+        interactionState.mouseLeft = event->buttons().testFlag(Qt::LeftButton);
+        interactionState.mouseMiddle = event->buttons().testFlag(Qt::MidButton);
+        interactionState.mouseRight = event->buttons().testFlag(Qt::RightButton);
+        interactionState.type = InteractionState::EVT_MOVE;
 
-            setSize(w, h);
-        }
-        else if( moving_ )
-        {
-            QPointF delta = event->pos() - event->lastPos();
+        setInteractionState(interactionState);
 
-            double x = x_ + delta.x();
-            double y = y_ + delta.y();
-
-            setPosition(x, y);
-        }
+        // force a redraw to update window info label
+        update();
     }
 }
 
@@ -377,12 +620,30 @@ void ContentWindowGraphicsItem::mousePressEvent(QGraphicsSceneMouseEvent * event
         return;
     }
 
+    if(windowState_ == INTERACTION)
+    {
+        QRectF r = boundingRect();
+        QPointF eventPos = event->pos();
+
+        InteractionState interactionState = interactionState_;
+
+        interactionState.mouseX = (eventPos.x() - r.x()) / r.width();
+        interactionState.mouseY = (eventPos.y() - r.y()) / r.height();
+
+        interactionState.mouseLeft = event->buttons().testFlag(Qt::LeftButton);
+        interactionState.mouseMiddle = event->buttons().testFlag(Qt::MidButton);
+        interactionState.mouseRight = event->buttons().testFlag(Qt::RightButton);
+        interactionState.type = InteractionState::EVT_PRESS;
+
+        setInteractionState(interactionState);
+    }
+
     // button dimensions
     float buttonWidth, buttonHeight;
     getButtonDimensions(buttonWidth, buttonHeight);
 
     // item rectangle and event position
-    QRectF r = rect();
+    QRectF r = boundingRect();
     QPointF eventPos = event->pos();
 
     // check to see if user clicked on the close button
@@ -397,10 +658,12 @@ void ContentWindowGraphicsItem::mousePressEvent(QGraphicsSceneMouseEvent * event
     // move to the front of the GUI display
     moveToFront();
 
-    if( selected_ )
+    if( selected( ))
         return;
 
     boost::shared_ptr<ContentWindowManager> window = getContentWindowManager();
+
+    window->getContent()->blockAdvance( true );
 
     // check to see if user clicked on the resize button
     if(fabs((r.x()+r.width()) - eventPos.x()) <= buttonWidth &&
@@ -444,9 +707,21 @@ void ContentWindowGraphicsItem::mouseDoubleClickEvent(QGraphicsSceneMouseEvent *
         return;
     }
 
-    bool selected = !selected_;
+    // move to next state
+    switch(windowState_)
+    {
+        case UNSELECTED:
+            windowState_ = SELECTED;
+            break;
+        case SELECTED:
+            windowState_ = INTERACTION;
+            break;
+        case INTERACTION:
+            windowState_ = UNSELECTED;
+            break;
+    }
 
-    setSelected(selected);
+    setWindowState(windowState_);
 
     QGraphicsItem::mouseDoubleClickEvent(event);
 }
@@ -455,6 +730,26 @@ void ContentWindowGraphicsItem::mouseReleaseEvent(QGraphicsSceneMouseEvent * eve
 {
     resizing_ = false;
     moving_ = false;
+    if( getContentWindowManager( ))
+        getContentWindowManager()->getContent()->blockAdvance( false );
+
+    if(windowState_ == INTERACTION)
+    {
+        QRectF r = boundingRect();
+        QPointF eventPos = event->pos();
+
+        InteractionState interactionState = interactionState_;
+
+        interactionState.mouseX = (eventPos.x() - r.x()) / r.width();
+        interactionState.mouseY = (eventPos.y() - r.y()) / r.height();
+
+        interactionState.mouseLeft = event->buttons().testFlag(Qt::LeftButton);
+        interactionState.mouseMiddle = event->buttons().testFlag(Qt::MidButton);
+        interactionState.mouseRight = event->buttons().testFlag(Qt::RightButton);
+        interactionState.type = InteractionState::EVT_RELEASE;
+
+        setInteractionState(interactionState);
+    }
 
     QGraphicsItem::mouseReleaseEvent(event);
 }
@@ -471,8 +766,8 @@ void ContentWindowGraphicsItem::wheelEvent(QGraphicsSceneWheelEvent * event)
         return;
     }
 
-    // handle wheel movements differently depending on selected mode of item
-    if(selected_ == false)
+    // handle wheel movements differently depending on state of item window
+    if(windowState_ == UNSELECTED)
     {
         // scale size based on wheel delta
         // typical delta value is 120, so scale based on that
@@ -480,7 +775,7 @@ void ContentWindowGraphicsItem::wheelEvent(QGraphicsSceneWheelEvent * event)
 
         scaleSize(factor);
     }
-    else
+    else if(windowState_ == SELECTED)
     {
         // change zoom based on wheel delta
         // deltas are counted in 1/8 degrees. so, scale based on 180 degrees => delta = 180*8 = 1440
@@ -489,4 +784,46 @@ void ContentWindowGraphicsItem::wheelEvent(QGraphicsSceneWheelEvent * event)
 
         setZoom(zoom);
     }
+    else if(windowState_ == INTERACTION)
+    {
+        QRectF r = boundingRect();
+        QPointF eventPos = event->pos();
+
+        InteractionState interactionState = interactionState_;
+
+        interactionState.mouseX = (eventPos.x() - r.x()) / r.width();
+        interactionState.mouseY = (eventPos.y() - r.y()) / r.height();
+
+        interactionState.mouseLeft = event->buttons().testFlag(Qt::LeftButton);
+        interactionState.mouseMiddle = event->buttons().testFlag(Qt::MidButton);
+        interactionState.mouseRight = event->buttons().testFlag(Qt::RightButton);
+        interactionState.type = InteractionState::EVT_WHEEL;
+        interactionState.dy = (double)event->delta() / 1440.;
+
+        setInteractionState(interactionState);
+    }
+}
+
+void ContentWindowGraphicsItem::keyPressEvent(QKeyEvent *event)
+{
+    if(windowState_ != INTERACTION)
+        return;
+
+    InteractionState interactionState = interactionState_;
+    interactionState.type = InteractionState::EVT_KEY_PRESS;
+    interactionState.key = event->key();
+
+    setInteractionState(interactionState);
+}
+
+void ContentWindowGraphicsItem::keyReleaseEvent(QKeyEvent *event)
+{
+    if(windowState_ != INTERACTION)
+        return;
+
+    InteractionState interactionState = interactionState_;
+    interactionState.type = InteractionState::EVT_KEY_RELEASE;
+    interactionState.key = event->key();
+
+    setInteractionState(interactionState);
 }

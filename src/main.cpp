@@ -44,7 +44,6 @@
 #include "berkelium/Berkelium.hpp"
 
 #if ENABLE_TUIO_TOUCH_LISTENER
-    #include "TouchListener.h"
     #include <X11/Xlib.h>
 #endif
 
@@ -68,6 +67,7 @@ boost::shared_ptr<DisplayGroupManager> g_displayGroupManager;
 MainWindow * g_mainWindow = NULL;
 NetworkListener * g_networkListener = NULL;
 long g_frameCount = 0;
+Dock* g_dock = 0;
 
 int main(int argc, char * argv[])
 {
@@ -103,13 +103,6 @@ int main(int argc, char * argv[])
 
     // calibrate timestamp offset between rank 0 and rank 1 clocks
     g_displayGroupManager->calibrateTimestampOffset();
-
-#if ENABLE_TUIO_TOUCH_LISTENER
-    if(g_mpiRank == 0)
-    {
-        new TouchListener();
-    }
-#endif
 
 #if ENABLE_JOYSTICK_SUPPORT
     if(g_mpiRank == 0)
