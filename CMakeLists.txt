@@ -17,9 +17,6 @@ endif(COMMAND cmake_policy)
 # show all warnings
 set(CMAKE_CXX_FLAGS "-Wall")
 
-# keep the library path in installed executables
-SET(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
-
 # build options
 option(BUILD_DISPLAYCLUSTER_LIBRARY "Build DisplayCluster library" OFF)
 option(BUILD_DESKTOPSTREAMER "Build DesktopStreamer application" OFF)
@@ -47,6 +44,11 @@ endif()
 
 # path for additional modules
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/modules/")
+
+if(NOT BUILDYARD)
+  include(Buildyard)
+  return()
+endif()
 
 # find and setup Qt4
 # see http://cmake.org/cmake/help/cmake2.6docs.html#module:FindQt4 for details
