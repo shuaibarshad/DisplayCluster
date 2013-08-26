@@ -124,7 +124,7 @@ bool PixelStream::render(float tX, float tY, float tW, float tH)
     return true;
 }
 
-bool PixelStream::setImageData(QByteArray imageData)
+bool PixelStream::setImageData(QByteArray imageData, bool compressed, int w, int h)
 {
     // drop frames if we're currently processing
     if(loadImageDataThread_.isRunning() == true)
@@ -132,7 +132,7 @@ bool PixelStream::setImageData(QByteArray imageData)
         return false;
     }
 
-    loadImageDataThread_ = QtConcurrent::run(loadImageDataThread, shared_from_this(), imageData);
+    loadImageDataThread_ = QtConcurrent::run(loadImageDataThread, shared_from_this(), imageData, compressed, w, h);
 
     return true;
 }
@@ -208,8 +208,15 @@ void PixelStream::updateTexture(QImage & image)
     }
 }
 
-void loadImageDataThread(boost::shared_ptr<PixelStream> pixelStream, QByteArray imageData)
+void loadImageDataThread(boost::shared_ptr<PixelStream> pixelStream, QByteArray imageData, bool compressed, int w, int h)
 {
+    if( !compressed )
+    {
+        QImage image((uchar*)imageData.data(), w, h, QImage::Format_RGB32);
+        image = QGLWidget::convertToGLFormat(image);
+        pixelStream->imageReady(image);
+        return;
+    }
     // use libjpeg-turbo for JPEG conversion
     tjhandle handle = pixelStream->getHandle();
 

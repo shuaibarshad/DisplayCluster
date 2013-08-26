@@ -77,9 +77,9 @@ void ImageStreamer::send( const QImage& image )
 
     DcStreamParameters parameters = dcStreamGenerateParameters( "menu",
         0, 0, image.width(), image.height(), image.width(), image.height( ));
-
-    dcStreamSend (dcSocket, (unsigned char*)image.bits(), 0, 0,
-                         image.width(),0,image.height(), RGBA, parameters );
+    parameters.compress = false;
+    dcStreamSend (dcSocket, (unsigned char*)image.bits(), image.byteCount(),
+                  0, 0, image.width(),0,image.height(), RGBA, parameters );
 }
 
 

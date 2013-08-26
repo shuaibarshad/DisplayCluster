@@ -353,7 +353,7 @@ void ParallelPixelStream::updatePixelStreams()
         // auto texture uploading depending on synchronous setting
         pixelStreams_[sourceIndex]->setAutoUpdateTexture(!enableStreamingSynchronization);
 
-        bool success = pixelStreams_[sourceIndex]->setImageData(segments[i].imageData);
+        bool success = pixelStreams_[sourceIndex]->setImageData(segments[i].imageData, segments[i].parameters.compressed, segments[i].parameters.width, segments[i].parameters.height);
 
         if(success == true)
         {

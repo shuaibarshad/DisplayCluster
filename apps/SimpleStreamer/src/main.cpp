@@ -163,7 +163,8 @@ void display()
     int windowHeight = glutGet(GLUT_WINDOW_HEIGHT);
 
     // grab the image data from OpenGL
-    unsigned char * imageData = (unsigned char *)malloc(windowWidth * windowHeight * 4);
+    const int imageSize = windowWidth * windowHeight * 4;
+    unsigned char * imageData = (unsigned char *)malloc(imageSize);
     glReadPixels(0,0,windowWidth,windowHeight, GL_RGBA, GL_UNSIGNED_BYTE, (void *)imageData);
 
     bool success;
@@ -182,7 +183,7 @@ void display()
         DcStreamParameters parameters = dcStreamGenerateParameters(dcStreamName, 0,0,windowWidth,windowHeight, windowWidth,windowHeight);
 
         // finally, send it to DisplayCluster
-        success = dcStreamSend(dcSocket, imageData, 0,0,windowWidth,0,windowHeight, RGBA, parameters);
+        success = dcStreamSend(dcSocket, imageData, imageSize, 0,0,windowWidth,0,windowHeight, RGBA, parameters);
     }
 
     if(success == false)

@@ -62,6 +62,8 @@ struct ParallelPixelStreamSegmentParameters {
     int32_t totalWidth;
     int32_t totalHeight;
 
+    bool compressed;
+
     ParallelPixelStreamSegmentParameters()
     {
         // defaults

@@ -525,6 +525,7 @@ void MainWindow::updateCoordinates()
             segment.parameters.height = (int)((float)h / (float)numSubdivisionsY);
             segment.parameters.totalWidth = w;
             segment.parameters.totalHeight = h;
+            segment.parameters.compressed = true;
 
             segments_.push_back(segment);
         }

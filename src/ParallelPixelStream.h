@@ -69,6 +69,7 @@ void serialize(Archive & ar, ParallelPixelStreamSegmentParameters & p, const uns
     ar & p.height;
     ar & p.totalWidth;
     ar & p.totalHeight;
+    ar & p.compressed;
 }
 
 } // namespace serialization
