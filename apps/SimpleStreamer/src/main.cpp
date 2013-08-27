@@ -175,7 +175,7 @@ void display()
         std::vector<DcStreamParameters> parameters = dcStreamGenerateParameters(dcStreamName, 0, dcSegmentSize,dcSegmentSize, 0,0,windowWidth,windowHeight, windowWidth,windowHeight);
 
         // finally, send it to DisplayCluster
-        success = dcStreamSend(dcSocket, imageData, 0,0,windowWidth,0,windowHeight, RGBA, parameters);
+        success = dcStreamSend(dcSocket, imageData, imageSize, 0,0,windowWidth,0,windowHeight, RGBA, parameters);
     }
     else
     {

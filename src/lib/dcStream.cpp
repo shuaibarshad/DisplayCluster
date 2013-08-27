@@ -60,8 +60,10 @@ struct DcImage {
     int width;
     int pitch;
     int height;
+    int rawSize;
     PIXEL_FORMAT pixelFormat;
     int quality;
+    bool compressed;
     unsigned char * jpegData;
     int jpegSize;
 };
@@ -69,7 +71,6 @@ struct DcImage {
 // enum PIXEL_FORMAT { RGB, RGBA, ARGB, BGR, BGRA, ABGR };
 int dcBytesPerPixel[] = { 3, 4, 4, 3, 4, 4 };
 
-DcImage dcStreamComputeJpegMapped(const DcImage & dcImage);
 
 // computes a compressed JPEG image corresponding to imageBuffer. results are
 // stored in jpegData and jpegSize.
@@ -149,6 +150,20 @@ bool computeJpeg_(unsigned char * imageBuffer, int width, int pitch, int height,
     tjDestroy(tjHandle);
 
     return true;
+}
+
+DcImage dcStreamComputeJpegMapped(const DcImage & dcImage)
+{
+    if( !dcImage.compressed )
+        return dcImage;
+
+    DcImage newDcImage = dcImage;
+
+    computeJpeg_(newDcImage.imageBuffer, newDcImage.width, newDcImage.pitch,
+                 newDcImage.height, newDcImage.pixelFormat, newDcImage.quality,
+                 &newDcImage.jpegData, newDcImage.jpegSize);
+
+    return newDcImage;
 }
 
 bool streamBindInteraction_(DcSocket * socket, const std::string& name,
@@ -266,7 +281,10 @@ void dcStreamReset(DcSocket * socket)
     g_dcStreamSourceIndices.erase( i );
 }
 
-DcStreamParameters dcStreamGenerateParameters(std::string name, int x, int y, int width, int height, int totalWidth, int totalHeight)
+DcStreamParameters dcStreamGenerateParameters(std::string name, int x, int y,
+                                              int width, int height,
+                                              int totalWidth, int totalHeight,
+                                              bool compression, int quality)
 {
     DcStreamParameters parameters;
 
@@ -278,13 +296,13 @@ DcStreamParameters dcStreamGenerateParameters(std::string name, int x, int y, in
     parameters.height = height;
     parameters.totalWidth = totalWidth;
     parameters.totalHeight = totalHeight;
-    parameters.quality = 75;
-    parameters.compress = true;
+    parameters.quality = quality;
+    parameters.compress = compression;
 
     return parameters;
 }
 
-std::vector<DcStreamParameters> dcStreamGenerateParameters(std::string name, int firstSourceIndex, int nominalSegmentWidth, int nominalSegmentHeight, int x, int y, int width, int height, int totalWidth, int totalHeight)
+std::vector<DcStreamParameters> dcStreamGenerateParameters(std::string name, int firstSourceIndex, int nominalSegmentWidth, int nominalSegmentHeight, int x, int y, int width, int height, int totalWidth, int totalHeight, bool compression, int quality)
 {
     // segment dimensions will be approximately nominalSegmentWidth x nominalSegmentHeight
 
@@ -309,8 +327,8 @@ std::vector<DcStreamParameters> dcStreamGenerateParameters(std::string name, int
             p.height = (int)((float)height / (float)numSubdivisionsY);
             p.totalWidth = totalWidth;
             p.totalHeight = totalHeight;
-            p.quality = 75;
-            p.compress = true;
+            p.quality = quality;
+            p.compress = compression;
 
             parameters.push_back(p);
 
@@ -354,7 +372,7 @@ bool dcStreamSend(DcSocket * socket, unsigned char * imageBuffer, int size, int 
     return success;
 }
 
-bool dcStreamSend(DcSocket * socket, unsigned char * imageBuffer, int imageX, int imageY, int imageWidth, int imagePitch, int imageHeight, PIXEL_FORMAT pixelFormat, std::vector<DcStreamParameters> parameters)
+bool dcStreamSend(DcSocket * socket, unsigned char * imageBuffer, int size, int imageX, int imageY, int imageWidth, int imagePitch, int imageHeight, PIXEL_FORMAT pixelFormat, std::vector<DcStreamParameters> parameters)
 {
     // compute imagePitch if necessary, assuming imageBuffer isn't padded
     if(imagePitch == 0)
@@ -377,8 +395,10 @@ bool dcStreamSend(DcSocket * socket, unsigned char * imageBuffer, int imageX, in
         d.width = parameters[i].width;
         d.pitch = imagePitch;
         d.height = parameters[i].height;
+        d.rawSize = size;
         d.pixelFormat = pixelFormat;
         d.quality = parameters[i].quality;
+        d.compressed = parameters[i].compress;
         d.jpegData = NULL;
         d.jpegSize = 0;
 
@@ -394,6 +414,13 @@ bool dcStreamSend(DcSocket * socket, unsigned char * imageBuffer, int imageX, in
 
     for(unsigned int i=0; i<dcImages.size(); i++)
     {
+        if( !dcImages[i].compressed )
+        {
+            if( !dcStreamSendImage(socket, parameters[i], dcImages[i].imageBuffer, dcImages[i].rawSize, false))
+                allSuccess = false;
+            continue;
+        }
+
         // jpegSize == 0 indicates an error
         if(dcImages[i].jpegSize == 0)
         {
@@ -572,15 +599,4 @@ int dcStreamHasInteraction(DcSocket * socket)
 bool dcHasNewInteractionState(DcSocket * socket)
 {
     return socket->hasNewInteractionState();
-}
-
-DcImage dcStreamComputeJpegMapped(const DcImage & dcImage)
-{
-    DcImage newDcImage = dcImage;
-
-    computeJpeg_(newDcImage.imageBuffer, newDcImage.width, newDcImage.pitch,
-                 newDcImage.height, newDcImage.pixelFormat, newDcImage.quality,
-                 &newDcImage.jpegData, newDcImage.jpegSize);
-
-    return newDcImage;
 }

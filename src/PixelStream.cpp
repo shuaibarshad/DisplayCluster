@@ -132,7 +132,9 @@ bool PixelStream::setImageData(QByteArray imageData, bool compressed, int w, int
         return false;
     }
 
-    loadImageDataThread_ = QtConcurrent::run(loadImageDataThread, shared_from_this(), imageData, compressed, w, h);
+    loadImageDataThread_ = QtConcurrent::run(loadImageDataThread,
+                                             shared_from_this(), imageData,
+                                             compressed, w, h);
 
     return true;
 }
@@ -208,7 +210,8 @@ void PixelStream::updateTexture(QImage & image)
     }
 }
 
-void loadImageDataThread(boost::shared_ptr<PixelStream> pixelStream, QByteArray imageData, bool compressed, int w, int h)
+void loadImageDataThread(boost::shared_ptr<PixelStream> pixelStream,
+                         QByteArray imageData, bool compressed, int w, int h)
 {
     if( !compressed )
     {
@@ -217,6 +220,7 @@ void loadImageDataThread(boost::shared_ptr<PixelStream> pixelStream, QByteArray 
         pixelStream->imageReady(image);
         return;
     }
+
     // use libjpeg-turbo for JPEG conversion
     tjhandle handle = pixelStream->getHandle();
 
@@ -235,7 +239,7 @@ void loadImageDataThread(boost::shared_ptr<PixelStream> pixelStream, QByteArray 
     int pitch = width * tjPixelSize[pixelFormat];
     int flags = TJ_FASTUPSAMPLE;
 
-    QImage image = QImage(width, height, QImage::Format_RGB32);
+    QImage image(width, height, QImage::Format_RGB32);
 
     success = tjDecompress2(handle, (unsigned char *)imageData.data(), (unsigned long)imageData.size(), (unsigned char *)image.scanLine(0), width, pitch, height, pixelFormat, flags);
 

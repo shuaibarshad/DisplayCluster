@@ -75,6 +75,7 @@ MainWindow::MainWindow()
 
         // rank 0 window setup
         resize(800,600);
+        move(0, 600);
 
         // create menus in menu bar
         QMenu * fileMenu = menuBar()->addMenu("&File");
@@ -332,6 +333,7 @@ MainWindow::MainWindow()
             }
             else
             {
+                setWindowFlags(Qt::FramelessWindowHint);
                 show();
             }
         }
@@ -339,7 +341,7 @@ MainWindow::MainWindow()
         {
             for(int i=0; i<g_configuration->getMyNumTiles(); i++)
             {
-                QRect windowRect = QRect(g_configuration->getTileX(i), g_configuration->getTileY(i), g_configuration->getScreenWidth(), g_configuration->getScreenHeight());
+                QRect windowRect = QRect(g_configuration->getTileX(i), g_configuration->getTileY(i)+50, g_configuration->getScreenWidth(), g_configuration->getScreenHeight());
 
                 // setup shared OpenGL contexts
                 GLWindow * shareWidget = NULL;
@@ -358,6 +360,7 @@ MainWindow::MainWindow()
                 }
                 else
                 {
+                    glw->setWindowFlags(Qt::FramelessWindowHint);
                     glw->show();
                 }
             }

@@ -1176,7 +1176,7 @@ void DisplayGroupManager::receivePixelStreams(MessageHeader messageHeader)
     std::string uri = std::string(messageHeader.uri);
 
     // de-serialize...
-    g_mainWindow->getGLWindow()->getPixelStreamFactory().getObject(uri)->setImageData(QByteArray(buf, messageHeader.size));
+    g_mainWindow->getGLWindow()->getPixelStreamFactory().getObject(uri)->setImageData(QByteArray(buf, messageHeader.size), true, 0, 0);
 
     // free mpi buffer
     delete [] buf;

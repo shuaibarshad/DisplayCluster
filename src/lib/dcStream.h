@@ -75,13 +75,14 @@ extern void dcStreamReset(DcSocket * socket);
 // (width, height). the origin (x, y) is relative to the full window represented
 // by all streams corresponding to <name>. totalWidth and totalHeight give the
 // full dimensions of the window.
-extern DcStreamParameters dcStreamGenerateParameters(std::string name, int x, int y, int width, int height, int totalWidth, int totalHeight);
+extern DcStreamParameters dcStreamGenerateParameters(std::string name, int x, int y, int width, int height, int totalWidth, int totalHeight,
+                                                     bool compression = true, int quality = 75);
 
 // generates a vector of parameter objects corresponding to segments contained
 // in (x, y, width, height). the parameters' dimensions will be approximately
 // nominalSegmentWidth x nominalSegmentHeight. source indices begin with
 // firstSourceIndex.
-extern std::vector<DcStreamParameters> dcStreamGenerateParameters(std::string name, int firstSourceIndex, int nominalSegmentWidth, int nominalSegmentHeight, int x, int y, int width, int height, int totalWidth, int totalHeight);
+extern std::vector<DcStreamParameters> dcStreamGenerateParameters(std::string name, int firstSourceIndex, int nominalSegmentWidth, int nominalSegmentHeight, int x, int y, int width, int height, int totalWidth, int totalHeight, bool compression = true, int quality = 75);
 
 // generates a segment corresponding to parameters from imageBuffer and sends
 // it to a DisplayCluster instance over socket. (imageX, imageY, imageWidth,
@@ -92,7 +93,7 @@ extern bool dcStreamSend(DcSocket * socket, unsigned char * imageBuffer, int siz
 
 // the same as above, excepts sends a group of segments corresponding to the
 // given vector of parameters. compression of segment image data is parallel.
-extern bool dcStreamSend(DcSocket * socket, unsigned char * imageBuffer, int imageX, int imageY, int imageWidth, int imagePitch, int imageHeight, PIXEL_FORMAT pixelFormat, std::vector<DcStreamParameters> parameters);
+extern bool dcStreamSend(DcSocket * socket, unsigned char * imageBuffer, int size, int imageX, int imageY, int imageWidth, int imagePitch, int imageHeight, PIXEL_FORMAT pixelFormat, std::vector<DcStreamParameters> parameters);
 
 // sends a compressed JPEG image or an uncompressed raw image corresponding to
 // parameters and sends it to a DisplayCluster instance over socket. If

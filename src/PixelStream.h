@@ -54,7 +54,7 @@ class PixelStream : public boost::enable_shared_from_this<PixelStream>, public F
 
         void getDimensions(int &width, int &height);
         bool render(float tX, float tY, float tW, float tH); // return true on successful render; false if no texture available
-        bool setImageData(QByteArray imageData, bool compressed=true, int w=0, int h=0); // returns true if load image thread was spawned; false if frame was dropped
+        bool setImageData(QByteArray imageData, bool compressed, int w, int h); // returns true if load image thread was spawned; false if frame was dropped
         bool getLoadImageDataThreadRunning();
         void setAutoUpdateTexture(bool set);
         void updateTextureIfAvailable();
@@ -92,6 +92,7 @@ class PixelStream : public boost::enable_shared_from_this<PixelStream>, public F
         void updateTexture(QImage & image);
 };
 
-extern void loadImageDataThread(boost::shared_ptr<PixelStream> pixelStream, QByteArray imageData, bool compressed, int w, int h);
+extern void loadImageDataThread(boost::shared_ptr<PixelStream> pixelStream,
+                                QByteArray imageData, bool compressed, int w, int h);
 
 #endif
