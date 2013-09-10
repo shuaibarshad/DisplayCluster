@@ -141,7 +141,7 @@ bool DcSocket::connect(const char * hostname)
     socket_ = new QTcpSocket();
 
     // open connection
-    socket_->connectToHost(hostname, 1701);
+    socket_->connectToHost(hostname, 50000);
 
     if(socket_->waitForConnected() != true)
     {

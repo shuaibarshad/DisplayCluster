@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/var/remote/software/python/2.7.3/bin/python
 
 # example launcher for DisplayCluster
 # this should work for most cases, but can be modified for a particular
@@ -39,7 +39,7 @@ else:
 # form the MPI host list
 
 # rank 0 is always on localhost
-hostList = ['bbplxviz03i']
+hostList = ['localhost']
 
 # configuration.xml gives the rest of the hosts
 try:

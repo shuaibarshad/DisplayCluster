@@ -236,7 +236,7 @@ void MainWindow::shareDesktop(bool set)
 
     // open connection (disconnecting from an existing connection if necessary)
     tcpSocket_.disconnectFromHost();
-    tcpSocket_.connectToHost(hostname_.c_str(), 1701);
+    tcpSocket_.connectToHost(hostname_.c_str(), 50000);
 
     if(tcpSocket_.waitForConnected() != true)
     {
