@@ -2,6 +2,7 @@
 #define INTERACTION_STATE_H
 
 #include <boost/serialization/access.hpp>
+#include <string>
 
 // the state of interaction within a window (mouse emulation)
 struct InteractionState {
@@ -9,12 +10,18 @@ struct InteractionState {
     {
         EVT_PRESS,
         EVT_RELEASE,
+        EVT_CLICK,
         EVT_DOUBLECLICK,
         EVT_MOVE,
         EVT_WHEEL,
+        EVT_SWIPE_LEFT,
+        EVT_SWIPE_RIGHT,
+        EVT_SWIPE_UP,
+        EVT_SWIPE_DOWN,
         EVT_CLOSE,
         EVT_KEY_PRESS,
         EVT_KEY_RELEASE,
+        EVT_VIEW_SIZE_CHANGED,
         EVT_NONE
     };
 
@@ -22,12 +29,15 @@ struct InteractionState {
     bool mouseLeft, mouseRight, mouseMiddle;
     EventType type;
     int key;
+    int modifiers;
+    std::string text;
 
     InteractionState()
     {
         mouseX = mouseY = dx = dy = 0.;
         mouseLeft = mouseRight = mouseMiddle = false;
         type = EVT_NONE;
+        key = modifiers = 0;
     }
 
     friend class boost::serialization::access;
@@ -43,6 +53,8 @@ struct InteractionState {
         ar & mouseRight;
         ar & mouseMiddle;
         ar & type;
+        ar & modifiers;
+        ar & text;
     }
 };
 

@@ -49,6 +49,8 @@
 #include <boost/date_time/posix_time/time_serialize.hpp>
 
 class DisplayGroupManager;
+class ContentInteractionDelegate;
+
 
 class ContentWindowManager : public ContentWindowInterface, public boost::enable_shared_from_this<ContentWindowManager> {
 
@@ -62,9 +64,13 @@ class ContentWindowManager : public ContentWindowInterface, public boost::enable
         boost::shared_ptr<DisplayGroupManager> getDisplayGroupManager();
         void setDisplayGroupManager(boost::shared_ptr<DisplayGroupManager> displayGroupManager);
 
+        ContentInteractionDelegate *getInteractionDelegate();
+
         // re-implemented ContentWindowInterface slots
         void moveToFront(ContentWindowInterface * source=NULL);
         void close(ContentWindowInterface * source=NULL);
+
+        void centerPositionAround(double x, double y, bool constrainToWindowBorders);
 
         // GLWindow rendering
         void render();
@@ -93,10 +99,12 @@ class ContentWindowManager : public ContentWindowInterface, public boost::enable
         }
 
     private:
-
         boost::shared_ptr<Content> content_;
 
         boost::weak_ptr<DisplayGroupManager> displayGroupManager_;
+
+        // Rank0: Delegate to handle user inputs
+        ContentInteractionDelegate* interactionDelegate_;
 };
 
 // typedef needed for SIP

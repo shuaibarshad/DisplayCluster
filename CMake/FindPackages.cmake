@@ -3,14 +3,15 @@
 include(System)
 list(APPEND FIND_PACKAGES_DEFINES ${SYSTEM})
 
-find_package(MPI )
-find_package(Boost 1.41.0 REQUIRED date_time serialization)
-find_package(LibJpegTurbo 1.2.1 REQUIRED)
-find_package(FFMPEG  REQUIRED)
-find_package(OpenGL  REQUIRED)
-find_package(Qt4 4.6 REQUIRED QtNetwork QtOpenGL QtXml QtXmlPatterns)
-find_package(TUIO 1.4 REQUIRED)
-find_package(GLUT  REQUIRED)
+find_package(MPI  )
+find_package(Poppler 0.24 )
+find_package(Boost 1.41.0  REQUIRED date_time serialization)
+find_package(LibJpegTurbo 1.2.1  REQUIRED)
+find_package(FFMPEG   REQUIRED)
+find_package(OpenGL   REQUIRED)
+find_package(Qt4 4.6  REQUIRED QtNetwork QtOpenGL QtXml QtXmlPatterns)
+find_package(TUIO 1.4  REQUIRED)
+find_package(GLUT   REQUIRED)
 
 if(EXISTS ${CMAKE_SOURCE_DIR}/CMake/FindPackagesPost.cmake)
   include(${CMAKE_SOURCE_DIR}/CMake/FindPackagesPost.cmake)
@@ -28,6 +29,21 @@ if(MPI_name)
   link_directories(${${MPI_name}_LIBRARY_DIRS})
   if(NOT "${${MPI_name}_INCLUDE_DIRS}" MATCHES "-NOTFOUND")
     include_directories(${${MPI_name}_INCLUDE_DIRS})
+  endif()
+endif()
+
+if(Poppler_FOUND)
+  set(Poppler_name Poppler)
+endif()
+if(POPPLER_FOUND)
+  set(Poppler_name POPPLER)
+endif()
+if(Poppler_name)
+  list(APPEND FIND_PACKAGES_DEFINES DISPLAYCLUSTER_USE_POPPLER)
+  set(FIND_PACKAGES_FOUND "${FIND_PACKAGES_FOUND} Poppler")
+  link_directories(${${Poppler_name}_LIBRARY_DIRS})
+  if(NOT "${${Poppler_name}_INCLUDE_DIRS}" MATCHES "-NOTFOUND")
+    include_directories(${${Poppler_name}_INCLUDE_DIRS})
   endif()
 endif()
 
@@ -136,9 +152,9 @@ if(GLUT_name)
   endif()
 endif()
 
-set(DISPLAYCLUSTER_BUILD_DEBS autoconf;automake;cmake;freeglut3-dev;git;git-svn;libavcodec-dev;libavformat-dev;libavutil-dev;libboost-date-time-dev;libboost-serialization-dev;libjpeg-turbo8-dev;libopenmpi-dev;libswscale-dev;libturbojpeg;libxmu-dev;pkg-config;subversion)
+set(DISPLAYCLUSTER_BUILD_DEBS autoconf;automake;cmake;freeglut3-dev;git;git-review;git-svn;libavcodec-dev;libavformat-dev;libavutil-dev;libboost-date-time-dev;libboost-serialization-dev;libjpeg-turbo8-dev;libopenmpi-dev;libswscale-dev;libturbojpeg;libxmu-dev;ninja-build;pkg-config;subversion)
 
-set(DISPLAYCLUSTER_DEPENDS MPI;Boost;LibJpegTurbo;FFMPEG;OpenGL;Qt4;TUIO;GLUT)
+set(DISPLAYCLUSTER_DEPENDS MPI;Poppler;Boost;LibJpegTurbo;FFMPEG;OpenGL;Qt4;TUIO;GLUT)
 
 # Write defines.h and options.cmake
 if(NOT PROJECT_INCLUDE_NAME)
@@ -155,10 +171,10 @@ file(WRITE ${DEFINES_FILE_IN}
   "#define ${CMAKE_PROJECT_NAME}_DEFINES_${SYSTEM}_H\n\n")
 file(WRITE ${OPTIONS_CMAKE} "# Optional modules enabled during build\n")
 foreach(DEF ${FIND_PACKAGES_DEFINES})
-  add_definitions(-D${DEF})
+  add_definitions(-D${DEF}=1)
   file(APPEND ${DEFINES_FILE_IN}
   "#ifndef ${DEF}\n"
-  "#  define ${DEF}\n"
+  "#  define ${DEF} 1\n"
   "#endif\n")
 if(NOT DEF STREQUAL SYSTEM)
   file(APPEND ${OPTIONS_CMAKE} "set(${DEF} ON)\n")

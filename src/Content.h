@@ -57,7 +57,8 @@ enum CONTENT_TYPE
     CONTENT_TYPE_MOVIE,
     CONTENT_TYPE_PIXEL_STREAM,
     CONTENT_TYPE_SVG,
-    CONTENT_TYPE_TEXTURE
+    CONTENT_TYPE_TEXTURE,
+    CONTENT_TYPE_PDF
 };
 
 class ContentWindowManager;
@@ -78,7 +79,6 @@ class Content : public QObject {
         virtual void getFactoryObjectDimensions(int &width, int &height) = 0;
         void render(boost::shared_ptr<ContentWindowManager> window);
         void blockAdvance( bool block ) { blockAdvance_ = block; }
-        bool isDock() const;
 
         // virtual method for implementing actions on advancing to a new frame
         // useful when a process has multiple GLWindows

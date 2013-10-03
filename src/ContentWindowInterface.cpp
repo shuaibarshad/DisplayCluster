@@ -41,7 +41,8 @@
 #include "main.h"
 
 ContentWindowInterface::ContentWindowInterface(boost::shared_ptr<ContentWindowManager> contentWindowManager)\
-    : boundInteractions_( 0 )
+    : windowState_(UNSELECTED)
+    , boundInteractions_( 0 )
 {
     contentWindowManager_ = contentWindowManager;
 
@@ -142,39 +143,7 @@ double ContentWindowInterface::getZoom()
 
 void ContentWindowInterface::toggleWindowState()
 {
-    const CONTENT_TYPE type = getContentWindowManager()->getContent()->getType();
-
-    switch( type )
-    {
-    case CONTENT_TYPE_DYNAMIC_TEXTURE:
-    case CONTENT_TYPE_TEXTURE:
-    case CONTENT_TYPE_SVG:
-        windowState_ = windowState_ == UNSELECTED ? SELECTED : UNSELECTED;
-        break;
-
-    case CONTENT_TYPE_PIXEL_STREAM:
-        windowState_ = windowState_ == UNSELECTED ? INTERACTION : UNSELECTED;
-        break;
-
-    case CONTENT_TYPE_MOVIE:
-    case CONTENT_TYPE_ANY:
-    default:
-        // move to next state
-        switch( windowState_ )
-        {
-        case UNSELECTED:
-            windowState_ = SELECTED;
-            break;
-        case SELECTED:
-            windowState_ = INTERACTION;
-            break;
-        case INTERACTION:
-            windowState_ = UNSELECTED;
-            break;
-        }
-    }
-
-    setWindowState( windowState_ );
+    setWindowState( windowState_ == UNSELECTED ? SELECTED : UNSELECTED );
 }
 
 ContentWindowInterface::WindowState ContentWindowInterface::getWindowState()
@@ -363,6 +332,8 @@ void ContentWindowInterface::setCoordinates(double x, double y, double w, double
         fixAspectRatio(source);
 
         emit(coordinatesChanged(x_, y_, w_, h_, source));
+
+        setInteractionStateToNewDimensions();
     }
 }
 
@@ -411,6 +382,8 @@ void ContentWindowInterface::setSize(double w, double h, ContentWindowInterface 
         fixAspectRatio(source);
 
         emit(sizeChanged(w_, h_, source));
+
+        setInteractionStateToNewDimensions();
     }
 }
 
@@ -642,6 +615,15 @@ void ContentWindowInterface::close(ContentWindowInterface * source)
 
         emit(closed(source));
     }
+}
+
+void ContentWindowInterface::setInteractionStateToNewDimensions()
+{
+    InteractionState state;
+    state.type = InteractionState::EVT_VIEW_SIZE_CHANGED;
+    state.dx = w_ * g_configuration->getTotalWidth();
+    state.dy = h_ * g_configuration->getTotalHeight();
+    setInteractionState(state);
 }
 
 void ContentWindowInterface::bindInteraction( const QObject* receiver,

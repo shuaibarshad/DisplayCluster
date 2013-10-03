@@ -126,6 +126,8 @@ class DisplayGroupManager : public DisplayGroupInterface, public boost::enable_s
 #endif
         // Rank0 manages pixel stream events
         void processPixelStreamSegment(QString uri, PixelStreamSegment segment);
+        void openPixelStream(QString uri, int width, int height);
+        void adjustPixelStreamContentDimensions(QString uri, int width, int height, bool changeViewSize);
         void deletePixelStream(QString uri);
 
     private:
@@ -174,6 +176,10 @@ class DisplayGroupManager : public DisplayGroupInterface, public boost::enable_s
         void receiveContentsDimensionsRequest(MessageHeader messageHeader);
         void receivePixelStreams(MessageHeader messageHeader);
         void receiveSVGStreams(MessageHeader messageHeader);
+
+    signals:
+        // Rank0 signals pixel streams events
+        void pixelStreamViewClosed(QString uri);
 };
 
 #endif

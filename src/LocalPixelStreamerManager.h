@@ -1,5 +1,6 @@
 /*********************************************************************/
-/* Copyright (c) 2013, The University of Texas at Austin.            */
+/* Copyright (c) 2013, EPFL/Blue Brain Project                       */
+/*                     Raphael Dumusc <raphael.dumusc@epfl.ch>       */
 /* All rights reserved.                                              */
 /*                                                                   */
 /* Redistribution and use in source and binary forms, with or        */
@@ -36,82 +37,49 @@
 /* or implied, of The University of Texas at Austin.                 */
 /*********************************************************************/
 
-#ifndef DOCK_H
-#define DOCK_H
+#ifndef LOCALPIXELSTREAMERMANAGER_H
+#define LOCALPIXELSTREAMERMANAGER_H
 
-#include <QtCore/QDir>
-#include <QtCore/QObject>
-#include <QtCore/QThread>
-#include <QtCore/QHash>
-#include <QtGui/QImage>
-#include <dcStream.h>
+#include <map>
+#include <boost/shared_ptr.hpp>
+#include <QMutex>
+#include <QObject>
+#include <QPointF>
 
-class PictureFlow;
+class LocalPixelStreamer;
+class DisplayGroupManager;
+class ContentWindowManager;
+class DockPixelStreamer;
 
-
-class ImageStreamer : public QObject
+class LocalPixelStreamerManager : public QObject
 {
-    Q_OBJECT
-
-    DcSocket* dcSocket;
+Q_OBJECT
 
 public:
-    ImageStreamer();
-    ~ImageStreamer();
+    LocalPixelStreamerManager(DisplayGroupManager *displayGroupManager);
+
+    bool createWebBrowser(QString uri, QString url);
+
+    bool isDockOpen();
+    void openDockAt(QPointF pos);
+    DockPixelStreamer* getDockInstance();
+
+    void clear();
 
 public slots:
-    void connect();
-    void disconnect();
-    void send( const QImage& image );
-};
 
-class ImageLoader : public QObject
-{
-    Q_OBJECT
-
-    PictureFlow* flow_;
-
-public:
-    ImageLoader( PictureFlow* flow );
-    ~ImageLoader();
-
-public slots:
-    void loadImage( const QString& fileName, const int index );
-};
-
-
-class Dock : public QObject
-{
-    Q_OBJECT
-
-public:
-    Dock();
-    ~Dock();
-    PictureFlow* getFlow() const;
-
-    void open();
-    void close();
-
-    void onItem();
-
-    void setPos( const QPointF& pos ) { pos_ = pos; }
-    QPointF getPos() const { return pos_; }
-
-Q_SIGNALS:
-    void started();
-    void finished();
-    void renderPreview( const QString& fileName, const int index );
+    void removePixelStreamer(QString uri);
 
 private:
-    void changeDirectory( const QString& dir );
-    QThread streamThread_;
-    QThread loadThread_;
-    PictureFlow* flow_;
-    ImageStreamer* streamer_;
-    ImageLoader* loader_;
-    QDir currentDir_;
-    QPointF pos_;
-    QHash< QString, int > slideIndex_;
+
+    // all existing objects
+    std::map<QString, boost::shared_ptr<LocalPixelStreamer> > map_;
+
+    // To connect new LocalPixelStreamers
+    DisplayGroupManager *displayGroupManager_;
+
+    void setWindowManagerPosition(boost::shared_ptr<ContentWindowManager> cwm, QPointF pos);
+    void bindPixelStreamerInteraction(LocalPixelStreamer* streamer);
 };
 
-#endif
+#endif // LOCALPIXELSTREAMERMANAGER_H

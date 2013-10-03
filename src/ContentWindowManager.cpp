@@ -40,6 +40,15 @@
 #include "Content.h"
 #include "DisplayGroupManager.h"
 #include "main.h"
+#include "ContentInteractionDelegate.h"
+
+// Specialized delegate implementations
+#include "PixelStreamInteractionDelegate.h"
+#include "ZoomInteractionDelegate.h"
+#if ENABLE_PDF_SUPPORT
+#  include "PDFInteractionDelegate.h"
+#endif
+
 
 ContentWindowManager::ContentWindowManager(boost::shared_ptr<Content> content)
 {
@@ -58,9 +67,6 @@ ContentWindowManager::ContentWindowManager(boost::shared_ptr<Content> content)
     // default to no zoom
     zoom_ = 1.;
 
-    // default window state
-    windowState_ = UNSELECTED;
-
     controlState_ = STATE_LOOP;
 
     // set content object
@@ -68,6 +74,24 @@ ContentWindowManager::ContentWindowManager(boost::shared_ptr<Content> content)
 
     // receive updates to content dimensions
     connect(content.get(), SIGNAL(dimensionsChanged(int, int)), this, SLOT(setContentDimensions(int, int)));
+
+    if (g_mpiRank == 0)
+    {
+        if (getContent()->getType() == CONTENT_TYPE_PIXEL_STREAM)
+        {
+            interactionDelegate_ = new PixelStreamInteractionDelegate(this);
+        }
+#if ENABLE_PDF_SUPPORT
+        else if (getContent()->getType() == CONTENT_TYPE_PDF)
+        {
+            interactionDelegate_ = new PDFInteractionDelegate(this);
+        }
+#endif
+        else
+        {
+            interactionDelegate_ = new ZoomInteractionDelegate(this);
+        }
+    }
 }
 
 boost::shared_ptr<Content> ContentWindowManager::getContent()
@@ -103,10 +127,16 @@ void ContentWindowManager::setDisplayGroupManager(boost::shared_ptr<DisplayGroup
         connect(this, SIGNAL(centerChanged(double, double, ContentWindowInterface *)), displayGroupManager.get(), SLOT(sendDisplayGroup()));
         connect(this, SIGNAL(zoomChanged(double, ContentWindowInterface *)), displayGroupManager.get(), SLOT(sendDisplayGroup()));
         connect(this, SIGNAL(windowStateChanged(ContentWindowInterface::WindowState, ContentWindowInterface *)), displayGroupManager.get(), SLOT(sendDisplayGroup()));
+        // TODO check: do we really need to serialize and MPI send the InteractionState? Isn't it used on Rank0 only?
         connect(this, SIGNAL(interactionStateChanged(InteractionState, ContentWindowInterface *)), displayGroupManager.get(), SLOT(sendDisplayGroup()));
 
         // we don't call sendDisplayGroup() on movedToFront() or destroyed() since it happens already
     }
+}
+
+ContentInteractionDelegate* ContentWindowManager::getInteractionDelegate()
+{
+    return interactionDelegate_;
 }
 
 void ContentWindowManager::moveToFront(ContentWindowInterface * source)
@@ -129,6 +159,25 @@ void ContentWindowManager::close(ContentWindowInterface * source)
     }
 }
 
+void ContentWindowManager::centerPositionAround(double x, double y, bool constrainToWindowBorders)
+{
+    double newX = x - 0.5 * w_;
+    double newY = y - 0.5 * h_;
+
+    if (constrainToWindowBorders)
+    {
+        if (newX + w_ > 1.0)
+            newX = 1.0-w_;
+        if (newY + h_ > 1.0)
+            newY = 1.0-h_;
+
+        newX = std::max(0.0, newX);
+        newY = std::max(0.0, newY);
+    }
+
+    setPosition(newX, newY);
+}
+
 void ContentWindowManager::render()
 {
     content_->render(shared_from_this());
@@ -143,7 +192,7 @@ void ContentWindowManager::render()
         showWindowBorders = dgm->getOptions()->getShowWindowBorders();
     }
 
-    if(showWindowBorders || windowState_ != UNSELECTED )
+    if(showWindowBorders || selected() )
     {
         double horizontalBorder = 5. / (double)g_configuration->getTotalHeight(); // 5 pixels
 
@@ -158,17 +207,9 @@ void ContentWindowManager::render()
         glPushAttrib(GL_CURRENT_BIT);
 
         // color the border based on window state
-        if(windowState_ == UNSELECTED)
-        {
-            glColor4f(1,1,1,1);
-        }
-        else if(windowState_ == SELECTED)
+        if(selected())
         {
             glColor4f(1,0,0,1);
-        }
-        else if(windowState_ == INTERACTION)
-        {
-            glColor4f(0,1,0,1);
         }
         else
         {

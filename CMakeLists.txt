@@ -24,6 +24,7 @@ option(ENABLE_TUIO_TOUCH_LISTENER "Enable TUIO touch listener for multi-touch ev
 option(ENABLE_JOYSTICK_SUPPORT "Enable joystick support" OFF)
 option(ENABLE_SKELETON_SUPPORT "EXPERIMENTAL: Enable skeleton tracking interface support" OFF)
 option(ENABLE_PYTHON_SUPPORT "Enable Python support" OFF)
+option(ENABLE_PDF_SUPPORT "Enable Pdf support using Poppler" OFF)
 
 if(APPLE)
   # WAR needed when CMAKE_OSX_SYSROOT is set to find /usr/include/turbojpeg.h
@@ -57,6 +58,7 @@ set(QT_USE_QTSVG TRUE)
 set(QT_USE_QTXMLPATTERNS TRUE)
 set(QT_USE_QTXML TRUE)
 set(QT_USE_QTNETWORK TRUE)
+set(QT_USE_QTWEBKIT TRUE)
 
 if(WIN32)
   set(QT_USE_QTMAIN TRUE)
@@ -209,6 +211,22 @@ if(OPENGL_FOUND AND MPI_FOUND AND FFMPEG_FOUND)
         set(MOC_HEADERS ${MOC_HEADERS} src/PythonConsole.h)
     endif()
 
+    if(ENABLE_PDF_SUPPORT)
+      find_package(Poppler REQUIRED)
+      include_directories(${POPPLER_QT_INCLUDE_DIR})
+      list(APPEND LIBS ${POPPLER_LIBRARIES})
+
+      list(APPEND SRCS
+        src/PDF.cpp
+        src/PDFContent.cpp
+        src/PDFInteractionDelegate.cpp
+      )
+      list(APPEND MOC_HEADERS
+        src/PDFContent.h
+        src/PDFInteractionDelegate.h
+      )
+    endif()
+
     # process config file
     configure_file(${CMAKE_CURRENT_SOURCE_DIR}/config.h.in ${CMAKE_CURRENT_BINARY_DIR}/config.h)
     include_directories(${CMAKE_CURRENT_BINARY_DIR})
@@ -218,6 +236,7 @@ if(OPENGL_FOUND AND MPI_FOUND AND FFMPEG_FOUND)
         src/Configuration.cpp
         src/Content.cpp
         src/ContentFactory.cpp
+        src/ContentInteractionDelegate.cpp
         src/ContentWindowManager.cpp
         src/ContentWindowInterface.cpp
         src/ContentWindowGraphicsItem.cpp
@@ -229,12 +248,14 @@ if(OPENGL_FOUND AND MPI_FOUND AND FFMPEG_FOUND)
         src/DisplayGroupGraphicsViewProxy.cpp
         src/DisplayGroupGraphicsView.cpp
         src/DisplayGroupListWidgetProxy.cpp
-        src/Dock.cpp
+        src/DockPixelStreamer.cpp
         src/DynamicTexture.cpp
         src/DynamicTextureContent.cpp
         src/FactoryObject.cpp
         src/GLWindow.cpp
         src/log.cpp
+        src/LocalPixelStreamer.cpp
+        src/LocalPixelStreamerManager.cpp
         src/main.cpp
         src/MainWindow.cpp
         src/Movie.cpp
@@ -245,29 +266,39 @@ if(OPENGL_FOUND AND MPI_FOUND AND FFMPEG_FOUND)
         src/Pictureflow.cpp
         src/PixelStream.cpp
         src/PixelStreamContent.cpp
+        src/PixelStreamInteractionDelegate.cpp
         src/PixelStreamSegmentRenderer.cpp
+        src/PixelStreamSegmentJpegCompressor.cpp
         src/SVG.cpp
         src/SVGContent.cpp
         src/SVGStreamSource.cpp
         src/Texture.cpp
         src/TextureContent.cpp
+        src/WebkitPixelStreamer.cpp
+        src/ZoomInteractionDelegate.cpp
     )
 
     list(APPEND MOC_HEADERS
         src/BackgroundWidget.h
         src/Content.h
+        src/ContentInteractionDelegate.h
         src/ContentWindowInterface.h
         src/DisplayGroupManager.h
         src/DisplayGroupInterface.h
         src/DisplayGroupGraphicsViewProxy.h
         src/DisplayGroupListWidgetProxy.h
-        src/Dock.h
+        src/DockPixelStreamer.h
+        src/LocalPixelStreamer.h
+        src/LocalPixelStreamerManager.h
         src/MainWindow.h
         src/Marker.h
         src/NetworkListener.h
         src/NetworkListenerThread.h
         src/Options.h
         src/Pictureflow.h
+        src/PixelStreamInteractionDelegate.h
+        src/WebkitPixelStreamer.h
+        src/ZoomInteractionDelegate.h
     )
 
     # add OPTIONS hacks for Qt's MOC processing of Boost headers, for compiler errors with some versions of Boost
