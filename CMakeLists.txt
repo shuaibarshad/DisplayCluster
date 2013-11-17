@@ -91,6 +91,7 @@ find_package(MPI)
 find_package(FFMPEG)
 if(OPENGL_FOUND AND MPI_FOUND AND FFMPEG_FOUND)
   add_subdirectory(src)
+  set(DISPLAYCLUSTER_LIBRARY_BUILT TRUE)
 
   # install launchers
   install(PROGRAMS examples/startdisplaycluster DESTINATION bin)

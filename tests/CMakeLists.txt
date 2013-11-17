@@ -6,6 +6,9 @@
 
 enable_testing()
 add_definitions(-DBOOST_TEST_DYN_LINK) # generates main() for unit tests
+if(NOT DISPLAYCLUSTER_LIBRARY_BUILT)
+  return()
+endif()
 
 if(NOT WIN32) # tests want to be with DLLs on Windows - no rpath
   set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/tests)
