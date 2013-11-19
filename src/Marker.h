@@ -39,8 +39,6 @@
 #ifndef MARKER_H
 #define MARKER_H
 
-#define MARKER_IMAGE_FILENAME "marker.png"
-
 // this is a fraction of the tiled display width of 1
 #define MARKER_WIDTH 0.0025
 

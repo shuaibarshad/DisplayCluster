@@ -39,7 +39,8 @@
 #ifndef CONTENT_H
 #define CONTENT_H
 
-#define ERROR_IMAGE_FILENAME "error.png"
+#include "ContentFactory.h"
+#include "ContentType.h"
 
 #include <string>
 #include <QtGui>
@@ -48,18 +49,6 @@
 #include <boost/serialization/assume_abstract.hpp>
 #include <boost/archive/binary_oarchive.hpp>
 #include <boost/archive/binary_iarchive.hpp>
-#include "ContentFactory.h"
-
-enum CONTENT_TYPE
-{
-    CONTENT_TYPE_ANY,
-    CONTENT_TYPE_DYNAMIC_TEXTURE,
-    CONTENT_TYPE_MOVIE,
-    CONTENT_TYPE_PIXEL_STREAM,
-    CONTENT_TYPE_SVG,
-    CONTENT_TYPE_TEXTURE,
-    CONTENT_TYPE_PDF
-};
 
 class ContentWindowManager;
 

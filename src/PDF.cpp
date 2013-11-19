@@ -50,7 +50,8 @@
 #error PopplerPixelStreamer needs Qt4 or Qt5
 #endif
 
-#include "main.h"
+#include "globals.h"
+#include "MainWindow.h"
 #include "log.h"
 
 #define INVALID_PAGE_NUMBER -1
@@ -135,6 +136,11 @@ void PDF::setPage(int pageNumber)
 int PDF::getPageCount() const
 {
     return pdfDoc_->numPages();
+}
+
+QImage PDF::renderToImage() const
+{
+    return pdfPage_->renderToImage();
 }
 
 void PDF::getDimensions(int &width, int &height) const

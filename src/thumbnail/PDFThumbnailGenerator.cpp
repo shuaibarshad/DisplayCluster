@@ -1,5 +1,6 @@
 /*********************************************************************/
-/* Copyright (c) 2011 - 2012, The University of Texas at Austin.     */
+/* Copyright (c) 2013, EPFL/Blue Brain Project                       */
+/*                     Raphael Dumusc <raphael.dumusc@epfl.ch>       */
 /* All rights reserved.                                              */
 /*                                                                   */
 /* Redistribution and use in source and binary forms, with or        */
@@ -36,36 +37,28 @@
 /* or implied, of The University of Texas at Austin.                 */
 /*********************************************************************/
 
-#ifndef MAIN_H
-#define MAIN_H
+#include "PDFThumbnailGenerator.h"
 
-#include "Configuration.h"
-#include "MainWindow.h"
-#include "DisplayGroupManager.h"
-#include "NetworkListener.h"
-#include "config.h"
-#include <boost/shared_ptr.hpp>
-#include <mpi.h>
+#include "../PDF.h"
+#include "../log.h"
 
-class LocalPixelStreamerManager;
+PDFThumbnailGenerator::PDFThumbnailGenerator(const QSize &size)
+    : ThumbnailGenerator(size)
+{
+}
 
-extern std::string g_displayClusterDir;
-extern QApplication * g_app;
-extern int g_mpiRank;
-extern int g_mpiSize;
-extern MPI_Comm g_mpiRenderComm;
-extern Configuration * g_configuration;
-extern boost::shared_ptr<DisplayGroupManager> g_displayGroupManager;
-extern MainWindow * g_mainWindow;
-extern long g_frameCount;
-// Rank0
-extern NetworkListener * g_networkListener;
-extern LocalPixelStreamerManager* g_localPixelStreamers;
+QImage PDFThumbnailGenerator::generate(const QString &filename) const
+{
+    PDF pdf(filename);
+    QImage image = pdf.renderToImage();
 
-#if ENABLE_SKELETON_SUPPORT
-    class SkeletonThread;
+    if (image.isNull())
+    {
+        put_flog(LOG_ERROR, "could not pdf file: %s", filename.toLatin1().constData());
+        return createErrorImage("pdf");
+    }
 
-    extern SkeletonThread * g_skeletonThread;
-#endif
-
-#endif
+    image = image.scaled(size_, aspectRatioMode_);
+    addMetadataToImage(image, filename);
+    return image;
+}

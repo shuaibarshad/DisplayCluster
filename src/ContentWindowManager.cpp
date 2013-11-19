@@ -39,8 +39,11 @@
 #include "ContentWindowManager.h"
 #include "Content.h"
 #include "DisplayGroupManager.h"
-#include "main.h"
+#include "globals.h"
 #include "ContentInteractionDelegate.h"
+#include "Configuration.h"
+#include "GLWindow.h"
+#include "config.h"
 
 // Specialized delegate implementations
 #include "PixelStreamInteractionDelegate.h"
@@ -157,6 +160,12 @@ void ContentWindowManager::close(ContentWindowInterface * source)
     {
         getDisplayGroupManager()->removeContentWindowManager(shared_from_this());
     }
+}
+
+void ContentWindowManager::getWindowCenterPosition(double &x, double &y)
+{
+    x = x_ + 0.5 * w_;
+    y = y_ + 0.5 * h_;
 }
 
 void ContentWindowManager::centerPositionAround(double x, double y, bool constrainToWindowBorders)

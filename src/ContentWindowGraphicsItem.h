@@ -44,8 +44,6 @@
 #include <boost/shared_ptr.hpp>
 
 class ContentWindowManager;
-class PanGesture;
-class DoubleTapGesture;
 
 class ContentWindowGraphicsItem : public QGraphicsObject, public ContentWindowInterface {
 
@@ -84,6 +82,12 @@ class ContentWindowGraphicsItem : public QGraphicsObject, public ContentWindowIn
         virtual void keyReleaseEvent(QKeyEvent *event);
 
     private:
+        void drawFrame_( QPainter* painter );
+        void drawCloseButton_( QPainter* painter );
+        void drawResizeIndicator_( QPainter* painter );
+        void drawFullscreenButton_( QPainter* painter );
+        void drawMovieControls_( QPainter* painter );
+        void drawTextLabel_( QPainter* painter );
 
         // manipulation state
         bool resizing_;

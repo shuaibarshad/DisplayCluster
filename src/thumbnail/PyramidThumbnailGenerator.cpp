@@ -1,6 +1,6 @@
 /*********************************************************************/
 /* Copyright (c) 2013, EPFL/Blue Brain Project                       */
-/*                     Daniel Nachbaur <daniel.nachbaur@epfl.ch>     */
+/*                     Raphael Dumusc <raphael.dumusc@epfl.ch>       */
 /* All rights reserved.                                              */
 /*                                                                   */
 /* Redistribution and use in source and binary forms, with or        */
@@ -37,90 +37,30 @@
 /* or implied, of The University of Texas at Austin.                 */
 /*********************************************************************/
 
-#ifndef GESTURES_H
-#define GESTURES_H
+#include "PyramidThumbnailGenerator.h"
 
-#include <QtGui/QGesture>
-#include <QtGui/QGestureRecognizer>
+#include <QImageReader>
 
-class PanGesture : public QGesture
+#include "../log.h"
+
+PyramidThumbnailGenerator::PyramidThumbnailGenerator(const QSize &size)
+    : ThumbnailGenerator(size)
 {
-public:
-    PanGesture( QObject* parent = 0 );
+}
 
-    const QPointF& position() const { return _position; }
-    const QPointF& lastOffset() const { return _lastOffset; }
-    const QPointF& offset() const { return _offset; }
-    QPointF delta() const { return _offset - _lastOffset; }
-    qreal acceleration() const { return _acceleration; }
-
-    void setPosition( const QPointF& value ) { _position = value; }
-    void setLastOffset( const QPointF& value ) { _lastOffset = value; }
-    void setOffset( const QPointF& value ) { _offset = value; }
-    void setAcceleration( const qreal value ) { _acceleration = value; }
-
-private:
-    QPointF _position;
-    QPointF _lastOffset;
-    QPointF _offset;
-    qreal _acceleration;
-};
-
-class DoubleTapGesture : public QGesture
+QImage PyramidThumbnailGenerator::generate(const QString &filename) const
 {
-public:
-    DoubleTapGesture( QObject* parent = 0 ) : QGesture( parent ){}
-
-    QPointF position() const { return _position; }
-    void setPosition( const QPointF& pos ) { _position = pos; }
-
-private:
-    QPointF _position;
-};
-
-class PanGestureRecognizer : public QGestureRecognizer
-{
-public:
-    PanGestureRecognizer( const int numPoints );
-
-    virtual QGesture* create( QObject *target );
-
-    virtual QGestureRecognizer::Result recognize( QGesture* state,
-                                                  QObject* watched,
-                                                  QEvent* event );
-
-    virtual void reset( QGesture* state );
-
-    static void install();
-    static void uninstall();
-    static Qt::GestureType type();
-
-private:
-    int _nPoints;
-    static Qt::GestureType _type;
-};
-
-class DoubleTapGestureRecognizer : public QGestureRecognizer
-{
-public:
-    DoubleTapGestureRecognizer();
-
-    virtual QGesture* create( QObject *target );
-
-    virtual QGestureRecognizer::Result recognize( QGesture* state,
-                                                  QObject* watched,
-                                                  QEvent* event );
-
-    virtual void reset( QGesture* state );
-
-    static void install();
-    static void uninstall();
-    static Qt::GestureType type();
-
-private:
-    QPointF _firstPoint;
-    QTime _firstPointTime;
-    static Qt::GestureType _type;
-};
-
-#endif
+    QImageReader reader( filename + "amid/0.jpg" );
+    if (reader.canRead())
+    {
+        QImage image = reader.read();
+        image = image.scaled(size_, aspectRatioMode_);
+        addMetadataToImage(image, filename);
+        return image;
+    }
+    else
+    {
+        put_flog(LOG_ERROR, "could not open pyramid file: %s", filename.toLatin1().constData());
+        return createErrorImage("pyramid");
+    }
+}

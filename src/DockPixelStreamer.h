@@ -46,30 +46,12 @@
 #include <QtCore/QObject>
 #include <QtCore/QThread>
 #include <QtCore/QHash>
+#include <QtCore/QVector>
+#include <QtCore/QLinkedList>
 #include <QtGui/QImage>
 
-
 class PictureFlow;
-
-// TODO make this class extend QRunnable!!
-class AsyncImageLoader : public QObject
-{
-    Q_OBJECT
-
-public:
-    AsyncImageLoader(QSize defaultSize);
-
-public slots:
-    void loadImage( const QString& fileName, const int index );
-
-signals:
-    void imageLoaded(int index, QImage image);
-
-private:
-    QSize defaultSize_;
-};
-
-
+class AsyncImageLoader;
 
 class DockPixelStreamer : public LocalPixelStreamer
 {
@@ -90,6 +72,8 @@ public:
 
 public slots:
     void update(const QImage &image);
+    void loadThumbnails(int newCenterIndex);
+    void loadNextThumbnailInList();
 
     virtual void updateInteractionState(InteractionState interactionState);
 
@@ -106,9 +90,16 @@ private:
     QDir currentDir_;
     QHash< QString, int > slideIndex_;
 
-    void changeDirectory( const QString& dir );
+    typedef QPair<bool, QString> SlideImageLoadingStatus;
+    QVector<SlideImageLoadingStatus> slideImagesLoaded_;
+    QLinkedList<int> slideImagesToLoad_;
 
     PixelStreamSegmentParameters makeSegmentHeader();
+    bool openFile(const QString &filename);
+    void changeDirectory( const QString& dir );
+    void addRootDirToFlow();
+    void addFilesToFlow();
+    void addFoldersToFlow();
 };
 
 #endif // DOCKPIXELSTREAMER_H

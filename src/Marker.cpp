@@ -38,8 +38,13 @@
 
 #include "Marker.h"
 #include "log.h"
-#include "main.h"
+#include "Configuration.h"
+#include "globals.h"
+#include "DisplayGroupManager.h"
+#include "MainWindow.h"
 #include <QGLWidget>
+
+#define MARKER_IMAGE_FILENAME "data/marker.png"
 
 GLuint Marker::textureId_ = 0;
 
@@ -50,7 +55,7 @@ Marker::Marker()
     if(g_mpiRank != 0 && textureId_ == 0 && g_mainWindow->getGLWindow() != NULL)
     {
         // load marker texture
-        std::string markerImageFilename = std::string(g_displayClusterDir) + std::string("/data/") + std::string(MARKER_IMAGE_FILENAME);
+        std::string markerImageFilename = std::string(g_displayClusterDir) + std::string("/") + std::string(MARKER_IMAGE_FILENAME);
 
         QImage image(markerImageFilename.c_str());
 

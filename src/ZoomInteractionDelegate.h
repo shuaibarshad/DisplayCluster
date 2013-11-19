@@ -50,7 +50,7 @@ public:
     ZoomInteractionDelegate(ContentWindowManager *cwm);
 
     void pan(PanGesture *gesture);
-    void pinch(QPinchGesture *gesture);
+    void pinch(PinchGesture *gesture);
 
     void mouseMoveEvent(QGraphicsSceneMouseEvent *event);
     void wheelEvent(QGraphicsSceneWheelEvent *event);

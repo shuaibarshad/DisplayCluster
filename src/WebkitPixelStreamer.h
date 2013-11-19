@@ -48,6 +48,8 @@
 class QWebView;
 class QTimer;
 class QRect;
+class QWebHitTestResult;
+class QWebElement;
 
 class WebkitPixelStreamer : public LocalPixelStreamer
 {
@@ -60,6 +62,8 @@ public:
     virtual QSize size() const;
 
     void setUrl(QString url);
+
+    QWebView* getView() const;
 
 public slots:
     virtual void updateInteractionState(InteractionState interactionState);
@@ -75,7 +79,21 @@ private:
 
     QImage image_;
 
-    PixelStreamSegmentParameters makeSegmentHeader();
+    bool interactionModeActive_;
+
+    void processClickEvent(const InteractionState &interactionState);
+    void processPressEvent(const InteractionState &interactionState);
+    void processMoveEvent(const InteractionState &interactionState);
+    void processReleaseEvent(const InteractionState &interactionState);
+    void processWheelEvent(const InteractionState &interactionState);
+    void processKeyPress(const InteractionState &interactionState);
+    void processKeyRelease(const InteractionState &interactionState);
+    void processViewSizeChange(const InteractionState &interactionState);
+
+    QWebHitTestResult performHitTest(const InteractionState &interactionState) const;
+    QPoint getPointerPosition(const InteractionState &interactionState) const;
+    PixelStreamSegmentParameters createSegmentHeader() const;
+    bool isWebGLElement(const QWebElement &element) const;
 };
 
 #endif // WEBKITPIXELSTREAMER_H

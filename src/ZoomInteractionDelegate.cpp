@@ -39,7 +39,10 @@
 
 #include "ZoomInteractionDelegate.h"
 #include "ContentWindowManager.h"
-#include "main.h"
+#include "globals.h"
+#include "Configuration.h"
+#include "gestures/PanGesture.h"
+#include "gestures/PinchGesture.h"
 
 ZoomInteractionDelegate::ZoomInteractionDelegate(ContentWindowManager* cwm)
     : ContentInteractionDelegate(cwm)
@@ -61,7 +64,7 @@ void ZoomInteractionDelegate::pan(PanGesture *gesture)
 }
 
 
-void ZoomInteractionDelegate::pinch(QPinchGesture *gesture)
+void ZoomInteractionDelegate::pinch(PinchGesture *gesture)
 {
     const double factor = adaptZoomFactor(gesture->scaleFactor());
     if( factor == 0.0 )
