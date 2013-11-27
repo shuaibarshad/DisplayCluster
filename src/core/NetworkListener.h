@@ -46,7 +46,7 @@ class NetworkListener : public QTcpServer {
 
     public:
 
-        NetworkListener(int port=1701);
+        NetworkListener(int port=50000);
 
     protected:
 

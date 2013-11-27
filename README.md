@@ -12,8 +12,3 @@ DisplayCluster is a software environment for interactively driving large-scale t
 [msrinivasan@madhu-00 Buildyard]$ module load openmpi-x86_64
 [msrinivasan@madhu-00 Buildyard]$ module load PythonQt/2.1-qt-4.6
 [msrinivasan@madhu-00 Buildyard]$ module load python/2.7.3
-[msrinivasan@madhu-00 Buildyard]$ make DisplayCluster
-
-
-
-```
