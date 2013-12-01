@@ -46,10 +46,12 @@ install(TARGETS desktopstreamer
     RUNTIME DESTINATION bin COMPONENT Runtime
     BUNDLE DESTINATION . COMPONENT Runtime
 )
-#if(APPLE)
-#  install(FILES ${DESKTOP_STREAMER_LIBS}
-#    DESTINATION ${CMAKE_BINARY_DIR}/desktopstreamer.app/Contents/MacOS)
-#endif()
+if(APPLE)
+  install(DIRECTORY  ${QT_QTCORE_LIBRARY} ${QT_QTGUI_LIBRARY} ${QT_QTNETWORK_LIBRARY}
+    DESTINATION ${CMAKE_BINARY_DIR}/desktopstreamer.app/Contents/Frameworks)
+  install(FILES ${LibJpegTurbo_LIBRARIES}
+    DESTINATION ${CMAKE_BINARY_DIR}/desktopstreamer.app/Contents/MacOS)
+endif()
 
 # on Apple platform make the .app bundle; on Windows make the installer
 if(APPLE OR WIN32)
