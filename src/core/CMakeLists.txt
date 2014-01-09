@@ -161,6 +161,7 @@ list(APPEND SRCS
     localstreamer/PixelStreamerType.cpp
     localstreamer/Pictureflow.cpp
     localstreamer/WebkitAuthenticationHelper.cpp
+    localstreamer/WebkitHtmlSelectReplacer.cpp
     localstreamer/WebkitPixelStreamer.cpp
     thumbnail/DefaultThumbnailGenerator.cpp
     thumbnail/FolderThumbnailGenerator.cpp
@@ -201,6 +202,7 @@ list(APPEND MOC_HEADERS
     localstreamer/PixelStreamerLauncher.h
     localstreamer/Pictureflow.h
     localstreamer/WebkitAuthenticationHelper.h
+    localstreamer/WebkitHtmlSelectReplacer.h
     localstreamer/WebkitPixelStreamer.h
     ws/TextInputDispatcher.h
     ws/TextInputHandler.h

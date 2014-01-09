@@ -1,5 +1,5 @@
 /*********************************************************************/
-/* Copyright (c) 2013, EPFL/Blue Brain Project                       */
+/* Copyright (c) 2014, EPFL/Blue Brain Project                       */
 /*                     Raphael Dumusc <raphael.dumusc@epfl.ch>       */
 /* All rights reserved.                                              */
 /*                                                                   */
@@ -37,91 +37,97 @@
 /* or implied, of The University of Texas at Austin.                 */
 /*********************************************************************/
 
-#ifndef WEBKITPIXELSTREAMER_H
-#define WEBKITPIXELSTREAMER_H
+#include "WebkitHtmlSelectReplacer.h"
 
-#include "PixelStreamer.h"
+#include <QWebPage>
+#include <QWebFrame>
+#include <QFile>
 
-#include <QString>
-#include <QImage>
-#include <QMutex>
+#define JQUERY_RESOURCE_FILE           ":/selectboxit/jquery.min.js"
+#define JQUERY_UI_RESOURCE_FILE        ":/selectboxit/jquery-ui.min.js"
+#define SELECTBOXIT_JS_RESOURCE_FILE   ":/selectboxit/jquery.selectBoxIt.min.js"
+#define SELECTBOXIT_CSS_RESOURCE_FILE  ":/selectboxit/selectboxit.css"
 
-class QWebView;
-class QTimer;
-class QRect;
-class QWebHitTestResult;
-class QWebElement;
-
-class WebkitAuthenticationHelper;
-class WebkitHtmlSelectReplacer;
-
-/**
- * Stream webpages with user interaction support.
- */
-class WebkitPixelStreamer : public PixelStreamer
+WebkitHtmlSelectReplacer::WebkitHtmlSelectReplacer(QWebView& webView)
+    : webView_(webView)
 {
-    Q_OBJECT
+    connect(&webView_, SIGNAL(loadFinished(bool)), this, SLOT(pageLoaded(bool)));
+}
 
-public:
-    /**
-     * Constructor.
-     *
-     * @param size The desired size of the webpage viewport. The actual stream
-     *        dimensions will be: size * default zoom factor (2x).
-     * @param url The webpage to load.
-     */
-    WebkitPixelStreamer(const QSize& size, const QString& url);
+void WebkitHtmlSelectReplacer::pageLoaded(bool success)
+{
+    if(!success)
+        return;
 
-    /** Destructor. */
-    ~WebkitPixelStreamer();
+    loadScripts();
 
-    /** Get the size of the webpage images. */
-    virtual QSize size() const;
+    replaceAllSelectElements();
+}
 
-    /**
-     * Open a webpage.
-     *
-     * @param url The address of the webpage to load.
-     */
-    void setUrl(QString url);
+void WebkitHtmlSelectReplacer::loadScripts()
+{
+    if (!hasJQuery())
+        loadJavascript(JQUERY_RESOURCE_FILE);
 
-    /** Get the QWebView used internally by the streamer. */
-    QWebView* getView() const;
+    if (!hasJQueryUi())
+        loadJavascript(JQUERY_UI_RESOURCE_FILE);
 
-public slots:
-    /** Process an Event. */
-    virtual void processEvent(dc::Event event);
+    loadJavascript(SELECTBOXIT_JS_RESOURCE_FILE);
+    loadCssUsingJQuery(SELECTBOXIT_CSS_RESOURCE_FILE);
+}
 
-private slots:
-    void update();
+void WebkitHtmlSelectReplacer::replaceAllSelectElements()
+{
+    QString js("var selectBox = $(\"select\").selectBoxIt();");
 
-private:
-    QWebView* webView_;
-    WebkitAuthenticationHelper* authenticationHelper_;
-    WebkitHtmlSelectReplacer* selectReplacer_;
-    QTimer* timer_;
-    QMutex mutex_;
+    webView_.page()->mainFrame()->evaluateJavaScript(js);
+}
 
-    QImage image_;
+bool WebkitHtmlSelectReplacer::hasJQuery()
+{
+    QString js("var hasJquery = false;"
+               "if( window.jQuery ) {"
+               "  hasJquery = true;"
+               "}");
 
-    bool interactionModeActive_;
+    return webView_.page()->mainFrame()->evaluateJavaScript(js).toBool();
+}
 
-    unsigned int initialWidth_;
+bool WebkitHtmlSelectReplacer::hasJQueryUi()
+{
+    QString js("var hasJqueryUi = false;"
+               "if( window.jQuery.ui ) {"
+               "  hasJqueryUi = true;"
+               "}");
 
-    void processClickEvent(const Event &event);
-    void processPressEvent(const Event &event);
-    void processMoveEvent(const Event &event);
-    void processReleaseEvent(const Event &event);
-    void processWheelEvent(const Event &event);
-    void processKeyPress(const Event &event);
-    void processKeyRelease(const Event &event);
-    void processViewSizeChange(const Event &event);
+    return webView_.page()->mainFrame()->evaluateJavaScript(js).toBool();
+}
 
-    QWebHitTestResult performHitTest(const Event &event) const;
-    QPoint getPointerPosition(const Event &event) const;
-    bool isWebGLElement(const QWebElement &element) const;
-    void setSize(const QSize& size);
-    void recomputeZoomFactor();
-};
+void WebkitHtmlSelectReplacer::loadJavascript(const QString& jsFile)
+{
+    QFile file(jsFile);
+    file.open(QIODevice::ReadOnly);
+    QString jQuery = file.readAll();
+    file.close();
 
-#endif // WEBKITPIXELSTREAMER_H
+    webView_.page()->mainFrame()->evaluateJavaScript(jQuery);
+}
+
+void WebkitHtmlSelectReplacer::loadCssUsingJQuery(const QString& cssFile)
+{
+    QFile file(cssFile);
+    file.open(QIODevice::ReadOnly);
+    QString cssStyle = file.readAll();
+    file.close();
+
+    cssStyle.remove(QRegExp("[\\n\\t\\r]"));
+
+    QString js = QString("loadCSS = function(href) {"
+                         "  var cssStyle = $(\"<style> %1 </style>\");"
+                         "  $(\"head\").append(cssStyle);"
+                         "};"
+                         "loadCSS();"
+                         ).arg(cssStyle);
+
+    webView_.page()->mainFrame()->evaluateJavaScript(js);
+}

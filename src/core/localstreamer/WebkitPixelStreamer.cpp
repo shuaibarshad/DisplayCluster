@@ -48,6 +48,7 @@
 
 #include "log.h"
 #include "WebkitAuthenticationHelper.h"
+#include "WebkitHtmlSelectReplacer.h"
 
 #define WEBPAGE_MIN_WIDTH      640
 #define WEBPAGE_MIN_HEIGHT     512
@@ -58,6 +59,7 @@ WebkitPixelStreamer::WebkitPixelStreamer(const QSize& size, const QString& url)
     : PixelStreamer()
     , webView_(new QWebView())
     , authenticationHelper_(0)
+    , selectReplacer_(0)
     , timer_(0)
     , interactionModeActive_(false)
     , initialWidth_( std::max( size.width(), WEBPAGE_MIN_WIDTH ))
@@ -66,6 +68,7 @@ WebkitPixelStreamer::WebkitPixelStreamer(const QSize& size, const QString& url)
     webView_->setZoomFactor(WEBPAGE_DEFAULT_ZOOM);
 
     authenticationHelper_ = new WebkitAuthenticationHelper(*webView_);
+    selectReplacer_ = new WebkitHtmlSelectReplacer(*webView_);
 
     QWebSettings* settings = webView_->settings();
     settings->setAttribute( QWebSettings::AcceleratedCompositingEnabled, true );
@@ -88,6 +91,7 @@ WebkitPixelStreamer::~WebkitPixelStreamer()
     timer_->stop();
     delete timer_;
     delete authenticationHelper_;
+    delete selectReplacer_;
     delete webView_;
 }
 
