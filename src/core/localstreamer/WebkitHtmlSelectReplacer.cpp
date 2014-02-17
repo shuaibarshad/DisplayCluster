@@ -43,6 +43,8 @@
 #include <QWebFrame>
 #include <QFile>
 
+// The SelectBoxIt scripts are developed and released by Greg Franko under MIT license
+// Project page: http://gregfranko.com/jquery.selectBoxIt.js/
 #define JQUERY_RESOURCE_FILE           ":/selectboxit/jquery.min.js"
 #define JQUERY_UI_RESOURCE_FILE        ":/selectboxit/jquery-ui.min.js"
 #define SELECTBOXIT_JS_RESOURCE_FILE   ":/selectboxit/jquery.selectBoxIt.min.js"

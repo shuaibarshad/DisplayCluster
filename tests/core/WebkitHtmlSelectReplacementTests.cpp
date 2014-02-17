@@ -41,6 +41,7 @@
 #include <boost/test/unit_test.hpp>
 namespace ut = boost::unit_test;
 
+#include <QDebug>
 #include "localstreamer/WebkitHtmlSelectReplacer.h"
 
 #include <QWebView>
@@ -51,60 +52,73 @@ namespace ut = boost::unit_test;
 #include "../GlobalQtApp.h"
 
 #define TEST_PAGE_URL               "select_test.htm"
+#define HTTP_BODY_SELECTOR          "body"
 #define HTTP_SELECT_SELECTOR        "select[id=language]"
 #define HTTP_SELECTBOXIT_SELECTOR   "span[id=languageSelectBoxIt]"
+#define DISPLAY_STYLE_PROPERTY_NAME "display"
+#define DISPLAY_STYLE_NONE          "none"
 
 BOOST_GLOBAL_FIXTURE( GlobalQtApp );
+
+class TestPage
+{
+public:
+    TestPage()
+    {
+        webview.page()->setViewportSize(QSize(640, 480));
+        QObject::connect( &webview, SIGNAL(loadFinished(bool)),
+                          QApplication::instance(), SLOT(quit()));
+    }
+
+    void load()
+    {
+        webview.load(QUrl(TEST_PAGE_URL));
+        QApplication::instance()->exec();
+
+        // Check that the page could be loaded
+        const QString pageContent = getElement(HTTP_BODY_SELECTOR).toInnerXml();
+        BOOST_REQUIRE( !pageContent.isEmpty( ));
+    }
+
+    QWebElement getElement(const QString& selectorQuery) const
+    {
+        return webview.page()->mainFrame()->findFirstElement(selectorQuery);
+    }
+
+    QString getSelectElementDisplayProperty() const
+    {
+        const QWebElement select = getElement(HTTP_SELECT_SELECTOR);
+        BOOST_REQUIRE( !select.isNull( ));
+        return select.styleProperty(DISPLAY_STYLE_PROPERTY_NAME, QWebElement::InlineStyle);
+    }
+
+    QWebView webview;
+};
 
 BOOST_AUTO_TEST_CASE( TestWhenNoReplacerThenSelectElementIsVisible )
 {
     if( !hasGLXDisplay( ))
         return;
 
-    QWebView webview;
-    webview.page()->setViewportSize(QSize(640, 480));
-    QObject::connect( &webview, SIGNAL(loadFinished(bool)),
-                      QApplication::instance(), SLOT(quit()));
+    TestPage testPage;
+    testPage.load();
 
-    webview.load(QUrl(TEST_PAGE_URL));
-    QApplication::instance()->exec();
-
-    QWebPage* page = webview.page();
-    BOOST_REQUIRE( page );
-    QWebFrame* frame = page->mainFrame();
-    BOOST_REQUIRE( frame );
-
-    QWebElement select = frame->findFirstElement(HTTP_SELECT_SELECTOR);
-    BOOST_REQUIRE( !select.isNull() );
-    const QString displayStyleProperty = select.styleProperty("display", QWebElement::InlineStyle);
+    const QString displayStyleProperty = testPage.getSelectElementDisplayProperty();
     BOOST_CHECK( displayStyleProperty.isEmpty( ));
 }
 
-BOOST_AUTO_TEST_CASE( TestWhenReplacerThenSelectHasHtmlEquivalent )
+BOOST_AUTO_TEST_CASE( TestWhenReplacerThenSelectHasEquivalentHtml )
 {
     if( !hasGLXDisplay( ))
         return;
 
-    QWebView webview;
-    webview.page()->setViewportSize(QSize(640, 480));
-    QObject::connect( &webview, SIGNAL(loadFinished(bool)),
-                      QApplication::instance(), SLOT(quit()));
+    TestPage testPage;
+    WebkitHtmlSelectReplacer replacer(testPage.webview);
+    testPage.load();
 
-    WebkitHtmlSelectReplacer replacer(webview);
+    const QString displayStyleProperty = testPage.getSelectElementDisplayProperty();
+    BOOST_CHECK_EQUAL( displayStyleProperty.toStdString(), DISPLAY_STYLE_NONE );
 
-    webview.load(QUrl(TEST_PAGE_URL));
-    QApplication::instance()->exec();
-
-    QWebPage* page = webview.page();
-    BOOST_REQUIRE( page );
-    QWebFrame* frame = page->mainFrame();
-    BOOST_REQUIRE( frame );
-
-    QWebElement select = frame->findFirstElement(HTTP_SELECT_SELECTOR);
-    BOOST_REQUIRE( !select.isNull() );
-    const QString displayStyleProperty = select.styleProperty("display", QWebElement::InlineStyle);
-    BOOST_CHECK_EQUAL( displayStyleProperty.toStdString(), "none" );
-
-    QWebElement selectboxit = frame->findFirstElement(HTTP_SELECT_SELECTOR);
-    BOOST_CHECK( !selectboxit.isNull() );
+    QWebElement selectboxit = testPage.getElement(HTTP_SELECTBOXIT_SELECTOR);
+    BOOST_CHECK( !selectboxit.isNull( ));
 }
