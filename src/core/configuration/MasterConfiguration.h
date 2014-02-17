@@ -40,9 +40,10 @@
 #ifndef MASTERCONFIGURATION_H
 #define MASTERCONFIGURATION_H
 
-#include <QtXmlPatterns>
-
 #include "Configuration.h"
+
+class QXmlQuery;
+
 /**
  * @brief The MasterConfiguration class manages all the parameters needed
  * to setup the Master process.

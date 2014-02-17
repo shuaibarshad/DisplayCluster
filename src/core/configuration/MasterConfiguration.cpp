@@ -39,6 +39,8 @@
 
 #include "MasterConfiguration.h"
 
+#include <QtXmlPatterns>
+
 #include "log.h"
 
 #define DEFAULT_WEBSERVICE_PORT 8888
@@ -101,7 +103,6 @@ const QString& MasterConfiguration::getDockStartDir() const
 {
     return dockStartDir_;
 }
-
 
 const int MasterConfiguration::getWebServicePort() const
 {
