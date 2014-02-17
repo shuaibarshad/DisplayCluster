@@ -40,6 +40,8 @@
 #ifndef MASTERCONFIGURATION_H
 #define MASTERCONFIGURATION_H
 
+#include <QtXmlPatterns>
+
 #include "Configuration.h"
 /**
  * @brief The MasterConfiguration class manages all the parameters needed
@@ -68,11 +70,21 @@ public:
      */
     const int getWebServicePort() const;
 
+    /**
+     * @brief Get the URL used as start page when opening a Web Browser.
+     * @return The URL defined in the configuration file, or a default value if
+     * none is found.
+     */
+    const QString& getWebBrowserDefaultURL() const;
+
 private:
     void loadMasterSettings();
+    void loadDockStartDirectory(QXmlQuery& query);
+    void loadWebBrowserStartURL(QXmlQuery& query);
 
     QString dockStartDir_;
     int dcWebServicePort_;
+    QString webBrowserDefaultURL_;
 };
 
 #endif // MASTERCONFIGURATION_H
