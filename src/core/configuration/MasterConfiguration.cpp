@@ -44,6 +44,8 @@
 #include "log.h"
 
 #define DEFAULT_WEBSERVICE_PORT 8888
+#define TRIM_REGEX "[\\n\\t\\r]"
+#define DEFAULT_URL "http://www.google.com";
 
 MasterConfiguration::MasterConfiguration(const QString &filename, OptionsPtr options)
     : Configuration(filename, options)
@@ -60,13 +62,19 @@ void MasterConfiguration::loadMasterSettings()
         exit(-1);
     }
 
+    loadDockStartDirectory(query);
+    loadWebBrowserStartURL(query);
+
+}
+
+void MasterConfiguration::loadDockStartDirectory(QXmlQuery& query)
+{
     QString queryResult;
 
-    // dock start directory
     query.setQuery("string(/configuration/dock/@directory)");
     if (query.evaluateTo(&queryResult))
-        dockStartDir_ = queryResult.remove(QRegExp("[\\n\\t\\r]"));
-    if( dockStartDir_.isEmpty( ))
+        dockStartDir_ = queryResult.remove(QRegExp(TRIM_REGEX));
+    if (dockStartDir_.isEmpty())
         dockStartDir_ = QDir::homePath();
 
     // WebService server port
@@ -80,7 +88,18 @@ void MasterConfiguration::loadMasterSettings()
     }
 }
 
-const QString &MasterConfiguration::getDockStartDir() const
+void MasterConfiguration::loadWebBrowserStartURL(QXmlQuery& query)
+{
+    QString queryResult;
+
+    query.setQuery("string(/configuration/webbrowser/@defaultURL)");
+    if (query.evaluateTo(&queryResult))
+        webBrowserDefaultURL_ = queryResult.remove(QRegExp(TRIM_REGEX));
+    if (webBrowserDefaultURL_.isEmpty())
+        webBrowserDefaultURL_ = DEFAULT_URL;
+}
+
+const QString& MasterConfiguration::getDockStartDir() const
 {
     return dockStartDir_;
 }
@@ -88,4 +107,9 @@ const QString &MasterConfiguration::getDockStartDir() const
 const int MasterConfiguration::getWebServicePort() const
 {
     return dcWebServicePort_;
+}
+
+const QString& MasterConfiguration::getWebBrowserDefaultURL() const
+{
+    return webBrowserDefaultURL_;
 }
