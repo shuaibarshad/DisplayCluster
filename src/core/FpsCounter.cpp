@@ -47,7 +47,7 @@ FpsCounter::FpsCounter()
 
 void FpsCounter::tick()
 {
-    history_.push_back(QDateTime::currentDateTime());
+    history_.push_back(boost::posix_time::microsec_clock::local_time());
 
     // see if we need to remove an entry
     while(history_.size() > HISTORY_SIZE)
@@ -61,7 +61,8 @@ float FpsCounter::getFps() const
     if(history_.empty())
         return 0.f;
 
-    return (float)history_.size() / (float)history_.front().msecsTo(history_.back()) * 1000.;
+    return (float)history_.size() / (float)(history_.front() - history_.back())
+                                                 .total_milliseconds() * 1000.;
 }
 
 QString FpsCounter::toString() const
