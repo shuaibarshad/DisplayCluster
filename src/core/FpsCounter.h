@@ -40,8 +40,11 @@
 #ifndef FPSCOUNTER_H
 #define FPSCOUNTER_H
 
+#include <QString>
+
 #include <vector>
-#include <QDateTime>
+
+#include <boost/date_time/posix_time/posix_time.hpp>
 
 class FpsCounter
 {
@@ -54,7 +57,7 @@ public:
     QString toString() const;
 
 private:
-    std::vector<QDateTime> history_;
+    std::vector<boost::posix_time::ptime> history_;
 };
 
 #endif // FPSCOUNTER_H
