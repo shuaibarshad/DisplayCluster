@@ -47,7 +47,7 @@ FpsCounter::FpsCounter()
 
 void FpsCounter::tick()
 {
-    history_.push_back(boost::posix_time::microsec_clock::local_time());
+    history_.push_back(boost::posix_time::microsec_clock::universal_time());
 
     // see if we need to remove an entry
     while(history_.size() > HISTORY_SIZE)

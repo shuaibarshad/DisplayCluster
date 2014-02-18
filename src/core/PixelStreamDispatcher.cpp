@@ -55,7 +55,7 @@ PixelStreamDispatcher::PixelStreamDispatcher()
     connect(&sendTimer_, SIGNAL(timeout()), this, SLOT(dispatchFrames()));
     sendTimer_.start(1000/DISPATCH_FREQUENCY);
 #else
-    lastFrameSent_ = boost::posix_time::microsec_clock::local_time();
+    lastFrameSent_ = boost::posix_time::microsec_clock::universal_time();
     // Not using a queued connection here causes the rendering to lag behind and the main UI to freeze..
     connect(this, SIGNAL(dispatchFramesSignal()), this, SLOT(dispatchFrames()), Qt::QueuedConnection);
 #endif
@@ -106,7 +106,7 @@ void PixelStreamDispatcher::processFrameFinished(const QString uri, const size_t
 
 #ifdef USE_TIMER
 #else
-    boost::posix_time::ptime now = boost::posix_time::microsec_clock::local_time();
+    boost::posix_time::ptime now = boost::posix_time::microsec_clock::universal_time();
     if ((lastFrameSent_ - now).total_milliseconds() > 1000/DISPATCH_FREQUENCY)
     {
         lastFrameSent_ = now;
