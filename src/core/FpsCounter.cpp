@@ -61,8 +61,8 @@ float FpsCounter::getFps() const
     if(history_.empty())
         return 0.f;
 
-    return (float)history_.size() / (float)(history_.front() - history_.back())
-                                                 .total_milliseconds() * 1000.;
+    const float delta = (float)(history_.back() - history_.front()).total_milliseconds() / 1000.f;
+    return (float)history_.size() / delta;
 }
 
 QString FpsCounter::toString() const
