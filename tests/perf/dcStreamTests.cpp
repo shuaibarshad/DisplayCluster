@@ -39,6 +39,7 @@
 
 #define BOOST_TEST_MODULE Socket
 #include <boost/test/unit_test.hpp>
+#include <boost/date_time/posix_time/posix_time.hpp>
 namespace ut = boost::unit_test;
 
 #include "DisplayGroupManager.h"
@@ -60,11 +61,36 @@ namespace ut = boost::unit_test;
 
 BOOST_GLOBAL_FIXTURE( MinimalGlobalQtApp );
 
+namespace
+{
+class Timer
+{
+public:
+    void start()
+    {
+	lastTime_ = boost::posix_time::microsec_clock::universal_time();
+    }
+
+    void restart()
+    {
+	start();
+    }
+
+    float elapsed()
+    {
+	const boost::posix_time::ptime now = boost::posix_time::microsec_clock::universal_time();
+	return (float)(now - lastTime_).total_milliseconds();
+    }
+private:
+    boost::posix_time::ptime lastTime_;
+};
+}
+
 class DCThread : public QThread
 {
     void run()
     {
-        QElapsedTimer timer;
+        Timer timer;
         uint8_t* pixels = new uint8_t[ NBYTES ];
         ::memset( pixels, 0, NBYTES );
         dc::ImageWrapper image( pixels, WIDTH, HEIGHT, dc::RGBA );
