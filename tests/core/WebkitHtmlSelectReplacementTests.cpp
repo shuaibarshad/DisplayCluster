@@ -1,5 +1,5 @@
 /*********************************************************************/
-/* Copyright (c) 2013, EPFL/Blue Brain Project                       */
+/* Copyright (c) 2014, EPFL/Blue Brain Project                       */
 /*                     Raphael Dumusc <raphael.dumusc@epfl.ch>       */
 /* All rights reserved.                                              */
 /*                                                                   */
@@ -37,93 +37,88 @@
 /* or implied, of The University of Texas at Austin.                 */
 /*********************************************************************/
 
-#ifndef WEBKITPIXELSTREAMER_H
-#define WEBKITPIXELSTREAMER_H
+#define BOOST_TEST_MODULE WebBrowser
+#include <boost/test/unit_test.hpp>
+namespace ut = boost::unit_test;
 
-#include "PixelStreamer.h"
+#include <QDebug>
+#include "localstreamer/WebkitHtmlSelectReplacer.h"
 
-#include <QString>
-#include <QImage>
-#include <QTimer>
 #include <QWebView>
-#include <QMutex>
+#include <QWebPage>
+#include <QWebFrame>
+#include <QWebElement>
 
-#include <boost/smart_ptr/scoped_ptr.hpp>
+#include "../GlobalQtApp.h"
 
-class QRect;
-class QWebHitTestResult;
-class QWebElement;
+#define TEST_PAGE_URL               "select_test.htm"
+#define HTTP_BODY_SELECTOR          "body"
+#define HTTP_SELECT_SELECTOR        "select[id=language]"
+#define HTTP_SELECTBOXIT_SELECTOR   "span[id=languageSelectBoxIt]"
+#define DISPLAY_STYLE_PROPERTY_NAME "display"
+#define DISPLAY_STYLE_NONE          "none"
 
-class WebkitAuthenticationHelper;
-class WebkitHtmlSelectReplacer;
+BOOST_GLOBAL_FIXTURE( GlobalQtApp );
 
-/**
- * Stream webpages with user interaction support.
- */
-class WebkitPixelStreamer : public PixelStreamer
+class TestPage
 {
-    Q_OBJECT
-
 public:
-    /**
-     * Constructor.
-     *
-     * @param size The desired size of the webpage viewport. The actual stream
-     *        dimensions will be: size * default zoom factor (2x).
-     * @param url The webpage to load.
-     */
-    WebkitPixelStreamer(const QSize& size, const QString& url);
+    TestPage()
+    {
+        webview.page()->setViewportSize(QSize(640, 480));
+        QObject::connect( &webview, SIGNAL(loadFinished(bool)),
+                          QApplication::instance(), SLOT(quit()));
+    }
 
-    /** Destructor. */
-    ~WebkitPixelStreamer();
+    void load()
+    {
+        webview.load(QUrl(TEST_PAGE_URL));
+        QApplication::instance()->exec();
 
-    /** Get the size of the webpage images. */
-    virtual QSize size() const;
+        // Check that the page could be loaded
+        const QString pageContent = getElement(HTTP_BODY_SELECTOR).toInnerXml();
+        BOOST_REQUIRE( !pageContent.isEmpty( ));
+    }
 
-    /**
-     * Open a webpage.
-     *
-     * @param url The address of the webpage to load.
-     */
-    void setUrl(QString url);
+    QWebElement getElement(const QString& selectorQuery) const
+    {
+        return webview.page()->mainFrame()->findFirstElement(selectorQuery);
+    }
 
-    /** Get the QWebView used internally by the streamer. */
-    const QWebView* getView() const;
+    QString getSelectElementDisplayProperty() const
+    {
+        const QWebElement select = getElement(HTTP_SELECT_SELECTOR);
+        BOOST_REQUIRE( !select.isNull( ));
+        return select.styleProperty(DISPLAY_STYLE_PROPERTY_NAME, QWebElement::InlineStyle);
+    }
 
-public slots:
-    /** Process an Event. */
-    virtual void processEvent(dc::Event event);
-
-private slots:
-    void update();
-
-private:
-    QWebView webView_;
-    boost::scoped_ptr<WebkitAuthenticationHelper> authenticationHelper_;
-    boost::scoped_ptr<WebkitHtmlSelectReplacer> selectReplacer_;
-    QTimer timer_;
-    QMutex mutex_;
-
-    QImage image_;
-
-    bool interactionModeActive_;
-
-    unsigned int initialWidth_;
-
-    void processClickEvent(const Event &event);
-    void processPressEvent(const Event &event);
-    void processMoveEvent(const Event &event);
-    void processReleaseEvent(const Event &event);
-    void processWheelEvent(const Event &event);
-    void processKeyPress(const Event &event);
-    void processKeyRelease(const Event &event);
-    void processViewSizeChange(const Event &event);
-
-    QWebHitTestResult performHitTest(const Event &event) const;
-    QPoint getPointerPosition(const Event &event) const;
-    bool isWebGLElement(const QWebElement &element) const;
-    void setSize(const QSize& size);
-    void recomputeZoomFactor();
+    QWebView webview;
 };
 
-#endif // WEBKITPIXELSTREAMER_H
+BOOST_AUTO_TEST_CASE( TestWhenNoReplacerThenSelectElementIsVisible )
+{
+    if( !hasGLXDisplay( ))
+        return;
+
+    TestPage testPage;
+    testPage.load();
+
+    const QString displayStyleProperty = testPage.getSelectElementDisplayProperty();
+    BOOST_CHECK( displayStyleProperty.isEmpty( ));
+}
+
+BOOST_AUTO_TEST_CASE( TestWhenReplacerThenSelectHasEquivalentHtml )
+{
+    if( !hasGLXDisplay( ))
+        return;
+
+    TestPage testPage;
+    WebkitHtmlSelectReplacer replacer(testPage.webview);
+    testPage.load();
+
+    const QString displayStyleProperty = testPage.getSelectElementDisplayProperty();
+    BOOST_CHECK_EQUAL( displayStyleProperty.toStdString(), DISPLAY_STYLE_NONE );
+
+    QWebElement selectboxit = testPage.getElement(HTTP_SELECTBOXIT_SELECTOR);
+    BOOST_CHECK( !selectboxit.isNull( ));
+}

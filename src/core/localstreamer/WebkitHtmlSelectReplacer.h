@@ -1,5 +1,5 @@
 /*********************************************************************/
-/* Copyright (c) 2013, EPFL/Blue Brain Project                       */
+/* Copyright (c) 2014, EPFL/Blue Brain Project                       */
 /*                     Raphael Dumusc <raphael.dumusc@epfl.ch>       */
 /* All rights reserved.                                              */
 /*                                                                   */
@@ -37,93 +37,51 @@
 /* or implied, of The University of Texas at Austin.                 */
 /*********************************************************************/
 
-#ifndef WEBKITPIXELSTREAMER_H
-#define WEBKITPIXELSTREAMER_H
+#ifndef WEBKITHTMLSELECTREPLACER_H
+#define WEBKITHTMLSELECTREPLACER_H
 
-#include "PixelStreamer.h"
-
-#include <QString>
-#include <QImage>
-#include <QTimer>
 #include <QWebView>
-#include <QMutex>
-
-#include <boost/smart_ptr/scoped_ptr.hpp>
-
-class QRect;
-class QWebHitTestResult;
-class QWebElement;
-
-class WebkitAuthenticationHelper;
-class WebkitHtmlSelectReplacer;
 
 /**
- * Stream webpages with user interaction support.
+ * Substitutes all <select> elements on a webpage by equivalent HTML lists.
+ *
+ * This class is most useful when QWebKit renders without a window and the system
+ * ui list elements are not working.
+ *
+ * It works by modifying the Html documents using Javascript after the page has finished loading.
  */
-class WebkitPixelStreamer : public PixelStreamer
+class WebkitHtmlSelectReplacer : public QObject
 {
     Q_OBJECT
 
 public:
     /**
      * Constructor.
-     *
-     * @param size The desired size of the webpage viewport. The actual stream
-     *        dimensions will be: size * default zoom factor (2x).
-     * @param url The webpage to load.
+     * @param webView The QWebView on which to operate.
      */
-    WebkitPixelStreamer(const QSize& size, const QString& url);
-
-    /** Destructor. */
-    ~WebkitPixelStreamer();
-
-    /** Get the size of the webpage images. */
-    virtual QSize size() const;
+    WebkitHtmlSelectReplacer(QWebView& webView);
 
     /**
-     * Open a webpage.
+     * Replace all <select> elements by Html equivalents.
      *
-     * @param url The address of the webpage to load.
+     * You only need to call this if new <select> elements have been dynamically
+     * added after the page was loaded.
      */
-    void setUrl(QString url);
-
-    /** Get the QWebView used internally by the streamer. */
-    const QWebView* getView() const;
-
-public slots:
-    /** Process an Event. */
-    virtual void processEvent(dc::Event event);
+    void replaceAllSelectElements();
 
 private slots:
-    void update();
+    void pageLoaded(bool success);
 
 private:
-    QWebView webView_;
-    boost::scoped_ptr<WebkitAuthenticationHelper> authenticationHelper_;
-    boost::scoped_ptr<WebkitHtmlSelectReplacer> selectReplacer_;
-    QTimer timer_;
-    QMutex mutex_;
+    QWebView& webView_;
 
-    QImage image_;
+    void loadScripts();
 
-    bool interactionModeActive_;
+    bool hasJQuery();
+    bool hasJQueryUi();
 
-    unsigned int initialWidth_;
-
-    void processClickEvent(const Event &event);
-    void processPressEvent(const Event &event);
-    void processMoveEvent(const Event &event);
-    void processReleaseEvent(const Event &event);
-    void processWheelEvent(const Event &event);
-    void processKeyPress(const Event &event);
-    void processKeyRelease(const Event &event);
-    void processViewSizeChange(const Event &event);
-
-    QWebHitTestResult performHitTest(const Event &event) const;
-    QPoint getPointerPosition(const Event &event) const;
-    bool isWebGLElement(const QWebElement &element) const;
-    void setSize(const QSize& size);
-    void recomputeZoomFactor();
+    void loadJavascript(const QString& jsFile);
+    void loadCssUsingJQuery(const QString& cssFile);
 };
 
-#endif // WEBKITPIXELSTREAMER_H
+#endif // WEBKITHTMLSELECTREPLACER_H
