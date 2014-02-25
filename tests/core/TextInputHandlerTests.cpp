@@ -92,7 +92,7 @@ BOOST_AUTO_TEST_CASE( testWhenRequestHasCharThenTextInputDispatcherReceivesIt )
     BOOST_CHECK_EQUAL(mockDispatcher.getKey(), '7');
 }
 
-BOOST_AUTO_TEST_CASE( testWhenRequestIsTooLongThenReturnCodeIs400 )
+BOOST_AUTO_TEST_CASE( testWhenRequestIsStringThenReturnCodeIs200Ok )
 {
     DisplayGroupManagerAdapterPtr adapter(new MockDisplayGroupManagerAdapter(true));
     TextInputHandler handler(adapter);
@@ -100,10 +100,10 @@ BOOST_AUTO_TEST_CASE( testWhenRequestIsTooLongThenReturnCodeIs400 )
     dcWebservice::RequestPtr request(new dcWebservice::Request());
     dcWebservice::ConstResponsePtr response;
 
-    request->data = "iamtoolong";
+    request->data = "iamastring";
     response = handler.handle(*request);
-    BOOST_CHECK_EQUAL(response->statusCode, 400);
-    BOOST_CHECK_EQUAL(response->statusMsg, "Bad Request");
+    BOOST_CHECK_EQUAL(response->statusCode, 200);
+    BOOST_CHECK_EQUAL(response->statusMsg, "OK");
 }
 
 BOOST_AUTO_TEST_CASE( testWhenRequestEmptyInvalidThenReturnCodeIs400 )

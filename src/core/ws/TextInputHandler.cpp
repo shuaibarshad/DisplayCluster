@@ -43,8 +43,6 @@
 #include "dcWebservice/Response.h"
 #include "dcWebservice/Request.h"
 
-#include <sstream>
-
 TextInputHandler::TextInputHandler(DisplayGroupManagerAdapterPtr displayGroupManagerAdapter)
     : displayGroupManagerAdapter_(displayGroupManagerAdapter)
 {
