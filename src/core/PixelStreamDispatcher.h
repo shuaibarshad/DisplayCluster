@@ -42,8 +42,9 @@
 
 #include <QObject>
 #include <QTimer>
-#include <QDateTime>
 #include <map>
+
+#include <boost/date_time/posix_time/posix_time.hpp>
 
 #include "PixelStreamSegment.h"
 #include "PixelStreamBuffer.h"
@@ -139,7 +140,7 @@ private:
 #ifdef USE_TIMER
     QTimer sendTimer_;
 #else
-    QDateTime lastFrameSent_;
+    boost::posix_time::ptime lastFrameSent_;
 #endif
 };
 
