@@ -38,7 +38,7 @@
 /*********************************************************************/
 
 var DEFAULT_MESSAGE = "Press A Key";
-var TEXT_API = "/dcapi/textinput";
+var TEXT_API = "/wall/dcapi/textinput";
 
 var KEY_TAB = 9
 var KEY_ENTER = 13 
@@ -59,6 +59,6 @@ function endTimer(timer) {
 
 
 // Sends character to server
-function sendCharacter(character) {
+function sendText(character) {
     $.post(TEXT_API, data=character);
 }

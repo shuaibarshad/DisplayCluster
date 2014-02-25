@@ -76,7 +76,7 @@ function(e) {
         return
     }
     clearTextIfNecessary("#text");
-    sendCharacter(String.fromCharCode(e.which));
+    sendText(String.fromCharCode(e.which));
     $("#text").append(String.fromCharCode(e.which));
     startDefaultMsgTimer("#text");
 }
@@ -90,7 +90,7 @@ function(e){
         // Something has been typed, reset the default message timer
         clearTimer();
         e.preventDefault();
-        sendCharacter(String.fromCharCode(e.keyCode));
+        sendText(String.fromCharCode(e.keyCode));
         clearTextIfNecessary("#text");
         $("#text").append(String.fromCharCode(e.keyCode));
         startDefaultMsgTimer("#text");
