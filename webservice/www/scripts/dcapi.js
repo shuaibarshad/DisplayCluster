@@ -58,7 +58,8 @@ function endTimer(timer) {
 }
 
 
-// Sends character to server
-function sendText(character) {
-    $.post(TEXT_API, data=character);
+// Sends text to server. Text can be a single or multiple
+// characters.
+function sendText(text) {
+    $.post(TEXT_API, data=text);
 }

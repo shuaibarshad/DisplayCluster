@@ -62,9 +62,7 @@ dcWebservice::ConstResponsePtr TextInputHandler::handle(const dcWebservice::Requ
     {
         response->statusCode = 400;
         response->statusMsg = "Bad Request";
-        std::ostringstream body;
-        body << "{\"code\":\"400\", \"msg\":\"Bad Request. Expected at least one character.\"}";
-        response->body = body.str();
+        response->body = "{\"code\":\"400\", \"msg\":\"Bad Request. Expected at least one character.\"}";
     }
     else if (displayGroupManagerAdapter_->hasWindows())
     {
