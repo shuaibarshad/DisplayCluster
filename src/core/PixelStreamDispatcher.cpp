@@ -106,8 +106,8 @@ void PixelStreamDispatcher::processFrameFinished(const QString uri, const size_t
 
 #ifdef USE_TIMER
 #else
-    boost::posix_time::ptime now = boost::posix_time::microsec_clock::universal_time();
-    if ((lastFrameSent_ - now).total_milliseconds() > 1000/DISPATCH_FREQUENCY)
+    const boost::posix_time::ptime now = boost::posix_time::microsec_clock::universal_time();
+    if ((now - lastFrameSent_).total_milliseconds() > 1000/DISPATCH_FREQUENCY)
     {
         lastFrameSent_ = now;
         //dispatchFrames(); // See comment above about direct Signal connection..

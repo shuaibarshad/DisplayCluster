@@ -1,5 +1,5 @@
 /*********************************************************************/
-/* Copyright (c) 2013, EPFL/Blue Brain Project                       */
+/* Copyright (c) 2014, EPFL/Blue Brain Project                       */
 /*                     Raphael Dumusc <raphael.dumusc@epfl.ch>       */
 /* All rights reserved.                                              */
 /*                                                                   */
@@ -37,44 +37,88 @@
 /* or implied, of The University of Texas at Austin.                 */
 /*********************************************************************/
 
-#include "FpsCounter.h"
+#define BOOST_TEST_MODULE WebBrowser
+#include <boost/test/unit_test.hpp>
+namespace ut = boost::unit_test;
 
-#if (QT_VERSION >= QT_VERSION_CHECK(4, 7, 0))
-#  define HISTORY_SIZE  30
-#else
-#  define HISTORY_SIZE  300
-#endif
+#include <QDebug>
+#include "localstreamer/WebkitHtmlSelectReplacer.h"
 
-FpsCounter::FpsCounter()
+#include <QWebView>
+#include <QWebPage>
+#include <QWebFrame>
+#include <QWebElement>
+
+#include "../GlobalQtApp.h"
+
+#define TEST_PAGE_URL               "select_test.htm"
+#define HTTP_BODY_SELECTOR          "body"
+#define HTTP_SELECT_SELECTOR        "select[id=language]"
+#define HTTP_SELECTBOXIT_SELECTOR   "span[id=languageSelectBoxIt]"
+#define DISPLAY_STYLE_PROPERTY_NAME "display"
+#define DISPLAY_STYLE_NONE          "none"
+
+BOOST_GLOBAL_FIXTURE( GlobalQtApp );
+
+class TestPage
 {
-}
-
-void FpsCounter::tick()
-{
-    history_.push_back(boost::posix_time::microsec_clock::universal_time());
-
-    // see if we need to remove an entry
-    while(history_.size() > HISTORY_SIZE)
+public:
+    TestPage()
     {
-        history_.erase(history_.begin());
+        webview.page()->setViewportSize(QSize(640, 480));
+        QObject::connect( &webview, SIGNAL(loadFinished(bool)),
+                          QApplication::instance(), SLOT(quit()));
     }
+
+    void load()
+    {
+        webview.load(QUrl(TEST_PAGE_URL));
+        QApplication::instance()->exec();
+
+        // Check that the page could be loaded
+        const QString pageContent = getElement(HTTP_BODY_SELECTOR).toInnerXml();
+        BOOST_REQUIRE( !pageContent.isEmpty( ));
+    }
+
+    QWebElement getElement(const QString& selectorQuery) const
+    {
+        return webview.page()->mainFrame()->findFirstElement(selectorQuery);
+    }
+
+    QString getSelectElementDisplayProperty() const
+    {
+        const QWebElement select = getElement(HTTP_SELECT_SELECTOR);
+        BOOST_REQUIRE( !select.isNull( ));
+        return select.styleProperty(DISPLAY_STYLE_PROPERTY_NAME, QWebElement::InlineStyle);
+    }
+
+    QWebView webview;
+};
+
+BOOST_AUTO_TEST_CASE( TestWhenNoReplacerThenSelectElementIsVisible )
+{
+    if( !hasGLXDisplay( ))
+        return;
+
+    TestPage testPage;
+    testPage.load();
+
+    const QString displayStyleProperty = testPage.getSelectElementDisplayProperty();
+    BOOST_CHECK( displayStyleProperty.isEmpty( ));
 }
 
-float FpsCounter::getFps() const
+BOOST_AUTO_TEST_CASE( TestWhenReplacerThenSelectHasEquivalentHtml )
 {
-    if(history_.empty())
-        return 0.f;
+    if( !hasGLXDisplay( ))
+        return;
 
-    const float delta = (float)(history_.back() - history_.front()).total_milliseconds() / 1000.f;
-    return (float)history_.size() / delta;
-}
+    TestPage testPage;
+    WebkitHtmlSelectReplacer replacer(testPage.webview);
+    testPage.load();
 
-QString FpsCounter::toString() const
-{
-    QString result;
+    const QString displayStyleProperty = testPage.getSelectElementDisplayProperty();
+    BOOST_CHECK_EQUAL( displayStyleProperty.toStdString(), DISPLAY_STYLE_NONE );
 
-    result += QString::number(getFps(), 'g', 4);
-    result += " fps";
-
-    return result;
+    QWebElement selectboxit = testPage.getElement(HTTP_SELECTBOXIT_SELECTOR);
+    BOOST_CHECK( !selectboxit.isNull( ));
 }

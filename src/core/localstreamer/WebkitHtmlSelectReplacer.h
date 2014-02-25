@@ -1,5 +1,5 @@
 /*********************************************************************/
-/* Copyright (c) 2013, EPFL/Blue Brain Project                       */
+/* Copyright (c) 2014, EPFL/Blue Brain Project                       */
 /*                     Raphael Dumusc <raphael.dumusc@epfl.ch>       */
 /* All rights reserved.                                              */
 /*                                                                   */
@@ -37,44 +37,51 @@
 /* or implied, of The University of Texas at Austin.                 */
 /*********************************************************************/
 
-#include "FpsCounter.h"
+#ifndef WEBKITHTMLSELECTREPLACER_H
+#define WEBKITHTMLSELECTREPLACER_H
 
-#if (QT_VERSION >= QT_VERSION_CHECK(4, 7, 0))
-#  define HISTORY_SIZE  30
-#else
-#  define HISTORY_SIZE  300
-#endif
+#include <QWebView>
 
-FpsCounter::FpsCounter()
+/**
+ * Substitutes all <select> elements on a webpage by equivalent HTML lists.
+ *
+ * This class is most useful when QWebKit renders without a window and the system
+ * ui list elements are not working.
+ *
+ * It works by modifying the Html documents using Javascript after the page has finished loading.
+ */
+class WebkitHtmlSelectReplacer : public QObject
 {
-}
+    Q_OBJECT
 
-void FpsCounter::tick()
-{
-    history_.push_back(boost::posix_time::microsec_clock::universal_time());
+public:
+    /**
+     * Constructor.
+     * @param webView The QWebView on which to operate.
+     */
+    WebkitHtmlSelectReplacer(QWebView& webView);
 
-    // see if we need to remove an entry
-    while(history_.size() > HISTORY_SIZE)
-    {
-        history_.erase(history_.begin());
-    }
-}
+    /**
+     * Replace all <select> elements by Html equivalents.
+     *
+     * You only need to call this if new <select> elements have been dynamically
+     * added after the page was loaded.
+     */
+    void replaceAllSelectElements();
 
-float FpsCounter::getFps() const
-{
-    if(history_.empty())
-        return 0.f;
+private slots:
+    void pageLoaded(bool success);
 
-    const float delta = (float)(history_.back() - history_.front()).total_milliseconds() / 1000.f;
-    return (float)history_.size() / delta;
-}
+private:
+    QWebView& webView_;
 
-QString FpsCounter::toString() const
-{
-    QString result;
+    void loadScripts();
 
-    result += QString::number(getFps(), 'g', 4);
-    result += " fps";
+    bool hasJQuery();
+    bool hasJQueryUi();
 
-    return result;
-}
+    void loadJavascript(const QString& jsFile);
+    void loadCssUsingJQuery(const QString& cssFile);
+};
+
+#endif // WEBKITHTMLSELECTREPLACER_H
