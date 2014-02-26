@@ -52,7 +52,7 @@ function(){
     // Send tab character
     $("#next").click(
     function() {
-        sendCharacter(String.fromCharCode(KEY_TAB));
+        sendText(String.fromCharCode(KEY_TAB));
         $("#text").focus();
     }
     );
@@ -60,10 +60,7 @@ function(){
     // Send the text in the textarea
     $("#send").click(
     function() {
-
-        var text = $("#text").val();
-          for (var i = 0 ; i < text.length ; ++i)
-            sendCharacter(text.charAt(i));
+        sendText($("#text").val());
         $("#text").val("");
         $("#text").focus();
     }
@@ -72,9 +69,8 @@ function(){
     // Send a "delete character"
     $("#delete").click(
     function() {
-
         var text = $("#text").val();
-          sendCharacter(String.fromCharCode(KEY_DEL));
+        sendText(String.fromCharCode(KEY_DEL));
         $("#text").val("");
         $("#text").focus();
     }
