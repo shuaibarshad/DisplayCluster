@@ -41,10 +41,10 @@
 
 #include <QTcpSocket>
 
-MockNetworkListener::MockNetworkListener(const unsigned short port, const int32_t protocolVersion)
+MockNetworkListener::MockNetworkListener(const int32_t protocolVersion)
     : protocolVersion_(protocolVersion)
 {
-    if ( !listen(QHostAddress::Any, port) )
+    if ( !listen() )
         qDebug("MockNetworkListener could not start listening!!");
 }
 

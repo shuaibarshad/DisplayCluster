@@ -50,8 +50,7 @@ class MockNetworkListener : public QTcpServer
     Q_OBJECT
 
 public:
-    MockNetworkListener(const unsigned short port,
-                        const int32_t protocolVersion = NETWORK_PROTOCOL_VERSION);
+    MockNetworkListener(const int32_t protocolVersion = NETWORK_PROTOCOL_VERSION);
     virtual ~MockNetworkListener();
 
 protected:
