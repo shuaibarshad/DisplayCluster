@@ -53,10 +53,10 @@ Mapper::Mapper()
 bool Mapper::addHandler(const std::string& pattern, HandlerPtr handler)
 {
     try {
-        MappingPair pair = std::make_pair(new boost::regex(pattern), handler);
+        MappingPair pair = std::make_pair(RegexPtr(new boost::regex(pattern)), handler);
         mappings.push_back(pair);
         return true;
-    } catch (boost::regex_error err) {
+    } catch (boost::regex_error&) {
         return false;
     }
 }

@@ -77,7 +77,7 @@ private:
     {
         ar & parameters;
 
-        int size;
+        int size = 0;
         ar & size;
         imageData.resize(size);
 

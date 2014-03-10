@@ -168,7 +168,7 @@ void PixelStream::render(const float tX, const float tY, const float tW, const f
     glPushMatrix();
     glScalef(1.f/(float)width_, 1.f/(float)height_, 0.f);
 
-    for(std::vector<PixelStreamSegmentRendererPtr>::iterator it=segmentRenderers_.begin(); it != segmentRenderers_.end(); it++)
+    for(std::vector<PixelStreamSegmentRendererPtr>::iterator it=segmentRenderers_.begin(); it != segmentRenderers_.end(); ++it)
     {
         if (isVisible( (*it)->getRect( )))
         {
@@ -213,7 +213,7 @@ bool PixelStream::isDecodingInProgress()
     int localThreadsRunning = 0;
 
     std::vector<PixelStreamSegmentDecoderPtr>::const_iterator it;
-    for (it = frameDecoders_.begin(); it != frameDecoders_.end(); it++)
+    for (it = frameDecoders_.begin(); it != frameDecoders_.end(); ++it)
     {
         if ((*it)->isRunning())
             ++localThreadsRunning;

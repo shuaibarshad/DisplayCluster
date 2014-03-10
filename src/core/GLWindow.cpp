@@ -55,9 +55,12 @@
 
 GLWindow::GLWindow(int tileIndex)
     : configuration_(static_cast<WallConfiguration*>(g_configuration))
+    , tileIndex_(tileIndex)
+    , left_(0)
+    , right_(0)
+    , bottom_(0)
+    , top_(0)
 {
-    tileIndex_ = tileIndex;
-
     // disable automatic buffer swapping
     setAutoBufferSwap(false);
 }
@@ -65,8 +68,12 @@ GLWindow::GLWindow(int tileIndex)
 GLWindow::GLWindow(int tileIndex, QRect windowRect, QGLWidget * shareWidget)
   : QGLWidget(0, shareWidget)
   , configuration_(static_cast<WallConfiguration*>(g_configuration))
+  , tileIndex_(tileIndex)
+  , left_(0)
+  , right_(0)
+  , bottom_(0)
+  , top_(0)
 {
-    tileIndex_ = tileIndex;
     setGeometry(windowRect);
 
     // make sure sharing succeeded
@@ -234,7 +241,7 @@ void GLWindow::renderContentWindows()
 
     const unsigned int windowCount = contentWindowManagers.size();
     unsigned int i = 0;
-    for(ContentWindowManagerPtrs::iterator it = contentWindowManagers.begin(); it != contentWindowManagers.end(); it++)
+    for(ContentWindowManagerPtrs::iterator it = contentWindowManagers.begin(); it != contentWindowManagers.end(); ++it)
     {
         // It is currently not possible to cull windows that are invisible as this conflics
         // with the "garbage collection" mechanism for Contents. In fact, "stale" objects are objects
@@ -260,7 +267,7 @@ void GLWindow::renderContentWindows()
 void GLWindow::renderMarkers()
 {
     MarkerPtrs markers = g_displayGroupManager->getMarkers();
-    for(MarkerPtrs::iterator it = markers.begin(); it != markers.end(); it++)
+    for(MarkerPtrs::iterator it = markers.begin(); it != markers.end(); ++it)
     {
         (*it)->render();
     }
