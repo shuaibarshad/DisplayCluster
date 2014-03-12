@@ -294,7 +294,7 @@ if(FCGI_name)
   endif()
 endif()
 
-set(DISPLAYCLUSTER_BUILD_DEBS autoconf;automake;cmake;cppcheck;doxygen;freeglut3-dev;git;git-review;git-svn;lcov;libavcodec-dev;libavformat-dev;libavutil-dev;libboost-date-time-dev;libboost-program-options-dev;libboost-regex-dev;libboost-serialization-dev;libboost-test-dev;libfcgi-dev;libjpeg-turbo8-dev;libopenmpi-dev;libpoppler-dev;libswscale-dev;libturbojpeg;libxmu-dev;ninja-build;openmpi-bin;pkg-config;subversion)
+set(DISPLAYCLUSTER_BUILD_DEBS autoconf;automake;cmake;doxygen;freeglut3-dev;git;git-review;libavcodec-dev;libavformat-dev;libavutil-dev;libboost-date-time-dev;libboost-program-options-dev;libboost-regex-dev;libboost-serialization-dev;libboost-test-dev;libfcgi-dev;libjpeg-turbo8-dev;libopenmpi-dev;libpoppler-dev;libswscale-dev;libturbojpeg;libxmu-dev;openmpi-bin;pkg-config;subversion)
 
 set(DISPLAYCLUSTER_DEPENDS Boost;LibJpegTurbo;Qt4;MPI;Poppler;GLUT;OpenGL;TUIO;FFMPEG;OpenMP;FCGI)
 
@@ -334,7 +334,7 @@ file(APPEND ${DEFINES_FILE_IN}
   "\n#endif\n")
 
 include(UpdateFile)
-update_file(${DEFINES_FILE_IN} ${DEFINES_FILE})
+configure_file(${DEFINES_FILE_IN} ${DEFINES_FILE} COPYONLY)
 if(Boost_FOUND) # another WAR for broken boost stuff...
   set(Boost_VERSION ${Boost_MAJOR_VERSION}.${Boost_MINOR_VERSION}.${Boost_SUBMINOR_VERSION})
 endif()

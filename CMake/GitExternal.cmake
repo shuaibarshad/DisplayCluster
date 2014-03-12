@@ -1,5 +1,5 @@
 # configures an external git repository
-# Usage: 
+# Usage:
 #  * Automatically reads, parses and updates a .gitexternals file if it only
 #    contains lines in the form "# <directory> <giturl> <gittag>".
 #    This function parses the file for this pattern and then calls
@@ -60,6 +60,8 @@ function(GIT_EXTERNAL DIR REPO TAG)
     if(nok)
       message(STATUS "${DIR} git checkout ${TAG} failed: ${error}\n")
     endif()
+  else()
+    message(STATUS "Can't update git external ${DIR}: Not a git repository")
   endif()
 endfunction()
 

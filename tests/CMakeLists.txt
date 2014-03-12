@@ -7,6 +7,11 @@
 
 # Change this number when adding tests to force a CMake run: 3
 
+set(CTEST_CUSTOM_WARNING_EXCEPTION ${CTEST_CUSTOM_WARNING_EXCEPTION}
+  # http://public.kitware.com/Bug/view.php?id=10179
+  "ld: warning: duplicate dylib")
+include(CTest)
+
 enable_testing()
 add_definitions(-DBOOST_TEST_DYN_LINK) # generates main() for unit tests
 

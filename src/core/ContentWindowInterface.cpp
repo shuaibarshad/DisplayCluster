@@ -45,12 +45,34 @@
 #include "EventReceiver.h"
 
 ContentWindowInterface::ContentWindowInterface()
-    : windowState_( UNSELECTED )
+    : contentWidth_(0)
+    , contentHeight_(0)
+    , x_(0)
+    , y_(0)
+    , w_(0)
+    , h_(0)
+    , centerX_(0)
+    , centerY_(0)
+    , zoom_(0)
+    , windowState_( UNSELECTED )
+    , sizeState_( SIZE_1TO1 )
+    , controlState_( STATE_PAUSED )
     , eventReceiversCount_( 0 )
 {}
 
 ContentWindowInterface::ContentWindowInterface(ContentWindowManagerPtr contentWindowManager)
-    : windowState_( UNSELECTED )
+    : contentWidth_(0)
+    , contentHeight_(0)
+    , x_(0)
+    , y_(0)
+    , w_(0)
+    , h_(0)
+    , centerX_(0)
+    , centerY_(0)
+    , zoom_(0)
+    , windowState_( UNSELECTED )
+    , sizeState_( SIZE_1TO1 )
+    , controlState_( STATE_PAUSED )
     , eventReceiversCount_( 0 )
 {
     contentWindowManager_ = contentWindowManager;
