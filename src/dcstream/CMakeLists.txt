@@ -36,9 +36,9 @@ set_target_properties(dcstream PROPERTIES
 
 # install library
 install(TARGETS dcstream
-    ARCHIVE DESTINATION lib COMPONENT dev
-    RUNTIME DESTINATION bin COMPONENT lib
-    LIBRARY DESTINATION lib COMPONENT lib)
+    ARCHIVE DESTINATION lib COMPONENT dev       # .a, .lib
+    RUNTIME DESTINATION bin COMPONENT dcstream  # .exe, .dll
+    LIBRARY DESTINATION lib COMPONENT dcstream) # .so, mod.dll
 
 # install headers
 install(FILES ${DCSTREAM_LIBRARY_PUBLIC_HEADERS} DESTINATION include/dc COMPONENT dev)

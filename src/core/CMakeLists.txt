@@ -226,8 +226,8 @@ set_target_properties(dccore PROPERTIES
   VERSION ${VERSION} SOVERSION ${VERSION_ABI} OUTPUT_NAME dccore)
 install(TARGETS dccore
     ARCHIVE DESTINATION lib COMPONENT dev
-    RUNTIME DESTINATION bin COMPONENT lib
-    LIBRARY DESTINATION lib COMPONENT lib)
+    RUNTIME DESTINATION bin COMPONENT core
+    LIBRARY DESTINATION lib COMPONENT core)
 
 # build Python module if Python support is enabled
 if(ENABLE_PYTHON_SUPPORT)
@@ -241,5 +241,5 @@ endif()
 
 # install Python module
 if(ENABLE_PYTHON_SUPPORT)
-  install(FILES ${CMAKE_BINARY_DIR}/pydc.so DESTINATION python COMPONENT lib)
+  install(FILES ${CMAKE_BINARY_DIR}/pydc.so DESTINATION python COMPONENT core)
 endif()
