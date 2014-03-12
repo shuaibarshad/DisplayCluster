@@ -265,14 +265,7 @@ void ContentWindowInterface::fixAspectRatio(ContentWindowInterface * source)
         coordinates_.setHeight( h );
 
         if(source == NULL || dynamic_cast<ContentWindowManager *>(this) != NULL)
-        {
-            if(source == NULL)
-            {
-                source = this;
-            }
-
             setSize(coordinates_.width(), coordinates_.height());
-        }
     }
 }
 
