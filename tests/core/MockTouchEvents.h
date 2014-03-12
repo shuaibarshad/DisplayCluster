@@ -1,5 +1,6 @@
 /*********************************************************************/
-/* Copyright (c) 2011 - 2012, The University of Texas at Austin.     */
+/* Copyright (c) 2014, EPFL/Blue Brain Project                       */
+/*                     Daniel Nachbaur <daniel.nachbaur@epfl.ch>     */
 /* All rights reserved.                                              */
 /*                                                                   */
 /* Redistribution and use in source and binary forms, with or        */
@@ -36,63 +37,72 @@
 /* or implied, of The University of Texas at Austin.                 */
 /*********************************************************************/
 
-#ifndef SERIALIZATION_HELPERS_H
-#define SERIALIZATION_HELPERS_H
+#ifndef MOCKTOUCHEVENTS_H
+#define MOCKTOUCHEVENTS_H
 
-#include <QColor>
-#include <QString>
-#include <QRectF>
+#include <QTouchEvent>
 
-#include <boost/serialization/nvp.hpp>
-#include <boost/serialization/split_free.hpp>
+const QSize widgetSize( 400, 400 );
+QMap< int, QTouchEvent::TouchPoint > touchPointMap;
 
-namespace boost
+QEvent* createTouchEvent( const int id, const QEvent::Type eventType,
+                          const Qt::TouchPointState state,
+                          const QPointF& normalizedPosition )
 {
-namespace serialization
-{
+    const QPoint position( widgetSize.width()  * normalizedPosition.x(),
+                           widgetSize.height() * normalizedPosition.y( ));
 
-template< class Archive >
-void serialize( Archive &ar, QColor& color, const unsigned int )
-{
-    unsigned char t;
-    t = color.red(); ar & t; color.setRed(t);
-    t = color.green(); ar & t; color.setGreen(t);
-    t = color.blue(); ar & t; color.setBlue(t);
-    t = color.alpha(); ar & t; color.setAlpha(t);
-}
+    const Qt::TouchPointStates touchPointStates = Qt::TouchPointPrimary | state;
+    QTouchEvent::TouchPoint touchPoint( id );
+    touchPoint.setPressure( 1.0 );
+    touchPoint.setNormalizedPos( normalizedPosition );
+    touchPoint.setPos( position );
+    touchPoint.setScenePos( normalizedPosition );
+    touchPoint.setScreenPos( position );
 
-template< class Archive >
-void save( Archive& ar, const QString& s, const unsigned int )
-{
-    std::string stdStr = s.toStdString();
-    ar << boost::serialization::make_nvp( "value", stdStr );
-}
+    switch( eventType )
+    {
+    case QEvent::TouchBegin:
+        touchPoint.setStartNormalizedPos( normalizedPosition );
+        touchPoint.setStartPos( touchPoint.pos( ));
+        touchPoint.setStartScreenPos( position );
+        touchPoint.setStartScenePos( touchPoint.scenePos( ));
 
-template< class Archive >
-void load( Archive& ar, QString& s, const unsigned int )
-{
-    std::string stdStr;
-    ar >> make_nvp( "value", stdStr );
-    s = QString::fromStdString(stdStr);
-}
+        touchPoint.setLastNormalizedPos( normalizedPosition );
+        touchPoint.setLastPos( touchPoint.pos( ));
+        touchPoint.setLastScreenPos( position );
+        touchPoint.setLastScenePos( touchPoint.scenePos( ));
+        break;
 
-template< class Archive >
-void serialize( Archive& ar, QString& s, const unsigned int version )
-{
-    boost::serialization::split_free( ar, s, version );
-}
+    case QEvent::TouchUpdate:
+    case QEvent::TouchEnd:
+    {
+        const QTouchEvent::TouchPoint& prevPoint = touchPointMap.value( id );
+        touchPoint.setStartNormalizedPos( prevPoint.startNormalizedPos( ));
+        touchPoint.setStartPos( prevPoint.startPos( ));
+        touchPoint.setStartScreenPos( prevPoint.startScreenPos( ));
+        touchPoint.setStartScenePos( prevPoint.startScenePos( ));
 
-template< class Archive >
-void serialize( Archive& ar, QRectF& rect, const unsigned int )
-{
-    qreal t;
-    t = rect.x(); ar & t; rect.setX(t);
-    t = rect.y(); ar & t; rect.setY(t);
-    t = rect.width(); ar & t; rect.setWidth(t);
-    t = rect.height(); ar & t; rect.setHeight(t);
-}
+        touchPoint.setLastNormalizedPos( prevPoint.normalizedPos( ));
+        touchPoint.setLastPos( prevPoint.pos( ));
+        touchPoint.setLastScreenPos( prevPoint.screenPos( ));
+        touchPoint.setLastScenePos( prevPoint.scenePos( ));
+        break;
+    }
+    default:
+        ;
+    }
 
-}
+    touchPointMap.insert( id, touchPoint );
+
+    QEvent* event = new QTouchEvent( eventType, QTouchEvent::TouchScreen,
+                                     Qt::NoModifier, touchPointStates,
+                                     touchPointMap.values( ));
+
+    if( eventType == QEvent::TouchEnd )
+        touchPointMap.remove( id );
+
+    return event;
 }
 
 #endif
