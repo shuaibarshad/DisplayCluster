@@ -296,7 +296,7 @@ ContentWindowManagerPtr DisplayGroupManager::getActiveWindow() const
     return contentWindowManagers_.back();
 }
 
-bool DisplayGroupManager::setBackgroundContentFromUri(const QString filename)
+bool DisplayGroupManager::setBackgroundContentFromUri(const QString& filename)
 {
     if(!filename.isEmpty())
     {
@@ -335,7 +335,7 @@ boost::shared_ptr<DisplayGroupInterface> DisplayGroupManager::getDisplayGroupInt
     return dgi;
 }
 
-void DisplayGroupManager::positionWindow(const QString uri, const QPointF position)
+void DisplayGroupManager::positionWindow(const QString& uri, const QPointF position)
 {
     ContentWindowManagerPtr contentWindow = getContentWindowManager(uri, CONTENT_TYPE_ANY);
     if (contentWindow)
@@ -349,7 +349,7 @@ void DisplayGroupManager::positionWindow(const QString uri, const QPointF positi
     }
 }
 
-void DisplayGroupManager::hideWindow(const QString uri)
+void DisplayGroupManager::hideWindow(const QString& uri)
 {
     ContentWindowManagerPtr contentWindow = getContentWindowManager(uri, CONTENT_TYPE_ANY);
     if (contentWindow)

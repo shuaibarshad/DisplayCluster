@@ -138,7 +138,7 @@ void ContentWindowManager::setDisplayGroupManager(DisplayGroupManagerPtr display
     {
         connect(this, SIGNAL(contentDimensionsChanged(int, int, ContentWindowInterface *)),
                 displayGroupManager.get(), SLOT(sendDisplayGroup()));
-        connect(this, SIGNAL(coordinatesChanged(double, double, double, double, ContentWindowInterface *)),
+        connect(this, SIGNAL(coordinatesChanged(QRectF, ContentWindowInterface *)),
                 displayGroupManager.get(), SLOT(sendDisplayGroup()));
         connect(this, SIGNAL(positionChanged(double, double, ContentWindowInterface *)),
                 displayGroupManager.get(), SLOT(sendDisplayGroup()));
@@ -186,20 +186,20 @@ void ContentWindowManager::close(ContentWindowInterface * source)
 
 QPointF ContentWindowManager::getWindowCenterPosition() const
 {
-    return QPointF(x_ + 0.5 * w_, y_ + 0.5 * h_);
+    return QPointF(coordinates_.x() + 0.5 * coordinates_.width(), coordinates_.y() + 0.5 * coordinates_.height());
 }
 
 void ContentWindowManager::centerPositionAround(const QPointF& position, const bool constrainToWindowBorders)
 {
-    double newX = position.x() - 0.5 * w_;
-    double newY = position.y() - 0.5 * h_;
+    double newX = position.x() - 0.5 * coordinates_.width();
+    double newY = position.y() - 0.5 * coordinates_.height();
 
     if (constrainToWindowBorders)
     {
-        if (newX + w_ > 1.0)
-            newX = 1.0-w_;
-        if (newY + h_ > 1.0)
-            newY = 1.0-h_;
+        if (newX + coordinates_.width() > 1.0)
+            newX = 1.0-coordinates_.width();
+        if (newY + coordinates_.height() > 1.0)
+            newY = 1.0-coordinates_.height();
 
         newX = std::max(0.0, newX);
         newY = std::max(0.0, newY);
@@ -247,8 +247,8 @@ void ContentWindowManager::render()
             glColor4f(1,1,1,1);
         }
 
-        GLWindow::drawRectangle(x_-verticalBorder, y_-horizontalBorder,
-                                w_+2.*verticalBorder, h_+2.*horizontalBorder);
+        GLWindow::drawRectangle(coordinates_.x()-verticalBorder, coordinates_.y()-horizontalBorder,
+                                coordinates_.width()+2.*verticalBorder, coordinates_.height()+2.*horizontalBorder);
 
         glPopAttrib();
     }

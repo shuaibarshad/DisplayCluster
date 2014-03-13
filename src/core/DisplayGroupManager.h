@@ -98,7 +98,7 @@ class DisplayGroupManager : public DisplayGroupInterface, public boost::enable_s
         QColor getBackgroundColor() const;
         void setBackgroundColor(QColor color);
 
-        bool setBackgroundContentFromUri(const QString filename);
+        bool setBackgroundContentFromUri(const QString& filename);
         void setBackgroundContentWindowManager(ContentWindowManagerPtr contentWindowManager);
         ContentWindowManagerPtr getBackgroundContentWindowManager() const;
 
@@ -128,14 +128,14 @@ public slots:
          * @param uri Window identifier
          * @param position The position of the center of the window
          */
-        void positionWindow( const QString uri, const QPointF position );
+        void positionWindow( const QString& uri, const QPointF position );
 
         /**
          * Hide a ContentWindowManager.
          *
          * @param uri Window identifier
          */
-        void hideWindow( const QString uri );
+        void hideWindow( const QString& uri );
 
         void receiveMessages();
 

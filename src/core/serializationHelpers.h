@@ -39,8 +39,9 @@
 #ifndef SERIALIZATION_HELPERS_H
 #define SERIALIZATION_HELPERS_H
 
-#include <QtGui/QColor>
-#include <QtCore/QString>
+#include <QColor>
+#include <QString>
+#include <QRectF>
 
 #include <boost/serialization/nvp.hpp>
 #include <boost/serialization/split_free.hpp>
@@ -79,6 +80,16 @@ template< class Archive >
 void serialize( Archive& ar, QString& s, const unsigned int version )
 {
     boost::serialization::split_free( ar, s, version );
+}
+
+template< class Archive >
+void serialize( Archive& ar, QRectF& rect, const unsigned int )
+{
+    qreal t;
+    t = rect.x(); ar & t; rect.setX(t);
+    t = rect.y(); ar & t; rect.setY(t);
+    t = rect.width(); ar & t; rect.setWidth(t);
+    t = rect.height(); ar & t; rect.setHeight(t);
 }
 
 }

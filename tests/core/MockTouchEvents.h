@@ -1,5 +1,6 @@
 /*********************************************************************/
-/* Copyright (c) 2011 - 2012, The University of Texas at Austin.     */
+/* Copyright (c) 2014, EPFL/Blue Brain Project                       */
+/*                     Daniel Nachbaur <daniel.nachbaur@epfl.ch>     */
 /* All rights reserved.                                              */
 /*                                                                   */
 /* Redistribution and use in source and binary forms, with or        */
@@ -36,91 +37,72 @@
 /* or implied, of The University of Texas at Austin.                 */
 /*********************************************************************/
 
-#ifndef PIXEL_STREAM_SEGMENT_RENDERER_H
-#define PIXEL_STREAM_SEGMENT_RENDERER_H
+#ifndef MOCKTOUCHEVENTS_H
+#define MOCKTOUCHEVENTS_H
 
-#include <QGLWidget>
-#include <boost/noncopyable.hpp>
+#include <QTouchEvent>
 
-class FpsCounter;
+const QSize widgetSize( 400, 400 );
+QMap< int, QTouchEvent::TouchPoint > touchPointMap;
 
-/**
- * Render a single PixelStream Segment
- *
- * This class is a texture renderer specialized for PixelStreamSegments
- */
-class PixelStreamSegmentRenderer : public boost::noncopyable
+QEvent* createTouchEvent( const int id, const QEvent::Type eventType,
+                          const Qt::TouchPointState state,
+                          const QPointF& normalizedPosition )
 {
-public:
-    /** Construct a renderer.
-     * @param Unique identifier for the stream to which this segment belongs
-     */
-    PixelStreamSegmentRenderer(const QString& uri);
+    const QPoint position( widgetSize.width()  * normalizedPosition.x(),
+                           widgetSize.height() * normalizedPosition.y( ));
 
-    /** Destruct a renderer. */
-    ~PixelStreamSegmentRenderer();
+    const Qt::TouchPointStates touchPointStates = Qt::TouchPointPrimary | state;
+    QTouchEvent::TouchPoint touchPoint( id );
+    touchPoint.setPressure( 1.0 );
+    touchPoint.setNormalizedPos( normalizedPosition );
+    touchPoint.setPos( position );
+    touchPoint.setScenePos( normalizedPosition );
+    touchPoint.setScreenPos( position );
 
-    /** Get the position and dimensions of this segment */
-    QRect getRect() const;
+    switch( eventType )
+    {
+    case QEvent::TouchBegin:
+        touchPoint.setStartNormalizedPos( normalizedPosition );
+        touchPoint.setStartPos( touchPoint.pos( ));
+        touchPoint.setStartScreenPos( position );
+        touchPoint.setStartScenePos( touchPoint.scenePos( ));
 
-    /**
-     * Update the texture.
-     *
-     * This call is blocking (texture upload to GPU).
-     * @param image The new texture to upload, in (GL_)RGBA format.
-     */
-    void updateTexture(const QImage &image);
+        touchPoint.setLastNormalizedPos( normalizedPosition );
+        touchPoint.setLastPos( touchPoint.pos( ));
+        touchPoint.setLastScreenPos( position );
+        touchPoint.setLastScenePos( touchPoint.scenePos( ));
+        break;
 
-    /** Has the texture been marked as oudated with setTextureOutdated() */
-    bool textureNeedsUpdate() const;
+    case QEvent::TouchUpdate:
+    case QEvent::TouchEnd:
+    {
+        const QTouchEvent::TouchPoint& prevPoint = touchPointMap.value( id );
+        touchPoint.setStartNormalizedPos( prevPoint.startNormalizedPos( ));
+        touchPoint.setStartPos( prevPoint.startPos( ));
+        touchPoint.setStartScreenPos( prevPoint.startScreenPos( ));
+        touchPoint.setStartScenePos( prevPoint.startScenePos( ));
 
-    /** Mark the texture as being outdated */
-    void setTextureNeedsUpdate();
+        touchPoint.setLastNormalizedPos( prevPoint.normalizedPos( ));
+        touchPoint.setLastPos( prevPoint.pos( ));
+        touchPoint.setLastScreenPos( prevPoint.screenPos( ));
+        touchPoint.setLastScenePos( prevPoint.scenePos( ));
+        break;
+    }
+    default:
+        ;
+    }
 
-    /**
-     * Set the paramters for this segment.
-     * @param x Position of the segement in pixels. (0,0) == top-left of the stream.
-     * @param y Position of the segement in pixels. (0,0) == top-left of the stream.
-     * @param width Width of the segment in pixels.
-     * @param height Height of the segment in pixels.
-     */
-    void setParameters(const unsigned int x, const unsigned int y,
-                       const unsigned int width, const unsigned int height);
+    touchPointMap.insert( id, touchPoint );
 
-    /**
-     * Render the current texture.
-     *
-     * Assume that the GL matrices have been set to the normalized dimensions of the stream.
-     * @param showSegmentBorders Show the segment boders
-     * @param showStatistics Show the statistics for this segment
-     * @return true on successful render; false if no texture available.
-     */
-    bool render(bool showSegmentBorders, bool showSegmentStatistics);
+    QEvent* event = new QTouchEvent( eventType, QTouchEvent::TouchScreen,
+                                     Qt::NoModifier, touchPointStates,
+                                     touchPointMap.values( ));
 
-private:
-    // pixel stream identifier
-    QString uri_;
+    if( eventType == QEvent::TouchEnd )
+        touchPointMap.remove( id );
 
-    // texture
-    GLuint textureId_;
-    int textureWidth_;
-    int textureHeight_;
-
-    // Segment position
-    unsigned int x_, y_;
-    // Segment dimensions
-    unsigned int width_, height_;
-
-    // Statistics
-    FpsCounter* segmentStatistics;
-
-    // Status
-    bool textureNeedsUpdate_;
-
-    // Rendering
-    void drawUnitTexturedQuad(float tX, float tY, float tW, float tH);
-    void drawSegmentBorders();
-    void drawSegmentStatistics();
-};
+    return event;
+}
 
 #endif
