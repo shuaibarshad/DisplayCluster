@@ -1,6 +1,6 @@
 /*********************************************************************/
-/* Copyright (c) 2013, EPFL/Blue Brain Project                       */
-/*                     Raphael Dumusc <raphael.dumusc@epfl.ch>       */
+/* Copyright (c) 2014, EPFL/Blue Brain Project                       */
+/*                     Daniel Nachbaur <daniel.nachbaur@epfl.ch>     */
 /* All rights reserved.                                              */
 /*                                                                   */
 /* Redistribution and use in source and binary forms, with or        */
@@ -37,30 +37,29 @@
 /* or implied, of The University of Texas at Austin.                 */
 /*********************************************************************/
 
-#ifndef MINIMALGLOBALQTAPP_H
-#define MINIMALGLOBALQTAPP_H
+#ifndef MINIMALGLOBALQTAPPMPI_H
+#define MINIMALGLOBALQTAPPMPI_H
 
-#include <QCoreApplication>
-#include <boost/noncopyable.hpp>
+#include "MinimalGlobalQtApp.h"
+#include <mpi.h>
 
 // We need a global fixture because a bug in QApplication prevents
 // deleting then recreating a QApplication in the same process.
 // https://bugreports.qt-project.org/browse/QTBUG-7104
-struct MinimalGlobalQtApp : public boost::noncopyable
+struct MinimalGlobalQtAppMPI : public MinimalGlobalQtApp
 {
-    MinimalGlobalQtApp()
-        : app( 0 )
+    MinimalGlobalQtAppMPI()
+        : MinimalGlobalQtApp()
     {
-        // need QApplication to instantiate WebkitPixelStreamer
         ut::master_test_suite_t& testSuite = ut::framework::master_test_suite();
-        app = new QCoreApplication( testSuite.argc, testSuite.argv );
+        MPI_Init( &testSuite.argc, &testSuite.argv );
     }
-    virtual ~MinimalGlobalQtApp()
+    ~MinimalGlobalQtAppMPI()
     {
-        delete app;
+        MPI_Finalize();
     }
 
     QCoreApplication* app;
 };
 
-#endif // MINIMALGLOBALQTAPP_H
+#endif // MINIMALGLOBALQTAPPMPI_H

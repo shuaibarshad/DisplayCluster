@@ -70,6 +70,7 @@ if(BUILD_CORE_LIBRARY)
     core/CommandLineOptionsTests.cpp
     core/CommandTests.cpp
     core/ConfigurationTests.cpp
+    core/ContentWindowManagerTests.cpp
     core/DockToolbarTests.cpp
     core/DoubleTapGestureTests.cpp
     core/LocalPixelStreamerTests.cpp
