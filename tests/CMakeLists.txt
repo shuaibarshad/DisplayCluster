@@ -5,7 +5,10 @@
 # Generates executables for the unit tests and defines a "tests" make target
 # which runs all of them.
 
-# Change this number when adding tests to force a CMake run: 3
+set(CTEST_CUSTOM_WARNING_EXCEPTION ${CTEST_CUSTOM_WARNING_EXCEPTION}
+  # http://public.kitware.com/Bug/view.php?id=10179
+  "ld: warning: duplicate dylib")
+include(CTest)
 
 enable_testing()
 add_definitions(-DBOOST_TEST_DYN_LINK) # generates main() for unit tests
@@ -68,6 +71,7 @@ if(BUILD_CORE_LIBRARY)
     core/CommandTests.cpp
     core/ConfigurationTests.cpp
     core/DockToolbarTests.cpp
+    core/DoubleTapGestureTests.cpp
     core/LocalPixelStreamerTests.cpp
     core/PixelStreamBufferTests.cpp
     core/TextInputHandlerTests.cpp

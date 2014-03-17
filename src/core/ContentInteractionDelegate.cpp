@@ -131,17 +131,13 @@ void ContentInteractionDelegate::gestureEvent( QGestureEvent* event )
 void ContentInteractionDelegate::tapAndHoldUnselected(QTapAndHoldGesture *gesture)
 {
     if( gesture->state() == Qt::GestureFinished )
-    {
         contentWindowManager_.toggleWindowState();
-    }
 }
 
 void ContentInteractionDelegate::doubleTapUnselected(DoubleTapGesture *gesture)
 {
     if( gesture->state() == Qt::GestureFinished )
-    {
-        contentWindowManager_.adjustSize( contentWindowManager_.getSizeState() == SIZE_FULLSCREEN ? SIZE_1TO1 : SIZE_FULLSCREEN );
-    }
+        contentWindowManager_.toggleFullscreen();
 }
 
 void ContentInteractionDelegate::panUnselected(PanGesture *gesture)

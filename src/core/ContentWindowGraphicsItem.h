@@ -57,7 +57,7 @@ class ContentWindowGraphicsItem : public QGraphicsObject, public ContentWindowIn
 
         // re-implemented ContentWindowInterface slots
         virtual void adjustSize( const SizeState state, ContentWindowInterface * source=NULL );
-        virtual void setCoordinates(double x, double y, double w, double h, ContentWindowInterface * source=NULL);
+        virtual void setCoordinates(QRectF coordinates, ContentWindowInterface * source=NULL);
         virtual void setPosition(double x, double y, ContentWindowInterface * source=NULL);
         virtual void setSize(double w, double h, ContentWindowInterface * source=NULL);
         virtual void setCenter(double centerX, double centerY, ContentWindowInterface * source=NULL);

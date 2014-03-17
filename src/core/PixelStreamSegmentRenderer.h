@@ -40,6 +40,7 @@
 #define PIXEL_STREAM_SEGMENT_RENDERER_H
 
 #include <QGLWidget>
+#include <boost/noncopyable.hpp>
 
 class FpsCounter;
 
@@ -48,7 +49,7 @@ class FpsCounter;
  *
  * This class is a texture renderer specialized for PixelStreamSegments
  */
-class PixelStreamSegmentRenderer
+class PixelStreamSegmentRenderer : public boost::noncopyable
 {
 public:
     /** Construct a renderer.

@@ -1,6 +1,6 @@
 /*********************************************************************/
-/* Copyright (c) 2013, EPFL/Blue Brain Project                       */
-/*                     Raphael Dumusc <raphael.dumusc@epfl.ch>       */
+/* Copyright (c) 2014, EPFL/Blue Brain Project                       */
+/*                     Daniel Nachbaur <daniel.nachbaur@epfl.ch>     */
 /* All rights reserved.                                              */
 /*                                                                   */
 /* Redistribution and use in source and binary forms, with or        */
@@ -37,38 +37,72 @@
 /* or implied, of The University of Texas at Austin.                 */
 /*********************************************************************/
 
-#ifndef GLOBALQTAPP_H
-#define GLOBALQTAPP_H
+#ifndef MOCKTOUCHEVENTS_H
+#define MOCKTOUCHEVENTS_H
 
-#include <QApplication>
-#include <boost/noncopyable.hpp>
+#include <QTouchEvent>
 
-#include "glxDisplay.h"
+const QSize widgetSize( 400, 400 );
+QMap< int, QTouchEvent::TouchPoint > touchPointMap;
 
-#define CONFIG_TEST_FILENAME "configuration.xml"
-
-// We need a global fixture because a bug in QApplication prevents
-// deleting then recreating a QApplication in the same process.
-// https://bugreports.qt-project.org/browse/QTBUG-7104
-struct GlobalQtApp : public boost::noncopyable
+QEvent* createTouchEvent( const int id, const QEvent::Type eventType,
+                          const Qt::TouchPointState state,
+                          const QPointF& normalizedPosition )
 {
-    GlobalQtApp()
-        : app( 0 )
+    const QPoint position( widgetSize.width()  * normalizedPosition.x(),
+                           widgetSize.height() * normalizedPosition.y( ));
+
+    const Qt::TouchPointStates touchPointStates = Qt::TouchPointPrimary | state;
+    QTouchEvent::TouchPoint touchPoint( id );
+    touchPoint.setPressure( 1.0 );
+    touchPoint.setNormalizedPos( normalizedPosition );
+    touchPoint.setPos( position );
+    touchPoint.setScenePos( normalizedPosition );
+    touchPoint.setScreenPos( position );
+
+    switch( eventType )
     {
-        if( !hasGLXDisplay( ))
-          return;
+    case QEvent::TouchBegin:
+        touchPoint.setStartNormalizedPos( normalizedPosition );
+        touchPoint.setStartPos( touchPoint.pos( ));
+        touchPoint.setStartScreenPos( position );
+        touchPoint.setStartScenePos( touchPoint.scenePos( ));
 
-        // need QApplication to instantiate WebkitPixelStreamer
-        ut::master_test_suite_t& testSuite = ut::framework::master_test_suite();
-        app = new QApplication( testSuite.argc, testSuite.argv );
-    }
-    ~GlobalQtApp()
+        touchPoint.setLastNormalizedPos( normalizedPosition );
+        touchPoint.setLastPos( touchPoint.pos( ));
+        touchPoint.setLastScreenPos( position );
+        touchPoint.setLastScenePos( touchPoint.scenePos( ));
+        break;
+
+    case QEvent::TouchUpdate:
+    case QEvent::TouchEnd:
     {
-        delete app;
+        const QTouchEvent::TouchPoint& prevPoint = touchPointMap.value( id );
+        touchPoint.setStartNormalizedPos( prevPoint.startNormalizedPos( ));
+        touchPoint.setStartPos( prevPoint.startPos( ));
+        touchPoint.setStartScreenPos( prevPoint.startScreenPos( ));
+        touchPoint.setStartScenePos( prevPoint.startScenePos( ));
+
+        touchPoint.setLastNormalizedPos( prevPoint.normalizedPos( ));
+        touchPoint.setLastPos( prevPoint.pos( ));
+        touchPoint.setLastScreenPos( prevPoint.screenPos( ));
+        touchPoint.setLastScenePos( prevPoint.scenePos( ));
+        break;
+    }
+    default:
+        ;
     }
 
-    QApplication* app;
-};
+    touchPointMap.insert( id, touchPoint );
 
+    QEvent* event = new QTouchEvent( eventType, QTouchEvent::TouchScreen,
+                                     Qt::NoModifier, touchPointStates,
+                                     touchPointMap.values( ));
 
-#endif // GLOBALQTAPP_H
+    if( eventType == QEvent::TouchEnd )
+        touchPointMap.remove( id );
+
+    return event;
+}
+
+#endif

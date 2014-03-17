@@ -41,11 +41,12 @@
 #define MINIMALGLOBALQTAPP_H
 
 #include <QCoreApplication>
+#include <boost/noncopyable.hpp>
 
 // We need a global fixture because a bug in QApplication prevents
 // deleting then recreating a QApplication in the same process.
 // https://bugreports.qt-project.org/browse/QTBUG-7104
-struct MinimalGlobalQtApp
+struct MinimalGlobalQtApp : public boost::noncopyable
 {
     MinimalGlobalQtApp()
         : app( 0 )

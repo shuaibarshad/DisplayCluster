@@ -83,7 +83,7 @@ bool PixelStreamBuffer::hasFrameComplete() const
     assert(!sourceBuffers_.empty());
 
     // Check if all sources for Stream have reached the same index
-    for(SourceBufferMap::const_iterator it = sourceBuffers_.begin(); it != sourceBuffers_.end(); it++)
+    for(SourceBufferMap::const_iterator it = sourceBuffers_.begin(); it != sourceBuffers_.end(); ++it)
     {
         if (it->second.frameIndex <= lastFrameComplete_)
             return false;
@@ -99,7 +99,7 @@ bool PixelStreamBuffer::isFirstFrame() const
 PixelStreamSegments PixelStreamBuffer::getFrame()
 {
     PixelStreamSegments frame;
-    for(SourceBufferMap::iterator it = sourceBuffers_.begin(); it != sourceBuffers_.end(); it++)
+    for(SourceBufferMap::iterator it = sourceBuffers_.begin(); it != sourceBuffers_.end(); ++it)
     {
         SourceBuffer& buffer = it->second;
         frame.insert(frame.end(), buffer.segments.front().begin(), buffer.segments.front().end());
@@ -113,7 +113,7 @@ QSize PixelStreamBuffer::getFrameSize() const
 {
     QSize size(0,0);
 
-    for(SourceBufferMap::const_iterator it = sourceBuffers_.begin(); it != sourceBuffers_.end(); it++)
+    for(SourceBufferMap::const_iterator it = sourceBuffers_.begin(); it != sourceBuffers_.end(); ++it)
     {
         const SourceBuffer& buffer = it->second;
         if (!buffer.segments.empty())

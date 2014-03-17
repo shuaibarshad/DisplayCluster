@@ -95,7 +95,7 @@ ContentWindowManagerPtr DisplayGroupInterface::getContentWindowManager(const QSt
 void DisplayGroupInterface::setContentWindowManagers(ContentWindowManagerPtrs contentWindowManagers)
 {
     // remove existing content window managers
-    while(contentWindowManagers_.size() > 0)
+    while(!contentWindowManagers_.empty())
     {
         removeContentWindowManager(contentWindowManagers_[0]);
     }

@@ -82,7 +82,7 @@ bool Stream::send(const ImageWrapper& image)
 
     bool allSuccess = true;
     for( PixelStreamSegments::const_iterator it = segments.begin();
-         it!=segments.end(); it++)
+         it!=segments.end(); ++it)
     {
         if( !impl_->sendPixelStreamSegment( *it ))
             allSuccess = false;

@@ -765,7 +765,7 @@ void MainWindow::updateGLWindows()
     g_displayGroupManager->advanceContents();
 
     // clear old factory objects and purge any textures
-    if(glWindows_.size() > 0)
+    if(!glWindows_.empty())
     {
         glWindows_[0]->getTextureFactory().clearStaleObjects();
         glWindows_[0]->getDynamicTextureFactory().clearStaleObjects();

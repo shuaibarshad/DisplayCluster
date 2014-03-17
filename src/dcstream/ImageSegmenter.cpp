@@ -118,7 +118,7 @@ PixelStreamSegments ImageSegmenter::generateJpegSegments(
     // Temporary segment wrappers for compression
     {
         std::vector<SegmentCompressionWrapper> segmentWrappers;
-        for (PixelStreamSegments::iterator it = segments.begin(); it != segments.end(); it++)
+        for (PixelStreamSegments::iterator it = segments.begin(); it != segments.end(); ++it)
         {
             segmentWrappers.push_back(SegmentCompressionWrapper(*it, image));
         }
@@ -137,7 +137,7 @@ PixelStreamSegments ImageSegmenter::generateRawSegments(const ImageWrapper &imag
     // The resulting Raw segments
     PixelStreamSegments segments;
 
-    for (SegmentParameters::const_iterator it = segmentParams.begin(); it != segmentParams.end(); it++)
+    for (SegmentParameters::const_iterator it = segmentParams.begin(); it != segmentParams.end(); ++it)
     {
         PixelStreamSegment segment;
         segment.parameters = *it;
