@@ -110,9 +110,9 @@ void DisplayGroupGraphicsScene::refreshTileRects()
     }
 }
 
-bool DisplayGroupGraphicsScene::event(QEvent *event)
+bool DisplayGroupGraphicsScene::event(QEvent *evt)
 {
-    switch( event->type())
+    switch( evt->type())
     {
     case QEvent::TouchBegin:
     case QEvent::TouchUpdate:
@@ -120,7 +120,7 @@ bool DisplayGroupGraphicsScene::event(QEvent *event)
     {
         if( g_displayGroupManager->getOptions()->getShowTouchPoints( ))
         {
-            QTouchEvent* touchEvent = static_cast< QTouchEvent* >( event );
+            QTouchEvent* touchEvent = static_cast< QTouchEvent* >( evt );
 
             while( markers_.size() < size_t( touchEvent->touchPoints().size( )))
                 markers_.push_back( g_displayGroupManager->getNewMarker());
@@ -131,11 +131,11 @@ bool DisplayGroupGraphicsScene::event(QEvent *event)
                                          touchEvent->touchPoints()[i].normalizedPos().y());
             }
         }
-        return QGraphicsScene::event(event);
+        return QGraphicsScene::event(evt);
     }
     case QEvent::KeyPress:
     {
-        QKeyEvent *k = static_cast<QKeyEvent*>(event);
+        QKeyEvent *k = static_cast<QKeyEvent*>(evt);
 
         // Override default behaviour to process TAB key events
         QGraphicsScene::keyPressEvent(k);
@@ -144,32 +144,32 @@ bool DisplayGroupGraphicsScene::event(QEvent *event)
             k->key() == Qt::Key_Tab ||
            (k->key() == Qt::Key_Tab && (k->modifiers() & Qt::ShiftModifier)))
         {
-            event->accept();
+            evt->accept();
         }
         return true;
     }
     default:
-        return QGraphicsScene::event(event);
+        return QGraphicsScene::event(evt);
     }
 }
 
-void DisplayGroupGraphicsScene::mouseMoveEvent(QGraphicsSceneMouseEvent * event)
+void DisplayGroupGraphicsScene::mouseMoveEvent(QGraphicsSceneMouseEvent * mouseEvent)
 {
-    markers_[0]->setPosition(event->scenePos().x(), event->scenePos().y());
+    markers_[0]->setPosition(mouseEvent->scenePos().x(), mouseEvent->scenePos().y());
 
-    QGraphicsScene::mouseMoveEvent(event);
+    QGraphicsScene::mouseMoveEvent(mouseEvent);
 }
 
-void DisplayGroupGraphicsScene::mousePressEvent(QGraphicsSceneMouseEvent * event)
+void DisplayGroupGraphicsScene::mousePressEvent(QGraphicsSceneMouseEvent * mouseEvent)
 {
-    markers_[0]->setPosition(event->scenePos().x(), event->scenePos().y());
+    markers_[0]->setPosition(mouseEvent->scenePos().x(), mouseEvent->scenePos().y());
 
-    QGraphicsScene::mousePressEvent(event);
+    QGraphicsScene::mousePressEvent(mouseEvent);
 }
 
-void DisplayGroupGraphicsScene::mouseReleaseEvent(QGraphicsSceneMouseEvent * event)
+void DisplayGroupGraphicsScene::mouseReleaseEvent(QGraphicsSceneMouseEvent * mouseEvent)
 {
-    markers_[0]->setPosition(event->scenePos().x(), event->scenePos().y());
+    markers_[0]->setPosition(mouseEvent->scenePos().x(), mouseEvent->scenePos().y());
 
-    QGraphicsScene::mouseReleaseEvent(event);
+    QGraphicsScene::mouseReleaseEvent(mouseEvent);
 }

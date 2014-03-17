@@ -104,7 +104,7 @@ const QString& MasterConfiguration::getDockStartDir() const
     return dockStartDir_;
 }
 
-const int MasterConfiguration::getWebServicePort() const
+int MasterConfiguration::getWebServicePort() const
 {
     return dcWebServicePort_;
 }

@@ -68,7 +68,7 @@ const QStringList& DynamicTextureContent::getSupportedExtensions()
     return extensions;
 }
 
-void DynamicTextureContent::advance(ContentWindowManagerPtr window)
+void DynamicTextureContent::advance(ContentWindowManagerPtr)
 {
     if( blockAdvance_ )
         return;

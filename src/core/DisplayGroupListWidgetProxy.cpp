@@ -92,17 +92,12 @@ void DisplayGroupListWidgetProxy::moveContentWindowManagerToFront(ContentWindowM
     }
 }
 
-void DisplayGroupListWidgetProxy::moveListWidgetItemToFront(QListWidgetItem * item)
+void DisplayGroupListWidgetProxy::moveListWidgetItemToFront(QListWidgetItem* item)
 {
-    ContentWindowListWidgetItem * cwlwi = dynamic_cast<ContentWindowListWidgetItem *>(listWidget_->takeItem(listWidget_->currentRow()));
+    ContentWindowListWidgetItem * contentWindowItem = dynamic_cast<ContentWindowListWidgetItem *>(item);
 
-    if(cwlwi != NULL)
-    {
-        cwlwi->moveToFront();
-
-        // just move the item to the top of the list, rather than refresh the entire list...
-        listWidget_->insertItem(0, cwlwi);
-    }
+    if(contentWindowItem)
+        contentWindowItem->moveToFront();
 }
 
 void DisplayGroupListWidgetProxy::refreshListWidget()

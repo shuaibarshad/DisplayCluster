@@ -74,8 +74,8 @@ MainWindow::MainWindow()
 
     // Receive changes from the selection rectangle
     connect(desktopSelectionWindow_->getDesktopSelectionView()->getDesktopSelectionRectangle(),
-            SIGNAL(coordinatesChanged(int,int,int,int)),
-            this, SLOT(setCoordinates(int,int,int,int)));
+            SIGNAL(coordinatesChanged(QRect coordinates)),
+            this, SLOT(setCoordinates(QRect coordinates)));
 
     connect(desktopSelectionWindow_, SIGNAL(windowVisible(bool)), showDesktopSelectionWindowAction_, SLOT(setChecked(bool)));
 }
@@ -90,8 +90,8 @@ void MainWindow::generateCursorImage()
 void MainWindow::setupUI()
 {
     QWidget * widget = new QWidget();
-    QFormLayout * layout = new QFormLayout();
-    widget->setLayout(layout);
+    QFormLayout * formLayout = new QFormLayout();
+    widget->setLayout(formLayout);
 
     setCentralWidget(widget);
 
@@ -130,15 +130,15 @@ void MainWindow::setupUI()
     frameRateSpinBox_.setValue(24);
 
     // add widgets to UI
-    layout->addRow("Hostname", &hostnameLineEdit_);
-    layout->addRow("Stream name", &uriLineEdit_);
-    layout->addRow("X", &xSpinBox_);
-    layout->addRow("Y", &ySpinBox_);
-    layout->addRow("Width", &widthSpinBox_);
-    layout->addRow("Height", &heightSpinBox_);
-    layout->addRow("Retina Display", &retinaBox_);
-    layout->addRow("Max frame rate", &frameRateSpinBox_);
-    layout->addRow("Actual frame rate", &frameRateLabel_);
+    formLayout->addRow("Hostname", &hostnameLineEdit_);
+    formLayout->addRow("Stream name", &uriLineEdit_);
+    formLayout->addRow("X", &xSpinBox_);
+    formLayout->addRow("Y", &ySpinBox_);
+    formLayout->addRow("Width", &widthSpinBox_);
+    formLayout->addRow("Height", &heightSpinBox_);
+    formLayout->addRow("Retina Display", &retinaBox_);
+    formLayout->addRow("Max frame rate", &frameRateSpinBox_);
+    formLayout->addRow("Actual frame rate", &frameRateLabel_);
 
     // share desktop action
     shareDesktopAction_ = new QAction("Share Desktop", this);
@@ -202,22 +202,22 @@ void MainWindow::handleStreamingError(const QString& errorMessage)
 
 }
 
-void MainWindow::closeEvent( QCloseEvent* event )
+void MainWindow::closeEvent( QCloseEvent* closeEvt )
 {
     delete desktopSelectionWindow_;
     desktopSelectionWindow_ = 0;
 
     stopStreaming();
 
-    QMainWindow::closeEvent( event );
+    QMainWindow::closeEvent( closeEvt );
 }
 
-void MainWindow::setCoordinates(int x, int y, int width, int height)
+void MainWindow::setCoordinates(const QRect coordinates)
 {
-    xSpinBox_.setValue(x);
-    ySpinBox_.setValue(y);
-    widthSpinBox_.setValue(width);
-    heightSpinBox_.setValue(height);
+    xSpinBox_.setValue(coordinates.x());
+    ySpinBox_.setValue(coordinates.y());
+    widthSpinBox_.setValue(coordinates.width());
+    heightSpinBox_.setValue(coordinates.height());
 
     // the spinboxes only update the UI; we must update the actual values too
     x_ = xSpinBox_.value();
@@ -335,5 +335,6 @@ void MainWindow::updateCoordinates()
 
     generateCursorImage();
 
-    desktopSelectionWindow_->getDesktopSelectionView()->getDesktopSelectionRectangle()->setCoordinates( x_, y_, width_, height_ );
+    const QRect coordinates(x_, y_, width_, height_);
+    desktopSelectionWindow_->getDesktopSelectionView()->getDesktopSelectionRectangle()->setCoordinates(coordinates);
 }

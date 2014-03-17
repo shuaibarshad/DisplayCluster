@@ -52,10 +52,10 @@ MockNetworkListener::~MockNetworkListener()
 {
 }
 
-void MockNetworkListener::incomingConnection(int socketDescriptor)
+void MockNetworkListener::incomingConnection(int handle)
 {
     QTcpSocket tcpSocket;
-    tcpSocket.setSocketDescriptor(socketDescriptor);
+    tcpSocket.setSocketDescriptor(handle);
 
     // Handshake -> send network protocol version
     tcpSocket.write((char *)&protocolVersion_, sizeof(int32_t));

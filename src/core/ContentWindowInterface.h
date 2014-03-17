@@ -123,7 +123,7 @@ class ContentWindowInterface : public QObject
         ControlState getControlState() const { return controlState_; }
 
         /** Get the last event for this window. */
-        Event getEvent();
+        Event getEvent() const;
 
         /** Toggle the window state. */
         void toggleWindowState();
@@ -210,7 +210,7 @@ class ContentWindowInterface : public QObject
         ContentWindowInterface::WindowState windowState_;
 
         // Window interaction
-        Event event_;
+        Event latestEvent_;
 
         SizeState sizeState_;
 

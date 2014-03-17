@@ -116,10 +116,6 @@ class DisplayGroupManager : public DisplayGroupInterface, public boost::enable_s
         ContentWindowManagerPtr getActiveWindow() const;
 
 public slots:
-
-        // this can be invoked from other threads to construct a DisplayGroupInterface and move it to that thread
-        boost::shared_ptr<DisplayGroupInterface> getDisplayGroupInterface(QThread * thread);
-
         /**
          * Position a ContentWindowManager.
          *
@@ -206,7 +202,7 @@ public slots:
 
         // ranks 1-n recieve data through MPI
         void receiveDisplayGroup(const MessageHeader& messageHeader);
-        void receiveContentsDimensionsRequest(const MessageHeader& messageHeader);
+        void receiveContentsDimensionsRequest();
         void receivePixelStreams(const MessageHeader& messageHeader);
 };
 

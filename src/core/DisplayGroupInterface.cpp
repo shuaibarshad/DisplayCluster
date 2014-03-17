@@ -134,9 +134,9 @@ void DisplayGroupInterface::removeContentWindowManager(ContentWindowManagerPtr c
         return;
     }
 
-    Event event;
-    event.type = Event::EVT_CLOSE;
-    contentWindowManager->setEvent( event );
+    Event closeEvent;
+    closeEvent.type = Event::EVT_CLOSE;
+    contentWindowManager->setEvent( closeEvent );
 
     // find vector entry for content window manager
     ContentWindowManagerPtrs::iterator it = find(contentWindowManagers_.begin(),

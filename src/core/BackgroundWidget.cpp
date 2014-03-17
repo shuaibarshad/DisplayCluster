@@ -47,8 +47,8 @@
 #include "ContentWindowManager.h"
 #include "DisplayGroupManager.h"
 
-BackgroundWidget::BackgroundWidget(QWidget *parent) :
-    QDialog(parent)
+BackgroundWidget::BackgroundWidget(QWidget *widget_) :
+    QDialog(widget_)
 {
     setWindowTitle(tr("Background settings"));
 
@@ -92,17 +92,17 @@ BackgroundWidget::BackgroundWidget(QWidget *parent) :
 
     // Layout
 
-    QGridLayout *layout = new QGridLayout;
-    layout->setColumnStretch(1, 1);
-    layout->setColumnMinimumWidth(1, 250);
-    setLayout(layout);
+    QGridLayout *gridLayout = new QGridLayout;
+    gridLayout->setColumnStretch(1, 1);
+    gridLayout->setColumnMinimumWidth(1, 250);
+    setLayout(gridLayout);
 
-    layout->addWidget(colorButton, 0, 0);
-    layout->addWidget(colorLabel_, 0, 1);
-    layout->addWidget(backgroundButton, 1, 0);
-    layout->addWidget(backgroundLabel_, 1, 1);
-    layout->addWidget(backgroundClearButton, 2, 0);
-    layout->addWidget(buttonBox, 2, 1);
+    gridLayout->addWidget(colorButton, 0, 0);
+    gridLayout->addWidget(colorLabel_, 0, 1);
+    gridLayout->addWidget(backgroundButton, 1, 0);
+    gridLayout->addWidget(backgroundLabel_, 1, 1);
+    gridLayout->addWidget(backgroundClearButton, 2, 0);
+    gridLayout->addWidget(buttonBox, 2, 1);
 }
 
 void BackgroundWidget::accept()

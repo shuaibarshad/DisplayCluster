@@ -555,7 +555,7 @@ void DynamicTexture::getObjectsAscending(std::vector<boost::shared_ptr<DynamicTe
     // get the shared_ptr from weak_ptr
     boost::shared_ptr<DynamicTexture> parent = parent_.lock();
 
-    if(parent != NULL)
+    if(parent)
     {
         parent->getObjectsAscending(objects);
     }

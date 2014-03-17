@@ -63,7 +63,7 @@ public:
   /*!
     Creates a new PictureFlow widget.
   */
-  PictureFlow(QWidget* parent = 0);
+  PictureFlow(QWidget* widget = 0);
 
   /*!
     Destroys the widget.
@@ -88,7 +88,7 @@ public:
   /*!
     Sets the dimension of each slide (in pixels).
   */
-  void setSlideSize(QSize size);
+  void setSlideSize(const QSize newSlideSize);
 
   /*!
     Returns the total number of slides.
@@ -184,7 +184,7 @@ signals:
   void imageUpdated( const QImage& image );
 
 protected:
-  void paintEvent(QPaintEvent *event);
+  void paintEvent(QPaintEvent* event);
   void keyPressEvent(QKeyEvent* event);
   void mousePressEvent(QMouseEvent* event);
   void resizeEvent(QResizeEvent* event);

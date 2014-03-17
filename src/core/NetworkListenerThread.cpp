@@ -93,9 +93,9 @@ void NetworkListenerThread::process()
     }
 
     // send events if needed
-    foreach (const Event& event, events_)
+    foreach (const Event& evt, events_)
     {
-        send(event);
+        send(evt);
     }
     events_.clear();
 
@@ -163,9 +163,9 @@ QByteArray NetworkListenerThread::receiveMessageBody(const int size)
     return messageByteArray;
 }
 
-void NetworkListenerThread::processEvent(Event event)
+void NetworkListenerThread::processEvent(Event evt)
 {
-    events_.enqueue(event);
+    events_.enqueue(evt);
     emit dataAvailable();
 }
 
@@ -294,7 +294,7 @@ void NetworkListenerThread::sendBindReply(const bool successful)
     }
 }
 
-void NetworkListenerThread::send(const Event& event)
+void NetworkListenerThread::send(const Event& evt)
 {
     // send message header
     MessageHeader mh(MESSAGE_TYPE_EVENT, Event::serializedSize);
@@ -302,7 +302,7 @@ void NetworkListenerThread::send(const Event& event)
 
     {
         QDataStream stream(tcpSocket_);
-        stream << event;
+        stream << evt;
     }
     // we want the message to be sent immediately
     tcpSocket_->flush();

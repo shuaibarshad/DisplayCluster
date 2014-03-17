@@ -69,7 +69,7 @@ public:
      * will be listening for incoming requests.
      * @return port for WebService server
      */
-    const int getWebServicePort() const;
+    int getWebServicePort() const;
 
     /**
      * @brief Get the URL used as start page when opening a Web Browser.
