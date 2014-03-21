@@ -48,6 +48,14 @@
 
 var defaultMessageTimer;
 
+// Appends characters or '*' to the component
+function append(component, character, hidden)
+{
+    if(hidden)
+        character = '*';
+    component.append(character);	
+}
+
 // Creates a new timer for the display of the default message
 function startDefaultMsgTimer(component) {
     defaultMessageTimer = startDefaultMessageTimer(component);
@@ -76,8 +84,8 @@ function(e) {
         return
     }
     clearTextIfNecessary("#text");
-    sendCharacter(String.fromCharCode(e.which));
-    $("#text").append(String.fromCharCode(e.which));
+    sendText(String.fromCharCode(e.which));
+    append($("#text"), String.fromCharCode(e.which), $("#hideText").is(":checked"));
     startDefaultMsgTimer("#text");
 }
 );
@@ -90,9 +98,9 @@ function(e){
         // Something has been typed, reset the default message timer
         clearTimer();
         e.preventDefault();
-        sendCharacter(String.fromCharCode(e.keyCode));
+        sendText(String.fromCharCode(e.keyCode));
         clearTextIfNecessary("#text");
-        $("#text").append(String.fromCharCode(e.keyCode));
+        append($("#text"), String.fromCharCode(e.keycode), $("#hideText").is(":checked"));
         startDefaultMsgTimer("#text");
     }
 }
@@ -103,5 +111,6 @@ function(e){
 <body>
 <b>Introduce text</b><p>
 <h1 id="text">Press A Key</h1>
+<input type="checkbox" id="hideText" />Hide Text
 </body>
 </html>

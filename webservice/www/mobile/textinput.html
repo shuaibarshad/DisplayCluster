@@ -49,34 +49,51 @@
 
 $(document).ready(
 function(){
-    // Send tab character
+    // Sends tab character
     $("#next").click(
     function() {
-        sendCharacter(String.fromCharCode(KEY_TAB));
+        sendText(String.fromCharCode(KEY_TAB));
         $("#text").focus();
     }
     );
 
-    // Send the text in the textarea
+    // Sends the text in the textarea
     $("#send").click(
     function() {
-
-        var text = $("#text").val();
-          for (var i = 0 ; i < text.length ; ++i)
-            sendCharacter(text.charAt(i));
+        sendText($("#text").val());
         $("#text").val("");
         $("#text").focus();
     }
     );
 
-    // Send a "delete character"
+    // Sends a "delete" character
     $("#delete").click(
     function() {
-
-        var text = $("#text").val();
-          sendCharacter(String.fromCharCode(KEY_DEL));
+        sendText(String.fromCharCode(KEY_DEL));
         $("#text").val("");
         $("#text").focus();
+    }
+    );
+
+    // Sends an "enter" character
+    $("#enter").click(
+    function() {
+        sendText(String.fromCharCode(KEY_ENTER));
+        $("#text").val("");
+        $("#text").focus();
+    }
+    );
+
+
+    // Change text input box type between text and password
+    $("#hideText").change(
+    function() {
+        $("#text").removeAttr("type");  
+        if($("#hideText").is(":checked")) {
+            $("#text").prop("type", "password");
+        } else {
+            $("#text").prop("type", "text");
+        }
     }
     );
 }
@@ -86,10 +103,13 @@ function(){
 </head>
 <body>
 <b>Introduce text</b><p>
-<textarea id="text" rows="4" cols="30x" placeholder="Press A Key"></textarea>
+<input type="text" id="text" cols="30x" placeholder="Press A Key"></textarea>
 <br/>
 <input type="submit" value="Next" id="next">
 <input type="submit" value="Send" id="send">
 <input type="submit" value="del" id="delete">
+<input type="submit" value="enter" id="enter">
+<br>
+<input type="checkbox" id="hideText" />Hide Text
 </body>
 </html>

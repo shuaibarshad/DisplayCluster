@@ -412,7 +412,7 @@ void DynamicTexture::render(float tX, float tY, float tW, float tH, bool compute
 void DynamicTexture::clearOldChildren(uint64_t minFrameCount)
 {
     // clear children if renderChildrenFrameCount_ < minFrameCount
-    if(children_.size() > 0 && renderChildrenFrameCount_ < minFrameCount && getThreadsDoneDescending())
+    if(!children_.empty() && renderChildrenFrameCount_ < minFrameCount && getThreadsDoneDescending())
     {
         children_.clear();
     }
@@ -688,7 +688,7 @@ void DynamicTexture::renderChildren(float tX, float tY, float tW, float tH)
     imageBounds[3] = QRectF(0.,0.5,0.5,0.5);
 
     // see if we need to generate children
-    if(children_.size() == 0)
+    if(children_.empty())
     {
         for(unsigned int i=0; i<4; i++)
         {

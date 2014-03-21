@@ -41,6 +41,7 @@
 #define GLOBALQTAPP_H
 
 #include <QApplication>
+#include <boost/noncopyable.hpp>
 
 #include "glxDisplay.h"
 
@@ -49,7 +50,7 @@
 // We need a global fixture because a bug in QApplication prevents
 // deleting then recreating a QApplication in the same process.
 // https://bugreports.qt-project.org/browse/QTBUG-7104
-struct GlobalQtApp
+struct GlobalQtApp : public boost::noncopyable
 {
     GlobalQtApp()
         : app( 0 )

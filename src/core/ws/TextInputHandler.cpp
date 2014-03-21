@@ -43,8 +43,6 @@
 #include "dcWebservice/Response.h"
 #include "dcWebservice/Request.h"
 
-#include <sstream>
-
 TextInputHandler::TextInputHandler(DisplayGroupManagerAdapterPtr displayGroupManagerAdapter)
     : displayGroupManagerAdapter_(displayGroupManagerAdapter)
 {
@@ -58,23 +56,22 @@ dcWebservice::ConstResponsePtr TextInputHandler::handle(const dcWebservice::Requ
 {
     dcWebservice::ResponsePtr response(new dcWebservice::Response());
 
-    if(request.data.size() != 1)
+    if(request.data.size() < 1)
     {
         response->statusCode = 400;
         response->statusMsg = "Bad Request";
-        std::ostringstream body;
-        body << "{\"code\":\"400\", \"msg\":\"Bad Request. Expected one character, ";
-        body << "received " << request.data.size() << " \"}";
-        response->body = body.str();
+        response->body = "{\"code\":\"400\", \"msg\":\"Bad Request. Expected at least one character.\"}";
     }
     else if (displayGroupManagerAdapter_->hasWindows())
     {
-        const char key = request.data.c_str()[0];
-        emit receivedKeyInput(key);
+	for(std::string::const_iterator it = request.data.begin(); it != request.data.end(); ++it)
+	{
+	    emit receivedKeyInput(*it);
+	}
 
         response->statusCode = 200;
         response->statusMsg = "OK";
-        response->body = "{\"code\":\"200\", \"msg\":\"OK, char added\"}";
+        response->body = "{\"code\":\"200\", \"msg\":\"OK, text added\"}";
     }
     else
     {

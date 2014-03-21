@@ -106,7 +106,7 @@ class Factory {
                 }
                 else
                 {
-                    it++;
+                    ++it;
                 }
             }
         }

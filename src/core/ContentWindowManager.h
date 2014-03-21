@@ -86,10 +86,7 @@ class ContentWindowManager : public ContentWindowInterface, public boost::enable
             ar & displayGroupManager_;
             ar & contentWidth_;
             ar & contentHeight_;
-            ar & x_;
-            ar & y_;
-            ar & w_;
-            ar & h_;
+            ar & coordinates_;
             ar & centerX_;
             ar & centerY_;
             ar & zoom_;

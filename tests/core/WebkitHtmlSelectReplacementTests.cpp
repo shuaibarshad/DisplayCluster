@@ -1,5 +1,5 @@
 /*********************************************************************/
-/* Copyright (c) 2013, EPFL/Blue Brain Project                       */
+/* Copyright (c) 2014, EPFL/Blue Brain Project                       */
 /*                     Raphael Dumusc <raphael.dumusc@epfl.ch>       */
 /* All rights reserved.                                              */
 /*                                                                   */
@@ -37,45 +37,88 @@
 /* or implied, of The University of Texas at Austin.                 */
 /*********************************************************************/
 
-#define BOOST_TEST_MODULE PixelStreamSegmentDecoderTests
+#define BOOST_TEST_MODULE WebBrowser
 #include <boost/test/unit_test.hpp>
 namespace ut = boost::unit_test;
 
-#include "dcstream/ImageWrapper.h"
-#include "dcstream/ImageJpegCompressor.h"
-#include "ImageJpegDecompressor.h"
+#include <QDebug>
+#include "localstreamer/WebkitHtmlSelectReplacer.h"
 
-BOOST_AUTO_TEST_CASE( testImageCompressionAndDecompression )
+#include <QWebView>
+#include <QWebPage>
+#include <QWebFrame>
+#include <QWebElement>
+
+#include "../GlobalQtApp.h"
+
+#define TEST_PAGE_URL               "select_test.htm"
+#define HTTP_BODY_SELECTOR          "body"
+#define HTTP_SELECT_SELECTOR        "select[id=language]"
+#define HTTP_SELECTBOXIT_SELECTOR   "span[id=languageSelectBoxIt]"
+#define DISPLAY_STYLE_PROPERTY_NAME "display"
+#define DISPLAY_STYLE_NONE          "none"
+
+BOOST_GLOBAL_FIXTURE( GlobalQtApp );
+
+class TestPage
 {
-    // Vector of RGBA data
-    std::vector<char> data;
-    data.reserve(8*8*4);
-    for (size_t i = 0; i<8*8; ++i)
+public:
+    TestPage()
     {
-        data.push_back(192); // R
-        data.push_back(128); // G
-        data.push_back(64);  // B
-        data.push_back(255); // A
+        webview.page()->setViewportSize(QSize(640, 480));
+        QObject::connect( &webview, SIGNAL(loadFinished(bool)),
+                          QApplication::instance(), SLOT(quit()));
     }
-    dc::ImageWrapper imageWrapper(data.data(), 8, 8, dc::RGBA);
 
-    // Compress image
-    dc::ImageJpegCompressor compressor;
-    QByteArray jpegData = compressor.computeJpeg(imageWrapper, QRect(0,0,8,8));
+    void load()
+    {
+        webview.load(QUrl(TEST_PAGE_URL));
+        QApplication::instance()->exec();
 
-    BOOST_REQUIRE( jpegData.size() > 0 );
-    BOOST_REQUIRE( jpegData.size() != (int)data.size() );
+        // Check that the page could be loaded
+        const QString pageContent = getElement(HTTP_BODY_SELECTOR).toInnerXml();
+        BOOST_REQUIRE( !pageContent.isEmpty( ));
+    }
 
-    // Decompress image
-    ImageJpegDecompressor decompressor;
-    QByteArray decodedData = decompressor.decompress(jpegData);
+    QWebElement getElement(const QString& selectorQuery) const
+    {
+        return webview.page()->mainFrame()->findFirstElement(selectorQuery);
+    }
 
-    // Check decoded image in format RGBA
-    BOOST_REQUIRE( !decodedData.isEmpty() );
-    BOOST_REQUIRE_EQUAL( decodedData.size(), data.size() );
+    QString getSelectElementDisplayProperty() const
+    {
+        const QWebElement select = getElement(HTTP_SELECT_SELECTOR);
+        BOOST_REQUIRE( !select.isNull( ));
+        return select.styleProperty(DISPLAY_STYLE_PROPERTY_NAME, QWebElement::InlineStyle);
+    }
 
-    const char* dataOut = decodedData.constData();
-    BOOST_CHECK_EQUAL_COLLECTIONS( data.data(), data.data()+data.size(),
-                                   dataOut, dataOut+data.size() );
+    QWebView webview;
+};
+
+BOOST_AUTO_TEST_CASE( TestWhenNoReplacerThenSelectElementIsVisible )
+{
+    if( !hasGLXDisplay( ))
+        return;
+
+    TestPage testPage;
+    testPage.load();
+
+    const QString displayStyleProperty = testPage.getSelectElementDisplayProperty();
+    BOOST_CHECK( displayStyleProperty.isEmpty( ));
 }
 
+BOOST_AUTO_TEST_CASE( TestWhenReplacerThenSelectHasEquivalentHtml )
+{
+    if( !hasGLXDisplay( ))
+        return;
+
+    TestPage testPage;
+    WebkitHtmlSelectReplacer replacer(testPage.webview);
+    testPage.load();
+
+    const QString displayStyleProperty = testPage.getSelectElementDisplayProperty();
+    BOOST_CHECK_EQUAL( displayStyleProperty.toStdString(), DISPLAY_STYLE_NONE );
+
+    QWebElement selectboxit = testPage.getElement(HTTP_SELECTBOXIT_SELECTOR);
+    BOOST_CHECK( !selectboxit.isNull( ));
+}

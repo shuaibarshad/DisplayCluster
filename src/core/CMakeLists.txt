@@ -2,7 +2,6 @@
 include_directories(SYSTEM ${OPENGL_INCLUDE_DIRS} ${FFMPEG_INCLUDE_DIR})
 list(APPEND CORE_LIBRARY_LIBS ${OPENGL_LIBRARIES} ${FFMPEG_LIBRARIES})
 
-include_directories(SYSTEM ${MPI_INCLUDE_PATH})
 list(APPEND CORE_LIBRARY_LIBS ${MPI_CXX_LIBRARIES})
 
 list(APPEND CORE_LIBRARY_LIBS ${QT_LIBRARIES})
@@ -14,7 +13,7 @@ set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
 
 # FastCGI WebService
-list(APPEND CORE_LIBRARY_LIBS fcgiws)
+list(APPEND CORE_LIBRARY_LIBS dcwebservice)
 
 # handle build options
 if(ENABLE_TUIO_TOUCH_LISTENER)
@@ -162,6 +161,7 @@ list(APPEND SRCS
     localstreamer/PixelStreamerType.cpp
     localstreamer/Pictureflow.cpp
     localstreamer/WebkitAuthenticationHelper.cpp
+    localstreamer/WebkitHtmlSelectReplacer.cpp
     localstreamer/WebkitPixelStreamer.cpp
     thumbnail/DefaultThumbnailGenerator.cpp
     thumbnail/FolderThumbnailGenerator.cpp
@@ -202,6 +202,7 @@ list(APPEND MOC_HEADERS
     localstreamer/PixelStreamerLauncher.h
     localstreamer/Pictureflow.h
     localstreamer/WebkitAuthenticationHelper.h
+    localstreamer/WebkitHtmlSelectReplacer.h
     localstreamer/WebkitPixelStreamer.h
     ws/TextInputDispatcher.h
     ws/TextInputHandler.h
@@ -219,14 +220,14 @@ QT4_ADD_RESOURCES( CORE_RC_SRCS ${CORE_RC} )
 # add OPTIONS hacks for Qt's MOC processing of Boost headers, for compiler errors with some versions of Boost
 qt4_wrap_cpp(MOC_OUTFILES ${MOC_HEADERS} OPTIONS -DPOSIX_TIME_HPP___ -DPOSIX_TIME_SERIALIZE_HPP___ -DBOOST_TT_HAS_OPERATOR_HPP_INCLUDED)
 
-add_library(DisplayClusterCore SHARED ${SRCS} ${MOC_OUTFILES} ${CORE_RC_SRCS} ${DISPLAYCLUSTER_LIBRARY_SHARED_HEADERS})
-target_link_libraries(DisplayClusterCore ${CORE_LIBRARY_LIBS})
-set_target_properties(DisplayClusterCore PROPERTIES
-  VERSION ${VERSION} SOVERSION ${VERSION_ABI} OUTPUT_NAME DisplayClusterCore)
-install(TARGETS DisplayClusterCore
+add_library(dccore SHARED ${SRCS} ${MOC_OUTFILES} ${CORE_RC_SRCS} ${DISPLAYCLUSTER_LIBRARY_SHARED_HEADERS})
+target_link_libraries(dccore ${CORE_LIBRARY_LIBS})
+set_target_properties(dccore PROPERTIES
+  VERSION ${VERSION} SOVERSION ${VERSION_ABI} OUTPUT_NAME dccore)
+install(TARGETS dccore
     ARCHIVE DESTINATION lib COMPONENT dev
-    RUNTIME DESTINATION bin COMPONENT lib
-    LIBRARY DESTINATION lib COMPONENT lib)
+    RUNTIME DESTINATION bin COMPONENT core
+    LIBRARY DESTINATION lib COMPONENT core)
 
 # build Python module if Python support is enabled
 if(ENABLE_PYTHON_SUPPORT)
@@ -240,5 +241,5 @@ endif()
 
 # install Python module
 if(ENABLE_PYTHON_SUPPORT)
-  install(FILES ${CMAKE_BINARY_DIR}/pydc.so DESTINATION python COMPONENT lib)
+  install(FILES ${CMAKE_BINARY_DIR}/pydc.so DESTINATION python COMPONENT core)
 endif()

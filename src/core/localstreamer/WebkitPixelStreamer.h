@@ -44,15 +44,18 @@
 
 #include <QString>
 #include <QImage>
+#include <QTimer>
+#include <QWebView>
 #include <QMutex>
 
-class QWebView;
-class QTimer;
+#include <boost/smart_ptr/scoped_ptr.hpp>
+
 class QRect;
 class QWebHitTestResult;
 class QWebElement;
 
 class WebkitAuthenticationHelper;
+class WebkitHtmlSelectReplacer;
 
 /**
  * Stream webpages with user interaction support.
@@ -85,7 +88,7 @@ public:
     void setUrl(QString url);
 
     /** Get the QWebView used internally by the streamer. */
-    QWebView* getView() const;
+    const QWebView* getView() const;
 
 public slots:
     /** Process an Event. */
@@ -95,9 +98,10 @@ private slots:
     void update();
 
 private:
-    QWebView* webView_;
-    WebkitAuthenticationHelper* authenticationHelper_;
-    QTimer* timer_;
+    QWebView webView_;
+    boost::scoped_ptr<WebkitAuthenticationHelper> authenticationHelper_;
+    boost::scoped_ptr<WebkitHtmlSelectReplacer> selectReplacer_;
+    QTimer timer_;
     QMutex mutex_;
 
     QImage image_;

@@ -125,5 +125,5 @@ void DisplayGroupGraphicsViewProxy::moveContentWindowManagerToFront(ContentWindo
 void DisplayGroupGraphicsViewProxy::optionsUpdated()
 {
     // mullion compensation may have been enabled or disabled, so refresh the tiled display rectangles
-    ((DisplayGroupGraphicsScene *)(graphicsView_->scene()))->refreshTileRects();
+    static_cast<DisplayGroupGraphicsScene *>(graphicsView_->scene())->refreshTileRects();
 }

@@ -48,15 +48,47 @@ namespace ut = boost::unit_test;
 
 BOOST_GLOBAL_FIXTURE( MinimalGlobalQtApp );
 
-BOOST_AUTO_TEST_CASE( testSocketConnection )
+BOOST_AUTO_TEST_CASE( testSocketConnectionValidWhenReturnedCorrectNetworkProtocolVersion )
 {
-    QThread* thread = new QThread();
-    MockNetworkListener server(dc::Socket::defaultPortNumber_);
-    server.moveToThread(thread);
-    server.connect(&server, SIGNAL(finished()), thread, SLOT(deleteLater()));
-    thread->start();
+    QThread thread;
+    MockNetworkListener server;
+    server.moveToThread(&thread);
+    thread.start();
 
-    dc::Socket socket( "localhost", dc::Socket::defaultPortNumber_);
+    dc::Socket socket( "localhost", server.serverPort());
 
     BOOST_CHECK( socket.isConnected() );
+
+    thread.quit();
+    thread.wait();
+}
+
+BOOST_AUTO_TEST_CASE( testSocketConnectionInvalidWhenReturnedLowerNetworkProtocolVersion )
+{
+    QThread thread;
+    MockNetworkListener server(NETWORK_PROTOCOL_VERSION-1);
+    server.moveToThread(&thread);
+    thread.start();
+
+    dc::Socket socket( "localhost", server.serverPort());
+
+    BOOST_CHECK( !socket.isConnected() );
+
+    thread.quit();
+    thread.wait();
+}
+
+BOOST_AUTO_TEST_CASE( testSocketConnectionInvalidWhenReturnedHigherNetworkProtocolVersion )
+{
+    QThread thread;
+    MockNetworkListener server(NETWORK_PROTOCOL_VERSION+1);
+    server.moveToThread(&thread);
+    thread.start();
+
+    dc::Socket socket( "localhost", server.serverPort());
+
+    BOOST_CHECK( !socket.isConnected() );
+
+    thread.quit();
+    thread.wait();
 }

@@ -39,29 +39,25 @@
 
 #include "MockNetworkListener.h"
 
-MockNetworkListener::MockNetworkListener(const unsigned short port)
+#include <QTcpSocket>
+
+MockNetworkListener::MockNetworkListener(const int32_t protocolVersion)
+    : protocolVersion_(protocolVersion)
 {
-    if ( !listen(QHostAddress::Any, port) )
+    if ( !listen() )
         qDebug("MockNetworkListener could not start listening!!");
 }
 
 MockNetworkListener::~MockNetworkListener()
 {
-    emit finished();
 }
 
 void MockNetworkListener::incomingConnection(int socketDescriptor)
 {
-    QThread * thread = new QThread();
-    NetworkListenerThread * worker = new NetworkListenerThread(socketDescriptor);
+    QTcpSocket tcpSocket;
+    tcpSocket.setSocketDescriptor(socketDescriptor);
 
-    worker->moveToThread(thread);
-
-    worker->connect(thread, SIGNAL(started()), worker, SLOT(initialize()));
-    worker->connect(worker, SIGNAL(finished()), thread, SLOT(quit()));
-    // Make sure the thread gets deleted
-    worker->connect(thread, SIGNAL(finished()), worker, SLOT(deleteLater()));
-    worker->connect(thread, SIGNAL(finished()), thread, SLOT(deleteLater()));
-
-    thread->start();
+    // Handshake -> send network protocol version
+    tcpSocket.write((char *)&protocolVersion_, sizeof(int32_t));
+    tcpSocket.flush();
 }

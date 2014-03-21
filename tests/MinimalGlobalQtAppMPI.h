@@ -1,6 +1,6 @@
 /*********************************************************************/
-/* Copyright (c) 2013, EPFL/Blue Brain Project                       */
-/*                     Raphael Dumusc <raphael.dumusc@epfl.ch>       */
+/* Copyright (c) 2014, EPFL/Blue Brain Project                       */
+/*                     Daniel Nachbaur <daniel.nachbaur@epfl.ch>     */
 /* All rights reserved.                                              */
 /*                                                                   */
 /* Redistribution and use in source and binary forms, with or        */
@@ -37,25 +37,29 @@
 /* or implied, of The University of Texas at Austin.                 */
 /*********************************************************************/
 
-#ifndef MOCKNETWORKLISTENER_H
-#define MOCKNETWORKLISTENER_H
+#ifndef MINIMALGLOBALQTAPPMPI_H
+#define MINIMALGLOBALQTAPPMPI_H
 
-#include "NetworkListenerThread.h"
+#include "MinimalGlobalQtApp.h"
+#include <mpi.h>
 
-#include <QtNetwork/QTcpServer>
-#include <QThread>
-
-class MockNetworkListener : public QTcpServer
+// We need a global fixture because a bug in QApplication prevents
+// deleting then recreating a QApplication in the same process.
+// https://bugreports.qt-project.org/browse/QTBUG-7104
+struct MinimalGlobalQtAppMPI : public MinimalGlobalQtApp
 {
-    Q_OBJECT
+    MinimalGlobalQtAppMPI()
+        : MinimalGlobalQtApp()
+    {
+        ut::master_test_suite_t& testSuite = ut::framework::master_test_suite();
+        MPI_Init( &testSuite.argc, &testSuite.argv );
+    }
+    ~MinimalGlobalQtAppMPI()
+    {
+        MPI_Finalize();
+    }
 
-public:
-    MockNetworkListener(const unsigned short port);
-    virtual ~MockNetworkListener();
-signals:
-    void finished();
-protected:
-    virtual void incomingConnection(int socketDescriptor);
+    QCoreApplication* app;
 };
 
-#endif // MOCKNETWORKLISTENER_H
+#endif // MINIMALGLOBALQTAPPMPI_H
