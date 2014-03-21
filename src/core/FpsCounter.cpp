@@ -39,11 +39,7 @@
 
 #include "FpsCounter.h"
 
-#if (QT_VERSION >= QT_VERSION_CHECK(4, 7, 0))
-#  define HISTORY_SIZE  30
-#else
-#  define HISTORY_SIZE  300
-#endif
+#define HISTORY_SIZE  30
 
 FpsCounter::FpsCounter()
 {
