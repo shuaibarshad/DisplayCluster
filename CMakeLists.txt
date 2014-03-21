@@ -24,6 +24,10 @@ endif()
 include(${QT_USE_FILE})
 
 # Build options
+
+# Fix for avutil: https://code.google.com/p/ffmpegsource/source/detail?r=311
+add_definitions(-D__STDC_CONSTANT_MACROS)
+
 if(OPENGL_FOUND AND MPI_FOUND AND FFMPEG_FOUND AND FCGI_FOUND)
   include_directories(SYSTEM ${MPI_INCLUDE_PATH})
   set(BUILD_CORE_LIBRARY ON)
