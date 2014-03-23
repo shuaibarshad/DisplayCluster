@@ -109,7 +109,7 @@ BOOST_AUTO_TEST_CASE( testCommandLineFromCommandLineArguments )
     QStringList arguments = options.getCommandLineArguments();
     int argc = arguments.size() + 1;
     char* argv[argc];
-    std::vector<char> argList[argc];
+    std::vector<char>* argList = new std::vector<char>[argc];
 
     // Program name
     {
@@ -129,5 +129,6 @@ BOOST_AUTO_TEST_CASE( testCommandLineFromCommandLineArguments )
 
     CommandLineOptions optionsDeserialized( argc, argv );
     checkOptionParameters(optionsDeserialized);
+    delete [] argList;
 }
 
