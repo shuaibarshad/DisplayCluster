@@ -52,6 +52,11 @@ CONTENT_TYPE DynamicTextureContent::getType()
     return CONTENT_TYPE_DYNAMIC_TEXTURE;
 }
 
+bool DynamicTextureContent::readMetadata()
+{
+    return true;
+}
+
 const QStringList& DynamicTextureContent::getSupportedExtensions()
 {
     static QStringList extensions;

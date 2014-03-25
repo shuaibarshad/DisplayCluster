@@ -52,6 +52,11 @@ CONTENT_TYPE MovieContent::getType()
     return CONTENT_TYPE_MOVIE;
 }
 
+bool MovieContent::readMetadata()
+{
+    return true;
+}
+
 const QStringList& MovieContent::getSupportedExtensions()
 {
     static QStringList extensions;

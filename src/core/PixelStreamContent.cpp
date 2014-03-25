@@ -51,6 +51,11 @@ CONTENT_TYPE PixelStreamContent::getType()
     return CONTENT_TYPE_PIXEL_STREAM;
 }
 
+bool PixelStreamContent::readMetadata()
+{
+    return true;
+}
+
 void PixelStreamContent::getFactoryObjectDimensions(int &width, int &height)
 {
     g_mainWindow->getGLWindow()->getPixelStreamFactory().getObject(getURI())->getDimensions(width, height);

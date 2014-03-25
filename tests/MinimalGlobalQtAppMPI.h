@@ -58,8 +58,6 @@ struct MinimalGlobalQtAppMPI : public MinimalGlobalQtApp
     {
         MPI_Finalize();
     }
-
-    QCoreApplication* app;
 };
 
 #endif // MINIMALGLOBALQTAPPMPI_H

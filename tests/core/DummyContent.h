@@ -1,5 +1,6 @@
 /*********************************************************************/
-/* Copyright (c) 2011 - 2012, The University of Texas at Austin.     */
+/* Copyright (c) 2014, EPFL/Blue Brain Project                       */
+/*                     Raphael Dumusc <raphael.dumusc@epfl.ch>       */
 /* All rights reserved.                                              */
 /*                                                                   */
 /* Redistribution and use in source and binary forms, with or        */
@@ -36,79 +37,42 @@
 /* or implied, of The University of Texas at Austin.                 */
 /*********************************************************************/
 
-#ifndef SERIALIZATION_HELPERS_H
-#define SERIALIZATION_HELPERS_H
+#ifndef DUMMYCONTENT_H
+#define DUMMYCONTENT_H
 
-#include <QColor>
-#include <QString>
-#include <QRectF>
+#include "Content.h"
 
-#include <boost/serialization/nvp.hpp>
-#include <boost/serialization/split_free.hpp>
-#include <boost/archive/xml_iarchive.hpp>
-#include <boost/archive/xml_oarchive.hpp>
+#include <boost/serialization/base_object.hpp>
+#include <boost/serialization/export.hpp>
 
-#define DECLARE_SERIALIZE_FOR_XML(className) \
-template<> \
-void className::serialize<>(boost::archive::xml_iarchive & ar, const unsigned int version); \
-template<> \
-void className::serialize<>(boost::archive::xml_oarchive & ar, const unsigned int version);
-
-#define IMPLEMENT_SERIALIZE_FOR_XML(className) \
-template<> \
-void className::serialize<>(boost::archive::xml_iarchive & ar, const unsigned int version) \
-{ serialize_for_xml(ar, version); } \
-template<> \
-void className::serialize<>(boost::archive::xml_oarchive & ar, const unsigned int version) \
-{ serialize_for_xml(ar, version); }
-
-namespace boost
+class DummyContent : public Content
 {
-namespace serialization
-{
+public:
+    DummyContent(const QString& uri = "") : Content(uri), dummyParam_(0) {}
 
-template< class Archive >
-void serialize( Archive &ar, QColor& color, const unsigned int )
-{
-    unsigned char t;
-    t = color.red(); ar & t; color.setRed(t);
-    t = color.green(); ar & t; color.setGreen(t);
-    t = color.blue(); ar & t; color.setBlue(t);
-    t = color.alpha(); ar & t; color.setAlpha(t);
-}
+    virtual CONTENT_TYPE getType() { return CONTENT_TYPE_ANY; }
 
-template< class Archive >
-void save( Archive& ar, const QString& s, const unsigned int )
-{
-    std::string stdStr = s.toStdString();
-    ar << boost::serialization::make_nvp( "value", stdStr );
-}
+    virtual bool readMetadata() { return true; }
 
-template< class Archive >
-void load( Archive& ar, QString& s, const unsigned int )
-{
-    std::string stdStr;
-    ar >> make_nvp( "value", stdStr );
-    s = QString::fromStdString(stdStr);
-}
+    virtual void getFactoryObjectDimensions(int &width, int &height)
+        { getDimensions( width, height ); }
 
-template< class Archive >
-void serialize( Archive& ar, QString& s, const unsigned int version )
-{
-    boost::serialization::split_free( ar, s, version );
-}
+    int dummyParam_;
 
-template< class Archive >
-void serialize( Archive& ar, QRectF& rect, const unsigned int )
-{
-    qreal t;
-    t = rect.x(); ar & make_nvp("x", t); rect.setX(t);
-    t = rect.y(); ar & make_nvp("y", t); rect.setY(t);
-    t = rect.width(); ar & make_nvp("w", t); rect.setWidth(t);
-    t = rect.height(); ar & make_nvp("h", t); rect.setHeight(t);
-}
+private:
+    friend class boost::serialization::access;
 
-}
-}
+    template<class Archive>
+    void serialize(Archive & ar, const unsigned int)
+    {
+        // serialize base class information (with NVP for xml archives)
+        ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Content);
+        ar & BOOST_SERIALIZATION_NVP(dummyParam_);
+    }
 
-#endif
+    virtual void renderFactoryObject(ContentWindowManagerPtr, const QRectF&) {}
+};
+
+BOOST_CLASS_EXPORT_GUID(DummyContent, "DummyContent")
+
+#endif // DUMMYCONTENT_H
