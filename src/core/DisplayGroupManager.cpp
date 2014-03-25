@@ -325,16 +325,6 @@ void DisplayGroupManager::setBackgroundColor(QColor color)
     sendDisplayGroup();
 }
 
-boost::shared_ptr<DisplayGroupInterface> DisplayGroupManager::getDisplayGroupInterface(QThread * thread)
-{
-    boost::shared_ptr<DisplayGroupInterface> dgi(new DisplayGroupInterface(shared_from_this()));
-
-    // push it to the other thread
-    dgi.get()->moveToThread(thread);
-
-    return dgi;
-}
-
 void DisplayGroupManager::positionWindow(const QString& uri, const QPointF position)
 {
     ContentWindowManagerPtr contentWindow = getContentWindowManager(uri, CONTENT_TYPE_ANY);
@@ -396,7 +386,7 @@ void DisplayGroupManager::receiveMessages()
             }
             else if(mh.type == MESSAGE_TYPE_CONTENTS_DIMENSIONS)
             {
-                receiveContentsDimensionsRequest(mh);
+                receiveContentsDimensionsRequest();
             }
             else if(mh.type == MESSAGE_TYPE_PIXELSTREAM)
             {
@@ -736,7 +726,7 @@ void DisplayGroupManager::receiveDisplayGroup(const MessageHeader& messageHeader
     delete [] buf;
 }
 
-void DisplayGroupManager::receiveContentsDimensionsRequest(const MessageHeader& messageHeader)
+void DisplayGroupManager::receiveContentsDimensionsRequest()
 {
     if(g_mpiRank == 1)
     {

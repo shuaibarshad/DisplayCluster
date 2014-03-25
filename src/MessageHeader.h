@@ -89,7 +89,7 @@ struct MessageHeader
     MessageHeader();
 
     /** Construct a message header with a uri */
-    MessageHeader(MessageType type, uint32_t size, const std::string& streamUri = "");
+    MessageHeader(const MessageType type, const uint32_t size, const std::string& streamUri = "");
 
     /** The size of the QDataStream serialized output. */
     static const size_t serializedSize;

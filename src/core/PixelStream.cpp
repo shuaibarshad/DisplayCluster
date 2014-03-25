@@ -158,7 +158,7 @@ void PixelStream::decodeVisibleTextures()
     }
 }
 
-void PixelStream::render(const float tX, const float tY, const float tW, const float tH)
+void PixelStream::render(const float, const float, const float, const float)
 {
     updateRenderedFrameIndex();
 
@@ -241,7 +241,7 @@ bool PixelStream::isVisible(const QRect& segment)
         const double segmentW = (double)segment.width() / (double)width_ * window.width();
         const double segmentH = (double)segment.height() / (double)height_ * window.height();
 
-        return g_mainWindow->isRegionVisible(segmentX, segmentY, segmentW, segmentH);
+        return g_mainWindow->isRegionVisible(QRectF(segmentX, segmentY, segmentW, segmentH));
     }
 
     put_flog(LOG_WARN, "could not find window for segment");

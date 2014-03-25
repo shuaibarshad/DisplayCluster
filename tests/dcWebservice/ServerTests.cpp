@@ -51,7 +51,7 @@ public:
 
     MockHandler() : simulateFailure(false) {}
 
-    virtual dcWebservice::ConstResponsePtr handle(const dcWebservice::Request& request) const
+    virtual dcWebservice::ConstResponsePtr handle(const dcWebservice::Request&) const
     {
         if(simulateFailure)
             return dcWebservice::ResponsePtr();
@@ -67,7 +67,7 @@ public:
 
     FakeBuilder() : simulateFailure(false) {};
 
-    virtual dcWebservice::RequestPtr buildRequest(FCGX_Request& fcgiRequest)
+    virtual dcWebservice::RequestPtr buildRequest(FCGX_Request&)
     {
         if(simulateFailure)
             return dcWebservice::RequestPtr();
@@ -82,7 +82,7 @@ public:
 class FakeFCGI : public dcWebservice::FastCGIWrapper
 {
 public:
-    virtual bool init(const int socket)
+    virtual bool init(const int)
     {
         return true;
     }

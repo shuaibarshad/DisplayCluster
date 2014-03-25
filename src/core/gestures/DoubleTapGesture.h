@@ -53,8 +53,8 @@ class DoubleTapGesture : public QGesture
 {
 public:
     /** @sa QGesture */
-    DoubleTapGesture( QObject* parent = 0 )
-        : QGesture( parent ), _position( -1, -1 ) {}
+    DoubleTapGesture( QObject* parentObject = 0 )
+        : QGesture( parentObject ), _position( -1, -1 ) {}
 
     /** @return the position on the device in pixels of the doubletap */
     QPointF position() const { return _position; }

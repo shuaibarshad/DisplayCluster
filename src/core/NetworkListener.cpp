@@ -72,20 +72,20 @@ CommandHandler& NetworkListener::getCommandHandler() const
     return *commandHandler_;
 }
 
-void NetworkListener::incomingConnection(int socketDescriptor)
+void NetworkListener::incomingConnection(int socketHandle)
 {
     put_flog(LOG_DEBUG, "");
 
-    QThread * thread = new QThread();
-    NetworkListenerThread * worker = new NetworkListenerThread(socketDescriptor);
+    QThread * workerThread = new QThread();
+    NetworkListenerThread * worker = new NetworkListenerThread(socketHandle);
 
-    worker->moveToThread(thread);
+    worker->moveToThread(workerThread);
 
-    connect(thread, SIGNAL(started()), worker, SLOT(initialize()));
-    connect(worker, SIGNAL(finished()), thread, SLOT(quit()));
+    connect(workerThread, SIGNAL(started()), worker, SLOT(initialize()));
+    connect(worker, SIGNAL(finished()), workerThread, SLOT(quit()));
     // Make sure the thread will be deleted
-    connect(thread, SIGNAL(finished()), worker, SLOT(deleteLater()));
-    connect(thread, SIGNAL(finished()), thread, SLOT(deleteLater()));
+    connect(workerThread, SIGNAL(finished()), worker, SLOT(deleteLater()));
+    connect(workerThread, SIGNAL(finished()), workerThread, SLOT(deleteLater()));
 
     // Commands
     connect(worker, SIGNAL(receivedCommand(QString,QString)),
@@ -111,5 +111,5 @@ void NetworkListener::incomingConnection(int socketDescriptor)
     connect(worker, SIGNAL(receivedRemovePixelStreamSource(QString,size_t)),
             pixelStreamDispatcher_, SLOT(removeSource(QString,size_t)));
 
-    thread->start();
+    workerThread->start();
 }

@@ -70,15 +70,15 @@ MultiTouchListener::~MultiTouchListener()
     PinchGestureRecognizer::uninstall();
 }
 
-void MultiTouchListener::addTuioObject( TUIO::TuioObject* tobj )
+void MultiTouchListener::addTuioObject( TUIO::TuioObject* )
 {
 }
 
-void MultiTouchListener::updateTuioObject( TUIO::TuioObject* tobj )
+void MultiTouchListener::updateTuioObject( TUIO::TuioObject* )
 {
 }
 
-void MultiTouchListener::removeTuioObject( TUIO::TuioObject* tobj )
+void MultiTouchListener::removeTuioObject( TUIO::TuioObject* )
 {
 }
 
@@ -188,6 +188,6 @@ void MultiTouchListener::removeTuioCursor(TUIO::TuioCursor *tcur)
     handleEvent( tcur, QEvent::TouchEnd );
 }
 
-void MultiTouchListener::refresh(TUIO::TuioTime frameTime)
+void MultiTouchListener::refresh(TUIO::TuioTime)
 {
 }

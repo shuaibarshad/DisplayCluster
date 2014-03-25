@@ -61,7 +61,7 @@ class MainWindow : public QMainWindow
         GLWindowPtr getGLWindow(int index=0);
         GLWindowPtr getActiveGLWindow();
 
-        bool isRegionVisible(double x, double y, double w, double h) const;
+        bool isRegionVisible(const QRectF& region) const;
 
         void finalize();
 
@@ -93,7 +93,7 @@ class MainWindow : public QMainWindow
         void showBackgroundWidget();
 
         void openWebBrowser();
-        void openDock(const QPointF pos);
+        void openDock(const QPointF position);
 
     #if ENABLE_SKELETON_SUPPORT
         void setEnableSkeletonTracking(bool enable);
@@ -110,9 +110,9 @@ class MainWindow : public QMainWindow
 
         void estimateGridSize(unsigned int numElem, unsigned int& gridX, unsigned int& gridY);
 
-        QStringList extractValidContentUrls(const QMimeData* data);
-        QStringList extractFolderUrls(const QMimeData *data);
-        QString extractStateFile(const QMimeData *data);
+        QStringList extractValidContentUrls(const QMimeData* mimeData);
+        QStringList extractFolderUrls(const QMimeData *mimeData);
+        QString extractStateFile(const QMimeData *mimeData);
 
         GLWindowPtrs glWindows_;
         GLWindowPtr activeGLWindow_;

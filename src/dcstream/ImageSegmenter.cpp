@@ -80,10 +80,10 @@ struct SegmentCompressionWrapper
     PixelStreamSegment* segment;
     const ImageWrapper* image;
 
-    SegmentCompressionWrapper( PixelStreamSegment& segment,
-                               const ImageWrapper& image )
-        : segment(&segment)
-        , image(&image)
+    SegmentCompressionWrapper( PixelStreamSegment& segment_,
+                               const ImageWrapper& image_ )
+        : segment(&segment_)
+        , image(&image_)
     {}
 };
 

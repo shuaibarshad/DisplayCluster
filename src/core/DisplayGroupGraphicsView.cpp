@@ -76,56 +76,58 @@ void DisplayGroupGraphicsView::grabGestures()
     viewport()->grabGesture(Qt::SwipeGesture);
 }
 
-bool DisplayGroupGraphicsView::viewportEvent( QEvent* event )
+bool DisplayGroupGraphicsView::viewportEvent( QEvent* evt )
 {
-    if( event->type() == QEvent::Gesture )
+    if( evt->type() == QEvent::Gesture )
     {
-        QGestureEvent* gesture = static_cast< QGestureEvent* >( event );
+        QGestureEvent* gesture = static_cast< QGestureEvent* >( evt );
         gestureEvent( gesture );
         return QGraphicsView::viewportEvent( gesture );
     }
-    return QGraphicsView::viewportEvent(event);
+    return QGraphicsView::viewportEvent(evt);
 }
 
-void DisplayGroupGraphicsView::gestureEvent( QGestureEvent* event )
+void DisplayGroupGraphicsView::gestureEvent( QGestureEvent* evt )
 {
-    if( QGesture* gesture = event->gesture( Qt::SwipeGesture ))
+    QGesture* gesture = 0;
+
+    if( ( gesture = evt->gesture( Qt::SwipeGesture )))
     {
-        event->accept( Qt::SwipeGesture );
+        evt->accept( Qt::SwipeGesture );
         swipe( static_cast< QSwipeGesture* >( gesture ));
     }
-    else if( QGesture* gesture = event->gesture( PanGestureRecognizer::type( )))
+    else if( ( gesture = evt->gesture( PanGestureRecognizer::type( ))))
     {
-        event->accept( PanGestureRecognizer::type( ));
+        evt->accept( PanGestureRecognizer::type( ));
         pan( static_cast< PanGesture* >( gesture ));
     }
-    else if( QGesture* gesture = event->gesture( PinchGestureRecognizer::type( )))
+    else if( ( gesture = evt->gesture( PinchGestureRecognizer::type( ))))
     {
-        event->accept( PinchGestureRecognizer::type( ));
+        evt->accept( PinchGestureRecognizer::type( ));
         pinch( static_cast< PinchGesture* >( gesture ));
     }
-    else if( QGesture* gesture = event->gesture( Qt::TapGesture ))
+    else if( ( gesture = evt->gesture( Qt::TapGesture )))
     {
-        event->accept( Qt::TapGesture );
+        evt->accept( Qt::TapGesture );
         tap( static_cast< QTapGesture* >( gesture ));
     }
-    else if( QGesture* gesture = event->gesture( Qt::TapAndHoldGesture ))
+    else if( ( gesture = evt->gesture( Qt::TapAndHoldGesture )))
     {
-        event->accept( Qt::TapAndHoldGesture );
+        evt->accept( Qt::TapAndHoldGesture );
         tapAndHold( static_cast< QTapAndHoldGesture* >( gesture ));
     }
 }
 
-void DisplayGroupGraphicsView::swipe( QSwipeGesture* gesture )
+void DisplayGroupGraphicsView::swipe( QSwipeGesture* )
 {
     std::cout << "SWIPE VIEW" << std::endl;
 }
 
-void DisplayGroupGraphicsView::pan( PanGesture* gesture )
+void DisplayGroupGraphicsView::pan( PanGesture* )
 {
 }
 
-void DisplayGroupGraphicsView::pinch( PinchGesture* gesture )
+void DisplayGroupGraphicsView::pinch( PinchGesture* )
 {
 }
 
@@ -134,10 +136,10 @@ void DisplayGroupGraphicsView::tap( QTapGesture* gesture )
     if( gesture->state() != Qt::GestureFinished )
         return;
 
-    const QPointF pos = getNormalizedPosition(gesture);
+    const QPointF position = getNormalizedPosition(gesture);
 
-    if (isOnBackground(pos))
-        emit backgroundTap(pos);
+    if (isOnBackground(position))
+        emit backgroundTap(position);
 }
 
 void DisplayGroupGraphicsView::tapAndHold( QTapAndHoldGesture* gesture )
@@ -145,13 +147,13 @@ void DisplayGroupGraphicsView::tapAndHold( QTapAndHoldGesture* gesture )
     if( gesture->state() != Qt::GestureFinished )
         return;
 
-    const QPointF pos = getNormalizedPosition(gesture);
+    const QPointF position = getNormalizedPosition(gesture);
 
-    if (isOnBackground(pos))
-        emit backgroundTapAndHold(pos);
+    if (isOnBackground(position))
+        emit backgroundTapAndHold(position);
 }
 
-void DisplayGroupGraphicsView::resizeEvent(QResizeEvent * event)
+void DisplayGroupGraphicsView::resizeEvent(QResizeEvent * resizeEvt)
 {
     // compute the scene rectangle to show such that the aspect ratio corresponds to the actual aspect ratio of the tiled display
     float tiledDisplayAspect = (float)g_configuration->getTotalWidth() / (float)g_configuration->getTotalHeight();
@@ -180,7 +182,7 @@ void DisplayGroupGraphicsView::resizeEvent(QResizeEvent * event)
 
     fitInView(sceneRect());
 
-    QGraphicsView::resizeEvent(event);
+    QGraphicsView::resizeEvent(resizeEvt);
 }
 
 QPointF DisplayGroupGraphicsView::getNormalizedPosition( const QGesture* gesture ) const

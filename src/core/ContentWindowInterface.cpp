@@ -81,7 +81,7 @@ ContentWindowInterface::ContentWindowInterface(ContentWindowManagerPtr contentWi
         sizeState_ = contentWindowManager->sizeState_;
         controlState_ = contentWindowManager->controlState_;
         windowState_ = contentWindowManager->windowState_;
-        event_ = contentWindowManager->event_;
+        latestEvent_ = contentWindowManager->latestEvent_;
     }
 
     // register WindowState in Qt
@@ -180,9 +180,9 @@ ContentWindowInterface::WindowState ContentWindowInterface::getWindowState()
     return windowState_;
 }
 
-Event ContentWindowInterface::getEvent()
+Event ContentWindowInterface::getEvent() const
 {
-    return event_;
+    return latestEvent_;
 }
 
 bool ContentWindowInterface::registerEventReceiver(EventReceiver* receiver)
@@ -575,14 +575,14 @@ void ContentWindowInterface::setWindowState(ContentWindowInterface::WindowState 
     }
 }
 
-void ContentWindowInterface::setEvent(Event event, ContentWindowInterface * source)
+void ContentWindowInterface::setEvent(Event event_, ContentWindowInterface * source)
 {
     if(source == this)
     {
         return;
     }
 
-    event_ = event;
+    latestEvent_ = event_;
 
     if(source == NULL || dynamic_cast<ContentWindowManager *>(this) != NULL)
     {

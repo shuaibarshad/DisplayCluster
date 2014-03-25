@@ -39,8 +39,8 @@
 
 #include "MockTextInputDispatcher.h"
 
-MockTextInputDispatcher::MockTextInputDispatcher(QObject *parent)
-    : TextInputDispatcher(DisplayGroupManagerPtr(), parent)
+MockTextInputDispatcher::MockTextInputDispatcher(QObject *parentObject)
+    : TextInputDispatcher(DisplayGroupManagerPtr(), parentObject)
     , key_('0')
 {
 }

@@ -52,7 +52,7 @@ namespace ut = boost::unit_test;
 class MockHandler : public dcWebservice::Handler
 {
 public:
-    virtual dcWebservice::ConstResponsePtr handle(const dcWebservice::Request& request) const
+    virtual dcWebservice::ConstResponsePtr handle(const dcWebservice::Request&) const
     {
         return dcWebservice::Response::OK();
     }

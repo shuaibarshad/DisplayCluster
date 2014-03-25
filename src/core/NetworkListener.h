@@ -58,7 +58,7 @@ public:
     CommandHandler& getCommandHandler() const;
 
 protected:
-    virtual void incomingConnection(int socketDescriptor);
+    virtual void incomingConnection(int socketHandle);
 
 private:
     DisplayGroupManager& displayGroupManager_;
