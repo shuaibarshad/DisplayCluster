@@ -222,8 +222,8 @@ SizeState ContentWindowInterface::getSizeState() const
 
 void ContentWindowInterface::getButtonDimensions(float &width, float &height)
 {
-    float sceneHeightFraction = 0.125;
-    double screenAspect = (double)g_configuration->getTotalWidth() / (double)g_configuration->getTotalHeight();
+    const float sceneHeightFraction = 0.125;
+    const double screenAspect = g_configuration->getAspectRatio();
 
     width = sceneHeightFraction / screenAspect;
     height = sceneHeightFraction;
@@ -242,13 +242,11 @@ void ContentWindowInterface::getButtonDimensions(float &width, float &height)
 
 void ContentWindowInterface::fixAspectRatio(ContentWindowInterface * source)
 {
-    if(g_displayGroupManager->getOptions()->getConstrainAspectRatio() != true || (contentWidth_ == 0 && contentHeight_ == 0))
-    {
+    if(contentWidth_ == 0 && contentHeight_ == 0)
         return;
-    }
 
     double aspect = (double)contentWidth_ / (double)contentHeight_;
-    double screenAspect = (double)g_configuration->getTotalWidth() / (double)g_configuration->getTotalHeight();
+    const double screenAspect = g_configuration->getAspectRatio();
 
     aspect /= screenAspect;
 
@@ -282,14 +280,13 @@ void ContentWindowInterface::adjustSize( const SizeState state,
 
     const double contentAR = contentHeight_ == 0 ? 16./9 :
                                  double(contentWidth_) / double(contentHeight_);
-    const double configAR = double(g_configuration->getTotalHeight()) /
-                            double(g_configuration->getTotalWidth());
+    const double wallAR = 1. / g_configuration->getAspectRatio();
 
     double height = contentHeight_ == 0
                             ? 1.
                             : double(contentHeight_) / double(g_configuration->getTotalHeight());
     double width = contentWidth_ == 0
-                            ? configAR * contentAR * height
+                            ? wallAR * contentAR * height
                             : double(contentWidth_) / double(g_configuration->getTotalWidth());
 
     QRectF coordinates;
@@ -309,7 +306,7 @@ void ContentWindowInterface::adjustSize( const SizeState state,
 
     case SIZE_1TO1:
         height = std::min( height, 1. );
-        width = configAR * contentAR * height;
+        width = wallAR * contentAR * height;
         if( width > 1. )
         {
             height /= width;

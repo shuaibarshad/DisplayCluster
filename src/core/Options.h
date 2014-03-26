@@ -50,7 +50,6 @@ class Options : public QObject
     public:
         Options();
 
-        bool getConstrainAspectRatio();
         bool getShowWindowBorders();
         bool getShowMouseCursor();
         bool getShowTouchPoints();
@@ -66,7 +65,6 @@ class Options : public QObject
 #endif
 
     public slots:
-        void setConstrainAspectRatio(bool set);
         void setShowWindowBorders(bool set);
         void setShowMouseCursor(bool set);
         void setShowTouchPoints(bool set);
@@ -90,7 +88,6 @@ class Options : public QObject
         template<class Archive>
         void serialize(Archive & ar, const unsigned int)
         {
-            ar & constrainAspectRatio_;
             ar & showWindowBorders_;
             ar & showMouseCursor_;
             ar & showTouchPoints_;
@@ -106,7 +103,6 @@ class Options : public QObject
 #endif
         }
 
-        bool constrainAspectRatio_;
         bool showWindowBorders_;
         bool showMouseCursor_;
         bool showTouchPoints_;

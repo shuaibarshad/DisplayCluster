@@ -497,7 +497,7 @@ void ContentWindowGraphicsItem::drawTextLabel_( QPainter* painter )
     float viewWidth = (float)scene()->views()[0]->width();
     float viewHeight = (float)scene()->views()[0]->height();
 
-    float tiledDisplayAspect = (float)g_configuration->getTotalWidth() / (float)g_configuration->getTotalHeight();
+    const float tiledDisplayAspect = g_configuration->getAspectRatio();
 
     if(viewWidth / viewHeight > tiledDisplayAspect)
     {

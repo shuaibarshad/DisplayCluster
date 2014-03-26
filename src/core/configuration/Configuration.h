@@ -123,6 +123,11 @@ public:
     int getTotalHeight() const;
 
     /**
+     * @return the aspect ratio of the DisplayWall, including Mulltion padding
+     */
+    double getAspectRatio() const;
+
+    /**
      * @brief getFullscreen Display the windows in fullscreen mode
      * @return
      */

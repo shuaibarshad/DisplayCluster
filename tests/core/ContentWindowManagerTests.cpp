@@ -41,12 +41,13 @@
 #include <boost/test/unit_test.hpp>
 namespace ut = boost::unit_test;
 
+#include <globals.h>
+#include <Options.h>
 #include <ContentWindowManager.h>
-#include <DisplayGroupManager.h>
 #include <configuration/MasterConfiguration.h>
 
-#include "MinimalGlobalQtAppMPI.h"
-BOOST_GLOBAL_FIXTURE( MinimalGlobalQtAppMPI )
+#include "MinimalGlobalQtApp.h"
+BOOST_GLOBAL_FIXTURE( MinimalGlobalQtApp )
 
 class DummyContent : public Content
 {
@@ -68,10 +69,8 @@ const int HEIGHT = 100;
 
 BOOST_AUTO_TEST_CASE( testInitialSize )
 {
-    g_displayGroupManager.reset( new DisplayGroupManager );
     g_configuration =
-        new MasterConfiguration( "configuration.xml",
-                                 g_displayGroupManager->getOptions( ));
+        new Configuration( "configuration.xml", OptionsPtr(new Options));
 
     ContentPtr content( new DummyContent );
     content->setDimensions( WIDTH, HEIGHT );
@@ -93,10 +92,9 @@ BOOST_AUTO_TEST_CASE( testInitialSize )
 
 BOOST_AUTO_TEST_CASE( testFullScreenSize )
 {
-    g_displayGroupManager.reset( new DisplayGroupManager );
     g_configuration =
         new MasterConfiguration( "configuration.xml",
-                                 g_displayGroupManager->getOptions( ));
+                                 OptionsPtr(new Options));
 
     ContentPtr content( new DummyContent );
     content->setDimensions( WIDTH, HEIGHT );
@@ -106,7 +104,7 @@ BOOST_AUTO_TEST_CASE( testFullScreenSize )
 
     const QRectF& coords = window.getCoordinates();
 
-    const double wallAR = double(g_configuration->getTotalHeight()) / g_configuration->getTotalWidth();
+    const double wallAR = 1. / g_configuration->getAspectRatio();
     const double normWidth = 1. * wallAR;
     const double normHeight = 1.;
 
@@ -121,17 +119,16 @@ BOOST_AUTO_TEST_CASE( testFullScreenSize )
 
 BOOST_AUTO_TEST_CASE( testFromFullscreenBackToNormalized )
 {
-    g_displayGroupManager.reset( new DisplayGroupManager );
-    g_displayGroupManager->getOptions()->setConstrainAspectRatio( false );
     g_configuration =
         new MasterConfiguration( "configuration.xml",
-                                 g_displayGroupManager->getOptions( ));
+                                 OptionsPtr(new Options));
 
     ContentPtr content( new DummyContent );
     content->setDimensions( WIDTH, HEIGHT );
     ContentWindowManager window( content );
 
-    QRectF target( 0.9, 0.7, 0.1, 0.8 );
+    QRectF target( 0.9, 0.7, 0.2, 1 );
+    target.setHeight( target.width() * g_configuration->getAspectRatio());
 
     window.setSize( target.width(), target.height( ));
     window.setPosition( target.x(), target.y( ));
@@ -158,10 +155,9 @@ BOOST_AUTO_TEST_CASE( testFromFullscreenBackToNormalized )
 
 BOOST_AUTO_TEST_CASE( testValidID )
 {
-    g_displayGroupManager.reset( new DisplayGroupManager );
     g_configuration =
         new MasterConfiguration( "configuration.xml",
-                                 g_displayGroupManager->getOptions( ));
+                                 OptionsPtr(new Options));
 
     ContentPtr content( new DummyContent );
     content->setDimensions( WIDTH, HEIGHT );
@@ -174,10 +170,9 @@ BOOST_AUTO_TEST_CASE( testValidID )
 
 BOOST_AUTO_TEST_CASE( testUniqueID )
 {
-    g_displayGroupManager.reset( new DisplayGroupManager );
     g_configuration =
         new MasterConfiguration( "configuration.xml",
-                                 g_displayGroupManager->getOptions( ));
+                                 OptionsPtr(new Options));
 
     ContentPtr content( new DummyContent );
     content->setDimensions( WIDTH, HEIGHT );
@@ -195,10 +190,9 @@ BOOST_AUTO_TEST_CASE( testUniqueID )
 
 BOOST_AUTO_TEST_CASE( testSetContent )
 {
-    g_displayGroupManager.reset( new DisplayGroupManager );
     g_configuration =
         new MasterConfiguration( "configuration.xml",
-                                 g_displayGroupManager->getOptions( ));
+                                 OptionsPtr(new Options));
 
     ContentPtr content( new DummyContent );
     content->setDimensions( WIDTH, HEIGHT );

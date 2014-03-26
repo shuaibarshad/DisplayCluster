@@ -89,7 +89,6 @@ class MainWindow : public QMainWindow
         void loadState();
 
         void computeImagePyramid();
-        void constrainAspectRatio(bool set);
         void showBackgroundWidget();
 
         void openWebBrowser();

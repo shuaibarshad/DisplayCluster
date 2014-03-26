@@ -156,8 +156,8 @@ void DisplayGroupGraphicsView::tapAndHold( QTapAndHoldGesture* gesture )
 void DisplayGroupGraphicsView::resizeEvent(QResizeEvent * resizeEvt)
 {
     // compute the scene rectangle to show such that the aspect ratio corresponds to the actual aspect ratio of the tiled display
-    float tiledDisplayAspect = (float)g_configuration->getTotalWidth() / (float)g_configuration->getTotalHeight();
-    float windowAspect = (float)width() / (float)height();
+    const float tiledDisplayAspect = g_configuration->getAspectRatio();
+    const float windowAspect = (float)width() / (float)height();
 
     float sceneWidth, sceneHeight;
 
