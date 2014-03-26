@@ -526,7 +526,7 @@ void MainWindow::openWebBrowser()
                                          WEBBROWSER_DEFAULT_URL, &ok);
     if (ok && !url.isEmpty())
     {
-        emit openWebBrowser(QPointF(), QSize(), url);
+        emit openWebBrowser(QPointF(.5,.5), QSize(), url);
     }
 }
 

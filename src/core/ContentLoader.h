@@ -72,16 +72,6 @@ public:
     bool load(const QString& filename, const QPointF& windowCenterPosition = QPointF(),
               const QSizeF& windowSize = QSizeF());
 
-    /**
-     * Load a Content from a file and create a window for it.
-     *
-     * Convienience overload to center the Content's window above another window.
-     * @param filename The content file to open.
-     * @param parentWindowUri The identifier of the window above which to center the content.
-     * @return true if operation was successful, false otherwise.
-     */
-    bool load(const QString& filename, const QString& parentWindowUri);
-
 private:
     DisplayGroupManagerPtr displayGroupManager_;
 };

@@ -62,47 +62,9 @@ ContentWindowManager::ContentWindowManager()
 ContentWindowManager::ContentWindowManager(ContentPtr content)
     : interactionDelegate_( 0 )
 {
-    // ContentWindowManagers must always belong to the main thread!
-    moveToThread(QApplication::instance()->thread());
-
-    // content dimensions
-    content->getDimensions(contentWidth_, contentHeight_);
+    setContent(content);
 
     adjustSize( SIZE_1TO1 );
-
-    // default to centered
-    centerX_ = 0.5;
-    centerY_ = 0.5;
-
-    // default to no zoom
-    zoom_ = 1.;
-
-    controlState_ = STATE_LOOP;
-
-    // set content object
-    content_ = content;
-
-    // receive updates to content dimensions
-    connect(content.get(), SIGNAL(dimensionsChanged(int, int)),
-            this, SLOT(setContentDimensions(int, int)));
-
-    if (g_mpiRank == 0)
-    {
-        if (getContent()->getType() == CONTENT_TYPE_PIXEL_STREAM)
-        {
-            interactionDelegate_ = new PixelStreamInteractionDelegate(*this);
-        }
-#if ENABLE_PDF_SUPPORT
-        else if (getContent()->getType() == CONTENT_TYPE_PDF)
-        {
-            interactionDelegate_ = new PDFInteractionDelegate(*this);
-        }
-#endif
-        else
-        {
-            interactionDelegate_ = new ZoomInteractionDelegate(*this);
-        }
-    }
 }
 
 ContentWindowManager::~ContentWindowManager()
@@ -110,9 +72,58 @@ ContentWindowManager::~ContentWindowManager()
     delete interactionDelegate_;
 }
 
+void ContentWindowManager::setContent(ContentPtr content)
+{
+    if(content_)
+        content_->disconnect(this, SLOT(setContentDimensions(int, int)));
+
+    // set content object
+    content_ = content;
+
+    // content dimensions
+    if(content_)
+    {
+        content_->getDimensions(contentWidth_, contentHeight_);
+
+        // receive updates to content dimensions
+        connect(content.get(), SIGNAL(dimensionsChanged(int, int)),
+                this, SLOT(setContentDimensions(int, int)));
+    }
+    else
+        contentWidth_ = contentHeight_ = 0;
+
+    createInteractionDelegate();
+}
+
 ContentPtr ContentWindowManager::getContent()
 {
     return content_;
+}
+
+void ContentWindowManager::createInteractionDelegate()
+{
+    if (g_mpiRank != 0)
+        return;
+
+    delete interactionDelegate_;
+
+    if(!getContent())
+        return;
+
+    if (getContent()->getType() == CONTENT_TYPE_PIXEL_STREAM)
+    {
+        interactionDelegate_ = new PixelStreamInteractionDelegate(*this);
+    }
+#if ENABLE_PDF_SUPPORT
+    else if (getContent()->getType() == CONTENT_TYPE_PDF)
+    {
+        interactionDelegate_ = new PDFInteractionDelegate(*this);
+    }
+#endif
+    else
+    {
+        interactionDelegate_ = new ZoomInteractionDelegate(*this);
+    }
 }
 
 DisplayGroupManagerPtr ContentWindowManager::getDisplayGroupManager()
@@ -191,6 +202,9 @@ QPointF ContentWindowManager::getWindowCenterPosition() const
 
 void ContentWindowManager::centerPositionAround(const QPointF& position, const bool constrainToWindowBorders)
 {
+    if(position.isNull())
+        return;
+
     double newX = position.x() - 0.5 * coordinates_.width();
     double newY = position.y() - 0.5 * coordinates_.height();
 

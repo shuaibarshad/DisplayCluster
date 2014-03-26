@@ -45,7 +45,6 @@
 #include "MainWindow.h"
 #include "GLWindow.h"
 #include "MessageHeader.h"
-#include "PixelStream.h"
 
 #include <sstream>
 #include <boost/serialization/vector.hpp>
@@ -161,14 +160,6 @@ void DisplayGroupManager::removeContentWindowManager(ContentWindowManagerPtr con
 
     if(source != this)
     {
-        // Notify the (local) pixel stream source of the deletion of the window so the source can be removed too
-        if (contentWindowManager->getContent()->getType() == CONTENT_TYPE_PIXEL_STREAM)
-        {
-            const QString& uri = contentWindowManager->getContent()->getURI();
-            closePixelStream(uri);
-            emit(pixelStreamViewClosed(uri));
-        }
-
         // set null display group in content window manager object
         contentWindowManager->setDisplayGroupManager(DisplayGroupManagerPtr());
 
@@ -325,31 +316,6 @@ void DisplayGroupManager::setBackgroundColor(QColor color)
     sendDisplayGroup();
 }
 
-void DisplayGroupManager::positionWindow(const QString& uri, const QPointF position)
-{
-    ContentWindowManagerPtr contentWindow = getContentWindowManager(uri, CONTENT_TYPE_ANY);
-    if (contentWindow)
-    {
-        contentWindow->centerPositionAround(position, true);
-    }
-    else
-    {
-        // Store position for use when window actually opens
-        windowPositions_[uri] = position;
-    }
-}
-
-void DisplayGroupManager::hideWindow(const QString& uri)
-{
-    ContentWindowManagerPtr contentWindow = getContentWindowManager(uri, CONTENT_TYPE_ANY);
-    if (contentWindow)
-    {
-        double x, y;
-        contentWindow->getSize(x, y);
-        contentWindow->setPosition(0,-2*y);
-    }
-}
-
 void DisplayGroupManager::receiveMessages()
 {
     if(g_mpiRank == 0)
@@ -494,56 +460,6 @@ void DisplayGroupManager::sendContentsDimensionsRequest()
     delete [] buf;
 }
 
-void DisplayGroupManager::adjustPixelStreamContentDimensions(QString uri, int width, int height, bool changeViewSize)
-{
-    ContentWindowManagerPtr contentWindow = getContentWindowManager(uri, CONTENT_TYPE_PIXEL_STREAM);
-    if(contentWindow)
-    {
-        // check for updated dimensions
-        ContentPtr c = contentWindow->getContent();
-
-        int oldWidth, oldHeight;
-        c->getDimensions(oldWidth, oldHeight);
-
-        if(width != oldWidth || height != oldHeight)
-        {
-            c->setDimensions(width, height);
-            if (changeViewSize)
-            {
-                contentWindow->adjustSize( SIZE_1TO1 );
-            }
-        }
-    }
-}
-
-void DisplayGroupManager::registerEventReceiver(QString uri, bool exclusive, EventReceiver* receiver)
-{
-    bool success = false;
-
-    // Try to register with the ContentWindowManager corresponding to this stream
-    ContentWindowManagerPtr contentWindow = getContentWindowManager(uri);
-
-    if(contentWindow)
-    {
-        put_flog(LOG_DEBUG, "found window: '%s'", uri.toStdString().c_str());
-
-        // If a receiver is already registered, don't register this one if exclusive was requested
-        if( !exclusive || !contentWindow->hasEventReceivers() )
-        {
-            success = contentWindow->registerEventReceiver( receiver );
-
-            if (success)
-                contentWindow->setWindowState(ContentWindowInterface::SELECTED);
-        }
-    }
-    else
-    {
-        put_flog(LOG_DEBUG, "could not find window: '%s'", uri.toStdString().c_str());
-    }
-
-    emit eventRegistrationReply(uri, success);
-}
-
 void DisplayGroupManager::sendFrameClockUpdate()
 {
     // this should only be called by the rank 1 process
@@ -656,41 +572,6 @@ void DisplayGroupManager::advanceContents()
     {
         backgroundContent_->getContent()->advance(backgroundContent_);
     }
-}
-
-void DisplayGroupManager::openPixelStream(QString uri, int width, int height)
-{
-    // add a Content/ContentWindowManager for this URI
-    ContentWindowManagerPtr contentWindow = getContentWindowManager(uri, CONTENT_TYPE_PIXEL_STREAM);
-
-    if(!contentWindow)
-    {
-        put_flog(LOG_DEBUG, "adding pixel stream: %s", uri.toLocal8Bit().constData());
-
-        ContentPtr content = ContentFactory::getPixelStreamContent(uri);
-        content->setDimensions(width, height);
-        contentWindow = ContentWindowManagerPtr(new ContentWindowManager(content));
-
-        // Position window if needed
-        WindowPositions::iterator it = windowPositions_.find(uri);
-        if (it != windowPositions_.end())
-        {
-            contentWindow->centerPositionAround(it->second, true);
-            windowPositions_.erase(it);
-        }
-        addContentWindowManager(contentWindow);
-
-        emit(pixelStreamViewAdded(uri));
-    }
-}
-
-void DisplayGroupManager::closePixelStream(const QString& uri)
-{
-    put_flog(LOG_DEBUG, "deleting pixel stream: %s", uri.toLocal8Bit().constData());
-
-    ContentWindowManagerPtr contentWindow = getContentWindowManager(uri, CONTENT_TYPE_PIXEL_STREAM);
-    if( contentWindow )
-        removeContentWindowManager( contentWindow );
 }
 
 #if ENABLE_SKELETON_SUPPORT

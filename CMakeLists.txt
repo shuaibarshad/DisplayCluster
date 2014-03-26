@@ -51,6 +51,7 @@ add_subdirectory(apps)
 add_subdirectory(tests)
 
 # Documentation
+set(PROJECT_INCLUDE_NAME dc)
 include(DoxygenRule)
 add_subdirectory(doc)
 

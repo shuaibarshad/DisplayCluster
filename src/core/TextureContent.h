@@ -63,7 +63,7 @@ class TextureContent : public Content {
             ar & boost::serialization::base_object<Content>(*this);
         }
 
-        void renderFactoryObject(float tX, float tY, float tW, float tH);
+        virtual void renderFactoryObject(ContentWindowManagerPtr window, const QRectF& texCoords);
 };
 
 #endif

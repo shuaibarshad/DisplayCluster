@@ -64,8 +64,8 @@ public:
 
     void getDimensions(int &width, int &height) const;
 
-    void preRenderUpdate();
-    void render(const float tX, const float tY, const float tW, const float tH);
+    void preRenderUpdate(const QRectF& windowRect);
+    void render(const QRectF& texCoords, const QRectF& windowRect);
 
     void insertNewFrame(const PixelStreamSegments& segments);
 
@@ -90,18 +90,18 @@ private:
     std::vector<PixelStreamSegmentRendererPtr> segmentRenderers_;
 
     void updateRenderers(const PixelStreamSegments& segments);
-    void updateVisibleTextures();
+    void updateVisibleTextures(const QRectF& windowRect);
     void swapBuffers();
     void recomputeDimensions(const PixelStreamSegments& segments);
-    void decodeVisibleTextures();
+    void decodeVisibleTextures(const QRectF& windowRect);
 
     void adjustFrameDecodersCount(const size_t count);
     void adjustSegmentRendererCount(const size_t count);
 
     bool isDecodingInProgress();
 
-    bool isVisible(const QRect& segment);
-    bool isVisible(const PixelStreamSegment& segment);
+    bool isVisible(const QRect& segment, const QRectF& windowRect);
+    bool isVisible(const PixelStreamSegment& segment, const QRectF& windowRect);
 };
 
 

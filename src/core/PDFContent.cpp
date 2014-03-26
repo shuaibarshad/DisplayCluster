@@ -91,8 +91,8 @@ void PDFContent::getFactoryObjectDimensions(int &width, int &height)
     g_mainWindow->getGLWindow()->getPDFFactory().getObject(getURI())->getDimensions(width, height);
 }
 
-void PDFContent::renderFactoryObject(float tX, float tY, float tW, float tH)
+void PDFContent::renderFactoryObject(ContentWindowManagerPtr, const QRectF& texCoords)
 {
     g_mainWindow->getGLWindow()->getPDFFactory().getObject(getURI())->setPage(pageNumber_);
-    g_mainWindow->getGLWindow()->getPDFFactory().getObject(getURI())->render(tX, tY, tW, tH);
+    g_mainWindow->getGLWindow()->getPDFFactory().getObject(getURI())->render(texCoords);
 }

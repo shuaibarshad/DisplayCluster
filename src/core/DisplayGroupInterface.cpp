@@ -78,15 +78,12 @@ ContentWindowManagerPtrs DisplayGroupInterface::getContentWindowManagers()
     return contentWindowManagers_;
 }
 
-ContentWindowManagerPtr DisplayGroupInterface::getContentWindowManager(const QString& uri, CONTENT_TYPE contentType)
+ContentWindowManagerPtr DisplayGroupInterface::getContentWindowManager(const QUuid& id) const
 {
-    for(size_t i=0; i<contentWindowManagers_.size(); i++)
+    for(size_t i=0; i<contentWindowManagers_.size(); ++i)
     {
-        if( contentWindowManagers_[i]->getContent()->getURI() == uri &&
-           (contentType == CONTENT_TYPE_ANY || contentWindowManagers_[i]->getContent()->getType() == contentType))
-        {
+        if( contentWindowManagers_[i]->getID() == id )
             return contentWindowManagers_[i];
-        }
     }
 
     return ContentWindowManagerPtr();

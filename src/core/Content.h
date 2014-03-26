@@ -94,7 +94,8 @@ class Content : public QObject {
         int height_;
         bool blockAdvance_;
 
-        virtual void renderFactoryObject(float tX, float tY, float tW, float tH) = 0;
+        virtual void renderFactoryObject(ContentWindowManagerPtr window,
+                                         const QRectF& texCoords) = 0;
 };
 
 BOOST_SERIALIZATION_ASSUME_ABSTRACT(Content)

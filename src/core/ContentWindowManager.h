@@ -59,7 +59,10 @@ class ContentWindowManager : public ContentWindowInterface, public boost::enable
         ContentWindowManager(ContentPtr content);
         virtual ~ContentWindowManager();
 
+        void setContent(ContentPtr content);
         ContentPtr getContent();
+
+        void createInteractionDelegate();
 
         DisplayGroupManagerPtr getDisplayGroupManager();
         void setDisplayGroupManager(DisplayGroupManagerPtr displayGroupManager);

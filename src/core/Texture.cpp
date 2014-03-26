@@ -78,7 +78,7 @@ void Texture::getDimensions(int &width, int &height)
     height = imageHeight_;
 }
 
-void Texture::render(float tX, float tY, float tW, float tH)
+void Texture::render(const QRectF& texCoords)
 {
     updateRenderedFrameIndex();
 
@@ -93,16 +93,16 @@ void Texture::render(float tX, float tY, float tW, float tH)
 
     glBegin(GL_QUADS);
 
-    glTexCoord2f(tX,tY);
+    glTexCoord2f(texCoords.x(), texCoords.y());
     glVertex2f(0.,0.);
 
-    glTexCoord2f(tX+tW,tY);
+    glTexCoord2f(texCoords.x()+texCoords.width(), texCoords.y());
     glVertex2f(1.,0.);
 
-    glTexCoord2f(tX+tW,tY+tH);
+    glTexCoord2f(texCoords.x()+texCoords.width(),texCoords.y()+texCoords.height());
     glVertex2f(1.,1.);
 
-    glTexCoord2f(tX,tY+tH);
+    glTexCoord2f(texCoords.x(),texCoords.y()+texCoords.height());
     glVertex2f(0.,1.);
 
     glEnd();

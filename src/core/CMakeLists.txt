@@ -138,6 +138,7 @@ list(APPEND SRCS
     PixelStreamInteractionDelegate.cpp
     PixelStreamSegmentDecoder.cpp
     PixelStreamSegmentRenderer.cpp
+    PixelStreamWindowManager.cpp
     SessionCommandHandler.cpp
     State.cpp
     StatePreview.cpp
@@ -195,6 +196,7 @@ list(APPEND MOC_HEADERS
     NetworkListenerThread.h
     Options.h
     PixelStreamDispatcher.h
+    PixelStreamWindowManager.h
     WebbrowserCommandHandler.h
     localstreamer/AsyncImageLoader.h
     localstreamer/DockPixelStreamer.h

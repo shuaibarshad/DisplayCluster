@@ -43,8 +43,11 @@
 #include "CommandLineOptions.h"
 
 #include "log.h"
-#include "DisplayGroupManager.h"
+#include "globals.h"
+#include "PixelStreamWindowManager.h"
+#include "configuration/Configuration.h"
 
+#include <QCoreApplication>
 #include <QProcess>
 
 #ifdef _WIN32
@@ -55,10 +58,10 @@
 
 #define WEBBROWSER_DEFAULT_SIZE  QSize(1280, 1024)
 
-PixelStreamerLauncher::PixelStreamerLauncher(DisplayGroupManager* displayGroupManager)
-    : displayGroupManager_(displayGroupManager)
+PixelStreamerLauncher::PixelStreamerLauncher(PixelStreamWindowManager& windowManager)
+    : windowManager_(windowManager)
 {
-    connect(displayGroupManager, SIGNAL(pixelStreamViewClosed(QString)),
+    connect(&windowManager_, SIGNAL(pixelStreamWindowClosed(QString)),
             this, SLOT(dereferenceLocalStreamer(QString)), Qt::QueuedConnection);
 }
 
@@ -67,9 +70,13 @@ void PixelStreamerLauncher::openWebBrowser(const QPointF pos, const QSize size, 
     static int webbrowserCounter = 0;
     const QString& uri = QString("WebBrowser_%1").arg(webbrowserCounter++);
 
-    const QString program = QString("%1/%2").arg(QCoreApplication::applicationDirPath(), LOCALSTREAMER_BIN);
-
     const QSize viewportSize = !size.isEmpty() ? size : WEBBROWSER_DEFAULT_SIZE;
+
+    const QSizeF normalizedSize( (double)viewportSize.width() / g_configuration->getTotalWidth(),
+                                 (double)viewportSize.height() / g_configuration->getTotalHeight());
+    windowManager_.createContentWindow(uri, pos, normalizedSize);
+
+    const QString program = QString("%1/%2").arg(QCoreApplication::applicationDirPath(), LOCALSTREAMER_BIN);
 
     CommandLineOptions options;
     options.setPixelStreamerType(PS_WEBKIT);
@@ -80,26 +87,29 @@ void PixelStreamerLauncher::openWebBrowser(const QPointF pos, const QSize size, 
 
     processes_[uri] = new QProcess(this);
     if ( !processes_[uri]->startDetached(program, options.getCommandLineArguments(), QDir::currentPath( )))
-        put_flog(LOG_WARN, "QProcess could not be started!");
-
-    if ( !pos.isNull( ))
-        displayGroupManager_->positionWindow(uri, pos);
+        put_flog(LOG_WARN, "Browser process could not be started!");
 }
 
 void PixelStreamerLauncher::openDock(const QPointF pos, const QSize size, const QString rootDir)
 {
     const QString& uri = DockPixelStreamer::getUniqueURI();
 
+    const QSize& dockSize = DockPixelStreamer::constrainSize(size);
+
+    const QSizeF normalizedSize( (double)dockSize.width() / g_configuration->getTotalWidth(),
+                                 (double)dockSize.height() / g_configuration->getTotalHeight());
+    windowManager_.createContentWindow(uri, pos, normalizedSize);
+
     if( !processes_.count(uri) )
     {
-        createDock(size, rootDir);
+        if( !createDock(dockSize, rootDir))
+            put_flog(LOG_WARN, "Dock process could not be started!");
     }
-    displayGroupManager_->positionWindow(uri, pos);
 }
 
 void PixelStreamerLauncher::hideDock()
 {
-    displayGroupManager_->hideWindow(DockPixelStreamer::getUniqueURI());
+    windowManager_.hideWindow(DockPixelStreamer::getUniqueURI());
 }
 
 void PixelStreamerLauncher::dereferenceLocalStreamer(const QString uri)
