@@ -69,7 +69,7 @@ void SVGContent::getFactoryObjectDimensions(int &width, int &height)
     g_mainWindow->getGLWindow()->getSVGFactory().getObject(getURI())->getDimensions(width, height);
 }
 
-void SVGContent::renderFactoryObject(float tX, float tY, float tW, float tH)
+void SVGContent::renderFactoryObject(ContentWindowManagerPtr, const QRectF& texCoords)
 {
-    g_mainWindow->getGLWindow()->getSVGFactory().getObject(getURI())->render(tX, tY, tW, tH);
+    g_mainWindow->getGLWindow()->getSVGFactory().getObject(getURI())->render(texCoords);
 }

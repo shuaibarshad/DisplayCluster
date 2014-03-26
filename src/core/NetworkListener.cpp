@@ -40,16 +40,18 @@
 
 #include "NetworkListenerThread.h"
 #include "PixelStreamDispatcher.h"
-#include "DisplayGroupManager.h"
+#include "PixelStreamWindowManager.h"
 #include "log.h"
 
 #include "CommandHandler.h"
 
+#include <QThread>
+
 const int NetworkListener::defaultPortNumber_ = 1701;
 
-NetworkListener::NetworkListener(DisplayGroupManager& displayGroupManager, int port)
-    : displayGroupManager_(displayGroupManager)
-    , pixelStreamDispatcher_(new PixelStreamDispatcher())
+NetworkListener::NetworkListener(PixelStreamWindowManager& windowManager, int port)
+    : windowManager_(windowManager)
+    , pixelStreamDispatcher_(new PixelStreamDispatcher(windowManager))
     , commandHandler_(new CommandHandler())
 {
     qRegisterMetaType<size_t>("size_t");
@@ -92,13 +94,13 @@ void NetworkListener::incomingConnection(int socketHandle)
             commandHandler_, SLOT(process(QString,QString)));
 
     // DisplayGroupManager
-    connect( &displayGroupManager_, SIGNAL( pixelStreamViewClosed( QString )),
+    connect( &windowManager_, SIGNAL( pixelStreamWindowClosed( QString )),
              worker, SLOT(pixelStreamerClosed( QString )));
-    connect( &displayGroupManager_,
+    connect( &windowManager_,
              SIGNAL( eventRegistrationReply( QString, bool )),
              worker, SLOT( eventRegistrationReply( QString, bool )));
     connect( worker, SIGNAL( registerToEvents( QString, bool, EventReceiver* )),
-             &displayGroupManager_,
+             &windowManager_,
              SLOT( registerEventReceiver( QString, bool, EventReceiver* )));
 
     // PixelStreamDispatcher

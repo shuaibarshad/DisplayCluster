@@ -300,7 +300,7 @@ void DynamicTexture::getDimensions(int &width, int &height)
     height = imageHeight_;
 }
 
-void DynamicTexture::render(float tX, float tY, float tW, float tH, bool computeOnDemand, bool considerChildren)
+void DynamicTexture::render(const QRectF& texCoords, bool computeOnDemand, bool considerChildren)
 {
     if(depth_ == 0)
     {
@@ -312,7 +312,7 @@ void DynamicTexture::render(float tX, float tY, float tW, float tH, bool compute
         // mark this object as having rendered children in this frame
         renderChildrenFrameCount_ = g_frameCount;
 
-        renderChildren(tX,tY,tW,tH);
+        renderChildren(texCoords);
     }
     else
     {
@@ -355,12 +355,12 @@ void DynamicTexture::render(float tX, float tY, float tW, float tH, bool compute
 
             if(parent != NULL)
             {
-                float pX = parentX_ + tX * parentW_;
-                float pY = parentY_ + tY * parentH_;
-                float pW = tW * parentW_;
-                float pH = tH * parentH_;
+                float pX = parentX_ + texCoords.x() * parentW_;
+                float pY = parentY_ + texCoords.y() * parentH_;
+                float pW = texCoords.width() * parentW_;
+                float pH = texCoords.height() * parentH_;
 
-                parent->render(pX, pY, pW, pH, false, false);
+                parent->render(QRectF(pX, pY, pW, pH), false, false);
             }
         }
         else
@@ -390,16 +390,16 @@ void DynamicTexture::render(float tX, float tY, float tW, float tH, bool compute
             glBegin(GL_QUADS);
 
             // note we need to flip the y coordinate since the textures are loaded upside down
-            glTexCoord2f(tX,1.-tY);
+            glTexCoord2f(texCoords.x(),1.-texCoords.y());
             glVertex2f(0.,0.);
 
-            glTexCoord2f(tX+tW,1.-tY);
+            glTexCoord2f(texCoords.x()+texCoords.width(),1.-texCoords.y());
             glVertex2f(1.,0.);
 
-            glTexCoord2f(tX+tW,1.-(tY+tH));
+            glTexCoord2f(texCoords.x()+texCoords.width(),1.-(texCoords.y()+texCoords.height()));
             glVertex2f(1.,1.);
 
-            glTexCoord2f(tX,1.-(tY+tH));
+            glTexCoord2f(texCoords.x(),1.-(texCoords.y()+texCoords.height()));
             glVertex2f(0.,1.);
 
             glEnd();
@@ -665,11 +665,8 @@ void DynamicTexture::uploadTexture()
     scaledImage_ = QImage();
 }
 
-void DynamicTexture::renderChildren(float tX, float tY, float tW, float tH)
+void DynamicTexture::renderChildren(const QRectF& texCoords)
 {
-    // texture rectangle we're showing with this parent object
-    QRectF textureRect(tX,tY,tW,tH);
-
     // children rectangles
     float inf = 1000000.;
 
@@ -701,7 +698,7 @@ void DynamicTexture::renderChildren(float tX, float tY, float tW, float tH)
     for(unsigned int i=0; i<children_.size(); i++)
     {
         // portion of texture for this child
-        QRectF childTextureRect = textureRect.intersected(textureBounds[i]);
+        QRectF childTextureRect = texCoords.intersected(textureBounds[i]);
 
         // translate and scale to child texture coordinates
         QRectF childTextureRectTranslated = childTextureRect.translated(-imageBounds[i].x(), -imageBounds[i].y());
@@ -710,13 +707,13 @@ void DynamicTexture::renderChildren(float tX, float tY, float tW, float tH)
 
         // find rendering position based on portion of textureRect we occupy
         // recall the parent object (this one) is rendered as a (0,0,1,1) rectangle
-        QRectF renderRect((childTextureRect.x()-textureRect.x()) / textureRect.width(), (childTextureRect.y()-textureRect.y()) / textureRect.height(), childTextureRect.width() / textureRect.width(), childTextureRect.height() / textureRect.height());
+        QRectF renderRect((childTextureRect.x()-texCoords.x()) / texCoords.width(), (childTextureRect.y()-texCoords.y()) / texCoords.height(), childTextureRect.width() / texCoords.width(), childTextureRect.height() / texCoords.height());
 
         glPushMatrix();
         glTranslatef(renderRect.x(), renderRect.y(), 0.);
         glScalef(renderRect.width(), renderRect.height(), 1.);
 
-        children_[i]->render(childTextureRectTranslatedAndScaled.x(), childTextureRectTranslatedAndScaled.y(), childTextureRectTranslatedAndScaled.width(), childTextureRectTranslatedAndScaled.height());
+        children_[i]->render(childTextureRectTranslatedAndScaled);
 
         glPopMatrix();
     }

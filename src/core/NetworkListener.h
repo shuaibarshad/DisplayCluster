@@ -42,7 +42,7 @@
 #include <QtNetwork/QTcpServer>
 
 class PixelStreamDispatcher;
-class DisplayGroupManager;
+class PixelStreamWindowManager;
 class CommandHandler;
 
 class NetworkListener : public QTcpServer
@@ -52,7 +52,8 @@ class NetworkListener : public QTcpServer
 public:
     static const int defaultPortNumber_;
 
-    NetworkListener(DisplayGroupManager& displayGroupManager, int port = defaultPortNumber_);
+    NetworkListener(PixelStreamWindowManager& windowManager,
+                    int port = defaultPortNumber_);
     ~NetworkListener();
 
     CommandHandler& getCommandHandler() const;
@@ -61,7 +62,7 @@ protected:
     virtual void incomingConnection(int socketHandle);
 
 private:
-    DisplayGroupManager& displayGroupManager_;
+    PixelStreamWindowManager& windowManager_;
     PixelStreamDispatcher* pixelStreamDispatcher_;
     CommandHandler* commandHandler_;
 };

@@ -335,21 +335,21 @@ void DockPixelStreamer::addFoldersToFlow()
     }
 }
 
-QSize DockPixelStreamer::getMinSize() const
+QSize DockPixelStreamer::getMinSize()
 {
     const float dockHeight = SLIDE_MIN_SIZE / SLIDE_REL_HEIGHT_FACTOR;
     const float dockWidth = dockHeight / getDefaultAspectRatio();
     return QSize( dockWidth, dockHeight );
 }
 
-QSize DockPixelStreamer::getMaxSize() const
+QSize DockPixelStreamer::getMaxSize()
 {
     const float dockHeight = SLIDE_MAX_SIZE / SLIDE_REL_HEIGHT_FACTOR;
     const float dockWidth = dockHeight / getDefaultAspectRatio();
     return QSize( dockWidth, dockHeight );
 }
 
-QSize DockPixelStreamer::constrainSize(const QSize& targetSize) const
+QSize DockPixelStreamer::constrainSize(const QSize& targetSize)
 {
     QSize minSize = getMinSize();
     QSize maxSize = getMaxSize();

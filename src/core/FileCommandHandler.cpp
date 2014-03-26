@@ -42,11 +42,15 @@
 #include "Command.h"
 #include "DisplayGroupManager.h"
 #include "ContentLoader.h"
+#include "ContentWindowManager.h"
 #include "StateSerializationHelper.h"
+#include "PixelStreamWindowManager.h"
 #include "log.h"
 
-FileCommandHandler::FileCommandHandler(DisplayGroupManagerPtr displayGroupManager)
+FileCommandHandler::FileCommandHandler(DisplayGroupManagerPtr displayGroupManager,
+                                       PixelStreamWindowManager& windowManager)
     : displayGroupManager_(displayGroupManager)
+    , pixelStreamWindowManager_(windowManager)
 {
 }
 
@@ -67,7 +71,14 @@ void FileCommandHandler::handle(const Command& command, const QString& senderUri
     else if ( ContentFactory::getSupportedExtensions().contains( extension ))
     {
         ContentLoader loader(displayGroupManager_);
-        loader.load(uri, senderUri);
+
+        // Center the new content where the dock is
+        // TODO: DISCL-230
+        QPointF position;
+        ContentWindowManagerPtr parentWindow = pixelStreamWindowManager_.getContentWindow(senderUri);
+        if( parentWindow )
+            position = parentWindow->getWindowCenterPosition();
+        loader.load(uri, position);
     }
     else
     {

@@ -77,7 +77,7 @@ private:
     int pageNumber_;
     int pageCount_;
 
-    void renderFactoryObject(float tX, float tY, float tW, float tH);
+    virtual void renderFactoryObject(ContentWindowManagerPtr window, const QRectF& texCoords);
 };
 
 #endif // PDFCONTENT_H

@@ -69,6 +69,8 @@ public:
 
     bool setRootDir(const QString& dir);
 
+    static QSize constrainSize(const QSize& targetSize);
+
 public slots:
     virtual void processEvent(Event evt);
 
@@ -106,9 +108,8 @@ private:
     void addFilesToFlow();
     void addFoldersToFlow();
 
-    QSize getMinSize() const;
-    QSize getMaxSize() const;
-    QSize constrainSize(const QSize& targetSize) const;
+    static QSize getMinSize();
+    static QSize getMaxSize();
 };
 
 #endif // DOCKPIXELSTREAMER_H

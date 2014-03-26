@@ -74,8 +74,7 @@ MainWindow::MainWindow()
 
     // Receive changes from the selection rectangle
     connect(desktopSelectionWindow_->getDesktopSelectionView()->getDesktopSelectionRectangle(),
-            SIGNAL(coordinatesChanged(QRect coordinates)),
-            this, SLOT(setCoordinates(QRect coordinates)));
+            SIGNAL(coordinatesChanged(QRect)), this, SLOT(setCoordinates(QRect)));
 
     connect(desktopSelectionWindow_, SIGNAL(windowVisible(bool)), showDesktopSelectionWindowAction_, SLOT(setChecked(bool)));
 }

@@ -45,32 +45,33 @@
 #include "EventReceiver.h"
 
 ContentWindowInterface::ContentWindowInterface()
-    : contentWidth_(0)
+    : uuid_(QUuid::createUuid())
+    , contentWidth_(0)
     , contentHeight_(0)
-    , centerX_(0)
-    , centerY_(0)
-    , zoom_(0)
+    , centerX_(0.5)
+    , centerY_(0.5)
+    , zoom_(1)
     , windowState_( UNSELECTED )
-    , sizeState_( SIZE_1TO1 )
-    , controlState_( STATE_PAUSED )
+    , sizeState_( SIZE_NORMALIZED )
+    , controlState_( STATE_LOOP )
     , eventReceiversCount_( 0 )
 {}
 
 ContentWindowInterface::ContentWindowInterface(ContentWindowManagerPtr contentWindowManager)
-    : contentWidth_(0)
+    : uuid_(contentWindowManager ? contentWindowManager->getID() : QUuid::createUuid())
+    , contentWindowManager_(contentWindowManager)
+    , contentWidth_(0)
     , contentHeight_(0)
     , centerX_(0)
     , centerY_(0)
     , zoom_(0)
     , windowState_( UNSELECTED )
-    , sizeState_( SIZE_1TO1 )
+    , sizeState_( SIZE_NORMALIZED )
     , controlState_( STATE_PAUSED )
     , eventReceiversCount_( 0 )
 {
-    contentWindowManager_ = contentWindowManager;
-
     // copy all members from contentWindowManager
-    if(contentWindowManager != NULL)
+    if(contentWindowManager)
     {
         contentWidth_ = contentWindowManager->contentWidth_;
         contentHeight_ = contentWindowManager->contentHeight_;
@@ -116,6 +117,11 @@ ContentWindowInterface::ContentWindowInterface(ContentWindowManagerPtr contentWi
 
     // destruction
     connect(contentWindowManager.get(), SIGNAL(destroyed(QObject *)), this, SLOT(deleteLater()));
+}
+
+const QUuid& ContentWindowInterface::getID() const
+{
+    return uuid_;
 }
 
 ContentWindowManagerPtr ContentWindowInterface::getContentWindowManager()

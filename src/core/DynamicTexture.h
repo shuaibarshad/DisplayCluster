@@ -61,7 +61,7 @@ class DynamicTexture : public boost::enable_shared_from_this<DynamicTexture>, pu
 
         void loadImage(bool convertToGLFormat=true); // thread needs access to this method
         void getDimensions(int &width, int &height);
-        void render(float tX, float tY, float tW, float tH, bool computeOnDemand=true, bool considerChildren=true);
+        void render(const QRectF& texCoords, bool computeOnDemand=true, bool considerChildren=true);
         void clearOldChildren(uint64_t minFrameCount); // clear children of nodes with renderChildrenFrameCount_ < minFrameCount
         void computeImagePyramid(std::string imagePyramidPath);
         void decrementThreadCount(); // thread needs access to this method
@@ -121,7 +121,7 @@ class DynamicTexture : public boost::enable_shared_from_this<DynamicTexture>, pu
         QRect getRootImageCoordinates(float x, float y, float w, float h);
         QImage getImageFromParent(float x, float y, float w, float h, DynamicTexture * start);
         void uploadTexture();
-        void renderChildren(float tX, float tY, float tW, float tH);
+        void renderChildren(const QRectF& texCoords);
         double getProjectedPixelArea(bool onScreenOnly);
         bool getThreadsDoneDescending();
         int getThreadCount();

@@ -50,7 +50,7 @@ class Texture : public FactoryObject {
         ~Texture();
 
         void getDimensions(int &width, int &height);
-        void render(float tX, float tY, float tW, float tH);
+        void render(const QRectF& texCoords);
 
     private:
 

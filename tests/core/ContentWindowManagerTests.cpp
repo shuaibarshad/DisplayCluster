@@ -54,12 +54,12 @@ public:
     DummyContent() : Content() {}
 
 private:
-    CONTENT_TYPE getType() { return CONTENT_TYPE_ANY; }
+    virtual CONTENT_TYPE getType() { return CONTENT_TYPE_ANY; }
 
-    void getFactoryObjectDimensions(int &width, int &height)
+    virtual void getFactoryObjectDimensions(int &width, int &height)
         { getDimensions( width, height ); }
 
-    void renderFactoryObject(float, float, float, float) {}
+    virtual void renderFactoryObject(ContentWindowManagerPtr, const QRectF&) {}
 };
 
 
@@ -152,6 +152,76 @@ BOOST_AUTO_TEST_CASE( testFromFullscreenBackToNormalized )
     BOOST_CHECK_EQUAL( coords.y(), target.y( ));
     BOOST_CHECK_EQUAL( coords.width(), target.width( ));
     BOOST_CHECK_EQUAL( coords.height(), target.height( ));
+
+    delete g_configuration;
+}
+
+BOOST_AUTO_TEST_CASE( testValidID )
+{
+    g_displayGroupManager.reset( new DisplayGroupManager );
+    g_configuration =
+        new MasterConfiguration( "configuration.xml",
+                                 g_displayGroupManager->getOptions( ));
+
+    ContentPtr content( new DummyContent );
+    content->setDimensions( WIDTH, HEIGHT );
+    ContentWindowManager window( content );
+
+    BOOST_CHECK( window.getID() != QUuid());
+
+    delete g_configuration;
+}
+
+BOOST_AUTO_TEST_CASE( testUniqueID )
+{
+    g_displayGroupManager.reset( new DisplayGroupManager );
+    g_configuration =
+        new MasterConfiguration( "configuration.xml",
+                                 g_displayGroupManager->getOptions( ));
+
+    ContentPtr content( new DummyContent );
+    content->setDimensions( WIDTH, HEIGHT );
+
+    ContentWindowManager window1( content );
+    BOOST_CHECK( window1.getID() != QUuid());
+
+    ContentWindowManager window2( content );
+    BOOST_CHECK( window2.getID() != QUuid());
+
+    BOOST_CHECK( window1.getID() != window2.getID());
+
+    delete g_configuration;
+}
+
+BOOST_AUTO_TEST_CASE( testSetContent )
+{
+    g_displayGroupManager.reset( new DisplayGroupManager );
+    g_configuration =
+        new MasterConfiguration( "configuration.xml",
+                                 g_displayGroupManager->getOptions( ));
+
+    ContentPtr content( new DummyContent );
+    content->setDimensions( WIDTH, HEIGHT );
+
+    ContentWindowManager window;
+    BOOST_CHECK(!window.getContent());
+
+    int contentWidth, contentHeight;
+    window.getContentDimensions(contentWidth, contentHeight);
+    BOOST_CHECK_EQUAL(contentWidth, 0);
+    BOOST_CHECK_EQUAL(contentHeight, 0);
+
+    window.setContent(content);
+    BOOST_CHECK_EQUAL(window.getContent(), content);
+    window.getContentDimensions(contentWidth, contentHeight);
+    BOOST_CHECK_EQUAL(contentWidth, WIDTH);
+    BOOST_CHECK_EQUAL(contentHeight, HEIGHT);
+
+    window.setContent(ContentPtr());
+    BOOST_CHECK(!window.getContent());
+    window.getContentDimensions(contentWidth, contentHeight);
+    BOOST_CHECK_EQUAL(contentWidth, 0);
+    BOOST_CHECK_EQUAL(contentHeight, 0);
 
     delete g_configuration;
 }

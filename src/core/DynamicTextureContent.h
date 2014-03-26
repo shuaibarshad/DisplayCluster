@@ -63,9 +63,9 @@ class DynamicTextureContent : public Content {
             ar & boost::serialization::base_object<Content>(*this);
         }
 
-        void advance(ContentWindowManagerPtr window);
+        virtual void advance(ContentWindowManagerPtr window);
 
-        void renderFactoryObject(float tX, float tY, float tW, float tH);
+        virtual void renderFactoryObject(ContentWindowManagerPtr window, const QRectF& texCoords);
 };
 
 #endif

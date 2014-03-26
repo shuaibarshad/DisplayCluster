@@ -45,7 +45,9 @@
 #include "Event.h"
 #include "types.h"
 
-#include <QtGui>
+#include <QObject>
+#include <QUuid>
+#include <QRectF>
 #ifndef Q_MOC_RUN
 // https://bugreports.qt.nokia.com/browse/QTBUG-22829: When Qt moc runs on CGAL
 // files, do not process <boost/type_traits/has_operator.hpp>
@@ -85,6 +87,9 @@ class ContentWindowInterface : public QObject
 
         ContentWindowInterface();
         ContentWindowInterface(ContentWindowManagerPtr contentWindowManager);
+
+        /** @return the unique identifier for this window. */
+        const QUuid& getID() const;
 
         /** Get the ContentWindowManger associated to this object if it has one, otherwise returns 0. */
         ContentWindowManagerPtr getContentWindowManager();
@@ -189,10 +194,13 @@ class ContentWindowInterface : public QObject
 
         void setEventToNewDimensions();
 
+        const QUuid uuid_;
+
         // optional: reference to ContentWindowManager for non-ContentWindowManager objects
         boost::weak_ptr<ContentWindowManager> contentWindowManager_;
 
         // content dimensions in pixels
+        // TODO remove those (DISCL-231)
         int contentWidth_;
         int contentHeight_;
 

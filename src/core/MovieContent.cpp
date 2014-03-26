@@ -87,7 +87,7 @@ void MovieContent::advance(ContentWindowManagerPtr window)
     movie->nextFrame(skip);
 }
 
-void MovieContent::renderFactoryObject(float tX, float tY, float tW, float tH)
+void MovieContent::renderFactoryObject(ContentWindowManagerPtr, const QRectF& texCoords)
 {
-    g_mainWindow->getGLWindow()->getMovieFactory().getObject(getURI())->render(tX, tY, tW, tH);
+    g_mainWindow->getGLWindow()->getMovieFactory().getObject(getURI())->render(texCoords);
 }
