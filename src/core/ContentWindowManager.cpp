@@ -106,6 +106,7 @@ void ContentWindowManager::createInteractionDelegate()
         return;
 
     delete interactionDelegate_;
+    interactionDelegate_ = 0;
 
     if(!getContent())
         return;

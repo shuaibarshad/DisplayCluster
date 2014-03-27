@@ -40,7 +40,6 @@
 
 Options::Options()
 {
-    constrainAspectRatio_ = true;
     showWindowBorders_ = false;
     showMouseCursor_ = false;
     showTouchPoints_ = false;
@@ -54,11 +53,6 @@ Options::Options()
 #if ENABLE_SKELETON_SUPPORT
     showSkeletons_ = true;
 #endif
-}
-
-bool Options::getConstrainAspectRatio()
-{
-    return constrainAspectRatio_;
 }
 
 bool Options::getShowWindowBorders()
@@ -112,13 +106,6 @@ bool Options::getShowSkeletons()
     return showSkeletons_;
 }
 #endif
-
-void Options::setConstrainAspectRatio(bool set)
-{
-    constrainAspectRatio_ = set;
-
-    emit(updated());
-}
 
 void Options::setShowWindowBorders(bool set)
 {

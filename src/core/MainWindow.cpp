@@ -180,13 +180,6 @@ void MainWindow::setupMasterWindowUI()
     quitAction->setStatusTip("Quit application");
     connect(quitAction, SIGNAL(triggered()), this, SLOT(close()));
 
-    // constrain aspect ratio action
-    QAction * constrainAspectRatioAction = new QAction("Constrain Aspect Ratio", this);
-    constrainAspectRatioAction->setStatusTip("Constrain aspect ratio");
-    constrainAspectRatioAction->setCheckable(true);
-    constrainAspectRatioAction->setChecked(g_displayGroupManager->getOptions()->getConstrainAspectRatio());
-    connect(constrainAspectRatioAction, SIGNAL(toggled(bool)), this, SLOT(constrainAspectRatio(bool)));
-
     // show window borders action
     QAction * showWindowBordersAction = new QAction("Show Window Borders", this);
     showWindowBordersAction->setStatusTip("Show window borders");
@@ -276,7 +269,6 @@ void MainWindow::setupMasterWindowUI()
     fileMenu->addAction(computeImagePyramidAction);
     fileMenu->addAction(quitAction);
     viewMenu->addAction(backgroundAction);
-    viewMenu->addAction(constrainAspectRatioAction);
     viewMenu->addAction(showWindowBordersAction);
     viewMenu->addAction(showMouseCursorAction);
     viewMenu->addAction(showTouchPoints);
@@ -592,24 +584,6 @@ void MainWindow::computeImagePyramid()
         dt->computeImagePyramid(imagePyramidPath);
 
         put_flog(LOG_DEBUG, "done");
-    }
-}
-
-void MainWindow::constrainAspectRatio(bool set)
-{
-    g_displayGroupManager->getOptions()->setConstrainAspectRatio( set );
-
-    if(set)
-    {
-        ContentWindowManagerPtrs contentWindowManagers = g_displayGroupManager->getContentWindowManagers();
-
-        for(unsigned int i=0; i<contentWindowManagers.size(); i++)
-        {
-            contentWindowManagers[i]->fixAspectRatio();
-        }
-
-        // force a display group synchronization
-        g_displayGroupManager->sendDisplayGroup();
     }
 }
 
