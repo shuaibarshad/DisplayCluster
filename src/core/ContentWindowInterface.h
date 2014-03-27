@@ -206,7 +206,7 @@ class ContentWindowInterface : public QObject
 
         // normalized window coordinates
         QRectF coordinates_;
-        QRectF backup_;
+        QRectF coordinatesBackup_;
 
         // panning and zooming
         double centerX_;

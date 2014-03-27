@@ -52,6 +52,11 @@ CONTENT_TYPE SVGContent::getType()
     return CONTENT_TYPE_SVG;
 }
 
+bool SVGContent::readMetadata()
+{
+    return true;
+}
+
 const QStringList& SVGContent::getSupportedExtensions()
 {
     static QStringList extensions;

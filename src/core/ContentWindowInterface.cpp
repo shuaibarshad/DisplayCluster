@@ -295,7 +295,7 @@ void ContentWindowInterface::adjustSize( const SizeState state,
     {
     case SIZE_FULLSCREEN:
         {
-            backup_ = coordinates_;
+            coordinatesBackup_ = coordinates_;
             const double resize = std::min( 1. / height, 1. / width );
             width *= resize;
             height *= resize;
@@ -318,7 +318,7 @@ void ContentWindowInterface::adjustSize( const SizeState state,
         break;
 
     case SIZE_NORMALIZED:
-        coordinates = backup_;
+        coordinates = coordinatesBackup_;
         break;
     default:
         return;

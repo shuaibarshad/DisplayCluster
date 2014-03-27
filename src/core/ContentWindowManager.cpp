@@ -53,6 +53,7 @@
 #  include "PDFInteractionDelegate.h"
 #endif
 
+IMPLEMENT_SERIALIZE_FOR_XML(ContentWindowManager)
 
 ContentWindowManager::ContentWindowManager()
     : interactionDelegate_( 0 )

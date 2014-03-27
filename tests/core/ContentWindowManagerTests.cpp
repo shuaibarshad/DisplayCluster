@@ -49,20 +49,7 @@ namespace ut = boost::unit_test;
 #include "MinimalGlobalQtApp.h"
 BOOST_GLOBAL_FIXTURE( MinimalGlobalQtApp )
 
-class DummyContent : public Content
-{
-public:
-    DummyContent() : Content() {}
-
-private:
-    virtual CONTENT_TYPE getType() { return CONTENT_TYPE_ANY; }
-
-    virtual void getFactoryObjectDimensions(int &width, int &height)
-        { getDimensions( width, height ); }
-
-    virtual void renderFactoryObject(ContentWindowManagerPtr, const QRectF&) {}
-};
-
+#include "DummyContent.h"
 
 const int WIDTH = 100;
 const int HEIGHT = 100;

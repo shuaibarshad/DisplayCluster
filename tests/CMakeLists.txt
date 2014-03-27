@@ -76,6 +76,7 @@ if(BUILD_CORE_LIBRARY)
     core/LocalPixelStreamerTests.cpp
     core/PixelStreamBufferTests.cpp
     core/PixelStreamWindowManagerTests.cpp
+    core/StateSerializationTests.cpp
     core/TextInputHandlerTests.cpp
   )
   find_package(X11)

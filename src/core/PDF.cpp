@@ -57,7 +57,7 @@
 
 #define INVALID_PAGE_NUMBER -1
 
-PDF::PDF(QString uri)
+PDF::PDF(const QString& uri)
     : uri_(uri)
     , pdfDoc_(0)
     , pdfPage_(0)
@@ -70,6 +70,11 @@ PDF::PDF(QString uri)
 PDF::~PDF()
 {
     closeDocument();
+}
+
+bool PDF::isValid() const
+{
+    return (pdfDoc_ != 0);
 }
 
 void PDF::closePage()

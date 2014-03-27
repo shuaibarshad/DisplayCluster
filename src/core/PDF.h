@@ -52,9 +52,10 @@ namespace Poppler {
 class PDF : public FactoryObject
 {
 public:
-    PDF(QString uri);
+    PDF(const QString& uri);
     ~PDF();
 
+    bool isValid() const;
     void getDimensions(int &width, int &height) const;
     void render(const QRectF& texCoords);
     void setPage(int pageNumber);

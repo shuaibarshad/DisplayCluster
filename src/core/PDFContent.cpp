@@ -41,14 +41,36 @@
 #include "MainWindow.h"
 #include "GLWindow.h"
 #include "globals.h"
-#include <boost/serialization/export.hpp>
+#include "PDF.h"
+
 #include "serializationHelpers.h"
+#include <boost/serialization/export.hpp>
 
 BOOST_CLASS_EXPORT_GUID(PDFContent, "PDFContent")
+
+PDFContent::PDFContent(const QString& uri)
+    : Content(uri)
+    , pageNumber_(0)
+    , pageCount_(0)
+{
+}
 
 CONTENT_TYPE PDFContent::getType()
 {
     return CONTENT_TYPE_PDF;
+}
+
+bool PDFContent::readMetadata()
+{
+    PDF pdf(uri_);
+    if (!pdf.isValid())
+        return false;
+
+    pdf.getDimensions(width_, height_);
+    pageCount_ = pdf.getPageCount();
+    pageNumber_ = std::min(pageNumber_, pageCount_-1);
+
+    return true;
 }
 
 const QStringList& PDFContent::getSupportedExtensions()
@@ -61,11 +83,6 @@ const QStringList& PDFContent::getSupportedExtensions()
     }
 
     return extensions;
-}
-
-void PDFContent::setPageCount(int count)
-{
-    pageCount_ = count;
 }
 
 void PDFContent::nextPage()

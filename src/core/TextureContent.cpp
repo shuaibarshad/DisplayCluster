@@ -52,6 +52,11 @@ CONTENT_TYPE TextureContent::getType()
     return CONTENT_TYPE_TEXTURE;
 }
 
+bool TextureContent::readMetadata()
+{
+    return true;
+}
+
 const QStringList& TextureContent::getSupportedExtensions()
 {
     static QStringList extensions;
