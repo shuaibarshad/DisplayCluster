@@ -80,7 +80,7 @@ QRectF ContentWindowGraphicsItem::boundingRect() const
     return coordinates_;
 }
 
-void ContentWindowGraphicsItem::paint(QPainter * painter, const QStyleOptionGraphicsItem * option, QWidget * widget)
+void ContentWindowGraphicsItem::paint(QPainter * painter, const QStyleOptionGraphicsItem* , QWidget* )
 {
     if( !getContentWindowManager( ))
         return;
@@ -115,12 +115,12 @@ void ContentWindowGraphicsItem::setCoordinates(QRectF coordinates, ContentWindow
     ContentWindowInterface::setCoordinates(coordinates, source);
 }
 
-void ContentWindowGraphicsItem::setPosition(double x, double y, ContentWindowInterface * source)
+void ContentWindowGraphicsItem::setPosition(double x_, double y_, ContentWindowInterface * source)
 {
     if(source != this)
         prepareGeometryChange();
 
-    ContentWindowInterface::setPosition(x, y, source);
+    ContentWindowInterface::setPosition(x_, y_, source);
 }
 
 void ContentWindowGraphicsItem::setSize(double w, double h, ContentWindowInterface * source)
@@ -211,10 +211,10 @@ void ContentWindowGraphicsItem::mouseMoveEvent(QGraphicsSceneMouseEvent * event)
             {
                 QPointF delta = event->pos() - event->lastPos();
 
-                double x = coordinates_.x() + delta.x();
-                double y = coordinates_.y() + delta.y();
+                double new_x = coordinates_.x() + delta.x();
+                double new_y = coordinates_.y() + delta.y();
 
-                setPosition(x, y);
+                setPosition(new_x, new_y);
             }
         }
     }
@@ -264,17 +264,17 @@ void ContentWindowGraphicsItem::mousePressEvent(QGraphicsSceneMouseEvent * event
     // move to the front of the GUI display
     moveToFront();
 
-    ContentWindowManagerPtr window = getContentWindowManager();
-    if (!window)
+    ContentWindowManagerPtr contentWindow = getContentWindowManager();
+    if (!contentWindow)
         return;
 
     if (selected())
     {
-        window->getInteractionDelegate().mousePressEvent(event);
+        contentWindow->getInteractionDelegate().mousePressEvent(event);
         return;
     }
 
-    window->getContent()->blockAdvance( true );
+    contentWindow->getContent()->blockAdvance( true );
 
     // check to see if user clicked on the resize button
     if(fabs((r.x()+r.width()) - eventPos.x()) <= buttonWidth &&
@@ -292,13 +292,13 @@ void ContentWindowGraphicsItem::mousePressEvent(QGraphicsSceneMouseEvent * event
             fabs((r.y()+r.height()) - eventPos.y()) <= buttonHeight &&
             g_displayGroupManager->getOptions()->getShowMovieControls( ))
     {
-        window->setControlState( ControlState(window->getControlState() ^ STATE_PAUSED) );
+        contentWindow->setControlState( ControlState(contentWindow->getControlState() ^ STATE_PAUSED) );
     }
     else if(fabs(((r.x()+r.width())/2) - eventPos.x()) <= buttonWidth &&
             fabs((r.y()+r.height()) - eventPos.y()) <= buttonHeight &&
             g_displayGroupManager->getOptions()->getShowMovieControls( ))
     {
-        window->setControlState( ControlState(window->getControlState() ^ STATE_LOOP) );
+        contentWindow->setControlState( ControlState(contentWindow->getControlState() ^ STATE_LOOP) );
     }
     else
         moving_ = true;
@@ -497,7 +497,7 @@ void ContentWindowGraphicsItem::drawTextLabel_( QPainter* painter )
     float viewWidth = (float)scene()->views()[0]->width();
     float viewHeight = (float)scene()->views()[0]->height();
 
-    float tiledDisplayAspect = (float)g_configuration->getTotalWidth() / (float)g_configuration->getTotalHeight();
+    const float tiledDisplayAspect = g_configuration->getAspectRatio();
 
     if(viewWidth / viewHeight > tiledDisplayAspect)
     {
@@ -542,11 +542,11 @@ void ContentWindowGraphicsItem::drawTextLabel_( QPainter* painter )
                               QString::number(centerX_, 'f', 2) + QString(", ") +
                               QString::number(centerY_, 'f', 2) + QString(")");
     QString interactionLabel = QString(" x: ") +
-            QString::number(event_.mouseX, 'f', 2) +
-            QString(" y: ") + QString::number(event_.mouseY, 'f', 2) +
-            QString(" mouseLeft: ") + QString::number((int) event_.mouseLeft, 'b', 1) +
-            QString(" mouseMiddle: ") + QString::number((int) event_.mouseMiddle, 'b', 1) +
-            QString(" mouseRight: ") + QString::number((int) event_.mouseRight, 'b', 1);
+            QString::number(latestEvent_.mouseX, 'f', 2) +
+            QString(" y: ") + QString::number(latestEvent_.mouseY, 'f', 2) +
+            QString(" mouseLeft: ") + QString::number((int) latestEvent_.mouseLeft, 'b', 1) +
+            QString(" mouseMiddle: ") + QString::number((int) latestEvent_.mouseMiddle, 'b', 1) +
+            QString(" mouseRight: ") + QString::number((int) latestEvent_.mouseRight, 'b', 1);
 
     QString windowInfoLabel = coordinatesLabel + zoomCenterLabel + interactionLabel;
     painter->drawText(textBoundingRect, Qt::AlignLeft | Qt::AlignBottom, windowInfoLabel);

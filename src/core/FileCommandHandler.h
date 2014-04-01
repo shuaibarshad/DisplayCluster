@@ -54,7 +54,8 @@ public:
      * Constructor
      * @param displayGroupManager The target DisplayGroupManager for the commands.
      */
-    FileCommandHandler(DisplayGroupManagerPtr displayGroupManager);
+    FileCommandHandler(DisplayGroupManagerPtr displayGroupManager,
+                       PixelStreamWindowManager& windowManager);
 
     /** Get the type of commands handled by the implementation. */
     virtual CommandType getType() const;
@@ -68,6 +69,7 @@ public:
 
 private:
     DisplayGroupManagerPtr displayGroupManager_;
+    PixelStreamWindowManager& pixelStreamWindowManager_;
 };
 
 #endif // FILECOMMANDHANDLER_H

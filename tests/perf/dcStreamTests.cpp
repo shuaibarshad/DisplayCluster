@@ -43,6 +43,7 @@
 namespace ut = boost::unit_test;
 
 #include "DisplayGroupManager.h"
+#include "PixelStreamWindowManager.h"
 #include "MinimalGlobalQtApp.h"
 #include "NetworkListener.h"
 #include "configuration/MasterConfiguration.h"
@@ -59,7 +60,7 @@ namespace ut = boost::unit_test;
 #define NIMAGES (100u)
 // #define NTHREADS 20 // QT default if not defined
 
-BOOST_GLOBAL_FIXTURE( MinimalGlobalQtApp );
+BOOST_GLOBAL_FIXTURE( MinimalGlobalQtApp )
 
 namespace
 {
@@ -68,18 +69,18 @@ class Timer
 public:
     void start()
     {
-	lastTime_ = boost::posix_time::microsec_clock::universal_time();
+        lastTime_ = boost::posix_time::microsec_clock::universal_time();
     }
 
     void restart()
     {
-	start();
+        start();
     }
 
     float elapsed()
     {
-	const boost::posix_time::ptime now = boost::posix_time::microsec_clock::universal_time();
-	return (float)(now - lastTime_).total_milliseconds();
+        const boost::posix_time::ptime now = boost::posix_time::microsec_clock::universal_time();
+        return (float)(now - lastTime_).total_milliseconds();
     }
 private:
     boost::posix_time::ptime lastTime_;
@@ -153,7 +154,9 @@ BOOST_AUTO_TEST_CASE( testSocketConnection )
     g_configuration =
         new MasterConfiguration( "configuration.xml",
                                  g_displayGroupManager->getOptions( ));
-    NetworkListener listener( *g_displayGroupManager );
+
+    PixelStreamWindowManager pixelStreamWindowManager( *g_displayGroupManager );
+    NetworkListener listener( pixelStreamWindowManager );
 #ifdef NTHREADS
     QThreadPool::globalInstance()->setMaxThreadCount( NTHREADS );
 #endif

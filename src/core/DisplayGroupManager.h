@@ -116,27 +116,6 @@ class DisplayGroupManager : public DisplayGroupInterface, public boost::enable_s
         ContentWindowManagerPtr getActiveWindow() const;
 
 public slots:
-
-        // this can be invoked from other threads to construct a DisplayGroupInterface and move it to that thread
-        boost::shared_ptr<DisplayGroupInterface> getDisplayGroupInterface(QThread * thread);
-
-        /**
-         * Position a ContentWindowManager.
-         *
-         * Immediately position the window if it is already open, or postion it
-         * at the time the window first opens (useful for PixelStreamers).
-         * @param uri Window identifier
-         * @param position The position of the center of the window
-         */
-        void positionWindow( const QString& uri, const QPointF position );
-
-        /**
-         * Hide a ContentWindowManager.
-         *
-         * @param uri Window identifier
-         */
-        void hideWindow( const QString& uri );
-
         void receiveMessages();
 
         void sendDisplayGroup();
@@ -150,18 +129,6 @@ public slots:
 #if ENABLE_SKELETON_SUPPORT
         void setSkeletons(std::vector<boost::shared_ptr<SkeletonState> > skeletons);
 #endif
-        // Rank0 manages pixel stream events
-        void openPixelStream(QString uri, int width, int height);
-        void closePixelStream(const QString& uri);
-        void adjustPixelStreamContentDimensions(QString uri, int width, int height, bool changeViewSize);
-
-        void registerEventReceiver(QString uri, bool exclusive, EventReceiver* receiver);
-
-    signals:
-        // Rank0 signals pixel streams events
-        void pixelStreamViewAdded(QString uri);
-        void pixelStreamViewClosed(QString uri);
-        void eventRegistrationReply(QString uri, bool success);
 
     private:
         friend class boost::serialization::access;
@@ -201,12 +168,9 @@ public slots:
         // rank 1 - rank 0 timestamp offset
         boost::posix_time::time_duration timestampOffset_;
 
-        typedef std::map<QString, QPointF> WindowPositions;
-        WindowPositions windowPositions_;
-
         // ranks 1-n recieve data through MPI
         void receiveDisplayGroup(const MessageHeader& messageHeader);
-        void receiveContentsDimensionsRequest(const MessageHeader& messageHeader);
+        void receiveContentsDimensionsRequest();
         void receivePixelStreams(const MessageHeader& messageHeader);
 };
 

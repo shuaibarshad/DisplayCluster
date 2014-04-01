@@ -38,18 +38,20 @@
 /*********************************************************************/
 
 #include "PixelStreamDispatcher.h"
-#include "DisplayGroupManager.h"
-#include "globals.h"
+#include "PixelStreamWindowManager.h"
 
 #include "MessageHeader.h"
+#include "globals.h"
 #include <boost/serialization/vector.hpp>
 #include <mpi.h>
+#include <boost/archive/binary_oarchive.hpp>
 
 #define DISPATCH_FREQUENCY 100
 
 #define STREAM_WINDOW_DEFAULT_SIZE 100
 
-PixelStreamDispatcher::PixelStreamDispatcher()
+PixelStreamDispatcher::PixelStreamDispatcher(PixelStreamWindowManager& windowManager)
+    : windowManager_(windowManager)
 {
 #ifdef USE_TIMER
     connect(&sendTimer_, SIGNAL(timeout()), this, SLOT(dispatchFrames()));
@@ -61,9 +63,9 @@ PixelStreamDispatcher::PixelStreamDispatcher()
 #endif
 
     // Connect with the DisplayGroupManager
-    connect(this, SIGNAL(openPixelStream(QString, int, int)), g_displayGroupManager.get(), SLOT(openPixelStream(QString, int, int)));
-    connect(this, SIGNAL(deletePixelStream(QString)), g_displayGroupManager.get(), SLOT(closePixelStream(QString)));
-    connect(g_displayGroupManager.get(), SIGNAL(pixelStreamViewClosed(QString)), this, SLOT(deleteStream(QString)));
+    connect(this, SIGNAL(openPixelStream(QString, QSize)), &windowManager, SLOT(openPixelStreamWindow(QString, QSize)));
+    connect(this, SIGNAL(deletePixelStream(QString)), &windowManager, SLOT(closePixelStreamWindow(QString)));
+    connect(&windowManager, SIGNAL(pixelStreamWindowClosed(QString)), this, SLOT(deleteStream(QString)));
 }
 
 void PixelStreamDispatcher::addSource(const QString uri, const size_t sourceIndex)
@@ -101,7 +103,7 @@ void PixelStreamDispatcher::processFrameFinished(const QString uri, const size_t
     if (streamBuffers_[uri].isFirstFrame() && streamBuffers_[uri].hasFrameComplete())
     {
         QSize size = streamBuffers_[uri].getFrameSize();
-        emit openPixelStream(uri, size.width(), size.height());
+        emit openPixelStream(uri, size);
     }
 
 #ifdef USE_TIMER
@@ -138,7 +140,7 @@ void PixelStreamDispatcher::dispatchFrames()
         if (!segments.empty())
         {
             QSize size = it->second.computeFrameDimensions(segments);
-            g_displayGroupManager->adjustPixelStreamContentDimensions(it->first, size.width(), size.height(), false);
+            windowManager_.updateDimension(it->first, size);
 
             sendPixelStreamSegments(segments, it->first);
         }

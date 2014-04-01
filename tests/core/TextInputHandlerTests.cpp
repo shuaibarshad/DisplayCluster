@@ -57,9 +57,9 @@ BOOST_GLOBAL_FIXTURE( MinimalGlobalQtApp );
 class MockDisplayGroupManagerAdapter : public DisplayGroupManagerAdapter
 {
 public:
-    MockDisplayGroupManagerAdapter(bool hasWindows)
+    MockDisplayGroupManagerAdapter(bool hasWindowsReturnValue)
         : DisplayGroupManagerAdapter(DisplayGroupManagerPtr())
-        , hasWindows_(hasWindows)
+        , hasWindows_(hasWindowsReturnValue)
     {}
 
     virtual bool hasWindows() const

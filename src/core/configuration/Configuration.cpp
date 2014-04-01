@@ -179,6 +179,11 @@ int Configuration::getTotalHeight() const
     return totalScreenCountY_ * screenHeight_ + (totalScreenCountY_ - 1) * getMullionHeight();
 }
 
+double Configuration::getAspectRatio() const
+{
+    return double(getTotalWidth()) / getTotalHeight();
+}
+
 bool Configuration::getFullscreen() const
 {
     return fullscreen_;

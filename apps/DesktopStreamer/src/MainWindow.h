@@ -67,7 +67,7 @@ private slots:
 
     void shareDesktopUpdate();
 
-    void setCoordinates(int x, int y, int width, int height);
+    void setCoordinates(const QRect coordinates);
     void updateCoordinates();
 
 private:

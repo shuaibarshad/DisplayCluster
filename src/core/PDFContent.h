@@ -48,19 +48,33 @@ class PDFContent : public Content
     Q_OBJECT
 
 public:
-    PDFContent(QString uri = "") : Content(uri), pageNumber_(0), pageCount_(0) { }
+    /**
+     * Consturctor
+     * @param uri The uri of the pdf document
+    **/
+    PDFContent(const QString& uri = "");
 
+    /** Get the content type **/
     CONTENT_TYPE getType();
+
+    /**
+     * Reaad PDF informations from the source URI.
+     * @return true on success, false if the URI is invalid or an error occured.
+    **/
+    virtual bool readMetadata();
 
     void getFactoryObjectDimensions(int &width, int &height);
 
     static const QStringList& getSupportedExtensions();
 
-    void setPageCount(int count);
+    /** Rank0 : go to next page **/
     void nextPage();
+
+    /** Rank0 : go to previous page **/
     void previousPage();
 
 signals:
+    /** Emitted when the page number is changed **/
     void pageChanged();
 
 private:
@@ -69,15 +83,16 @@ private:
     template<class Archive>
     void serialize(Archive & ar, const unsigned int)
     {
-        // serialize base class information
-        ar & boost::serialization::base_object<Content>(*this);
-        ar & pageNumber_;
+        // serialize base class information (with NVP for xml archives)
+        ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Content);
+        ar & boost::serialization::make_nvp("pageNumber", pageNumber_);
     }
 
+    // These informations are needed on Rank0
     int pageNumber_;
     int pageCount_;
 
-    void renderFactoryObject(float tX, float tY, float tW, float tH);
+    virtual void renderFactoryObject(ContentWindowManagerPtr window, const QRectF& texCoords);
 };
 
 #endif // PDFCONTENT_H

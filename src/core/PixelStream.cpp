@@ -63,7 +63,7 @@ void PixelStream::getDimensions(int &width, int &height) const
     height = height_;
 }
 
-void PixelStream::preRenderUpdate()
+void PixelStream::preRenderUpdate(const QRectF& windowRect)
 {
     if( isDecodingInProgress( ))
         return;
@@ -78,7 +78,7 @@ void PixelStream::preRenderUpdate()
     }
 
     // The window may have moved, so always check if some segments have become visible to upload them.
-    updateVisibleTextures();
+    updateVisibleTextures(windowRect);
 
     if ( !backBuffer_.empty( ))
     {
@@ -87,7 +87,7 @@ void PixelStream::preRenderUpdate()
     }
 
     // The window may have moved, so always check if some segments have become visible to decode them.
-    decodeVisibleTextures();
+    decodeVisibleTextures(windowRect);
 }
 
 void PixelStream::updateRenderers(const PixelStreamSegments& segments)
@@ -103,12 +103,12 @@ void PixelStream::updateRenderers(const PixelStreamSegments& segments)
     }
 }
 
-void PixelStream::updateVisibleTextures()
+void PixelStream::updateVisibleTextures(const QRectF& windowRect)
 {
     for(size_t i=0; i<frontBuffer_.size(); i++)
     {
         if (segmentRenderers_[i]->textureNeedsUpdate() && !frontBuffer_[i].parameters.compressed &&
-                isVisible(frontBuffer_[i]))
+                isVisible(frontBuffer_[i], windowRect))
         {
             const QImage textureWrapper((const uchar*)frontBuffer_[i].imageData.constData(),
                                         frontBuffer_[i].parameters.width,
@@ -143,7 +143,7 @@ void PixelStream::recomputeDimensions(const PixelStreamSegments &segments)
     }
 }
 
-void PixelStream::decodeVisibleTextures()
+void PixelStream::decodeVisibleTextures(const QRectF& windowRect)
 {
     assert(frameDecoders_.size() == frontBuffer_.size());
 
@@ -151,14 +151,14 @@ void PixelStream::decodeVisibleTextures()
     PixelStreamSegments::iterator segment_it = frontBuffer_.begin();
     for ( ; segment_it != frontBuffer_.end(); ++segment_it, ++frameDecoder_it )
     {
-        if ( segment_it->parameters.compressed && isVisible(*segment_it) )
+        if ( segment_it->parameters.compressed && isVisible(*segment_it, windowRect) )
         {
             (*frameDecoder_it)->startDecoding(*segment_it);
         }
     }
 }
 
-void PixelStream::render(const float tX, const float tY, const float tW, const float tH)
+void PixelStream::render(const QRectF&, const QRectF& windowRect)
 {
     updateRenderedFrameIndex();
 
@@ -170,7 +170,7 @@ void PixelStream::render(const float tX, const float tY, const float tW, const f
 
     for(std::vector<PixelStreamSegmentRendererPtr>::iterator it=segmentRenderers_.begin(); it != segmentRenderers_.end(); ++it)
     {
-        if (isVisible( (*it)->getRect( )))
+        if (isVisible( (*it)->getRect(), windowRect ))
         {
             (*it)->render(showSegmentBorders, showSegmentStatistics);
         }
@@ -204,7 +204,6 @@ void PixelStream::insertNewFrame(const PixelStreamSegments &segments)
     backBuffer_ = segments;
 }
 
-
 bool PixelStream::isDecodingInProgress()
 {
     // determine if threads are running on any processes for this PixelStream
@@ -227,31 +226,21 @@ bool PixelStream::isDecodingInProgress()
     return globalThreadsRunning > 0;
 }
 
-bool PixelStream::isVisible(const QRect& segment)
+bool PixelStream::isVisible(const QRect& segment, const QRectF& windowRect)
 {
-    ContentWindowManagerPtr contentWindow = g_displayGroupManager->getContentWindowManager(uri_, CONTENT_TYPE_PIXEL_STREAM);
+    // coordinates of segment in global tiled display space
+    const double segmentX = windowRect.x() + (double)segment.x() / (double)width_ * windowRect.width();
+    const double segmentY = windowRect.y() + (double)segment.y() / (double)height_ * windowRect.height();
+    const double segmentW = (double)segment.width() / (double)width_ * windowRect.width();
+    const double segmentH = (double)segment.height() / (double)height_ * windowRect.height();
 
-    if(contentWindow)
-    {
-        const QRectF& window = contentWindow->getCoordinates();
-
-        // coordinates of segment in global tiled display space
-        const double segmentX = window.x() + (double)segment.x() / (double)width_ * window.width();
-        const double segmentY = window.y() + (double)segment.y() / (double)height_ * window.height();
-        const double segmentW = (double)segment.width() / (double)width_ * window.width();
-        const double segmentH = (double)segment.height() / (double)height_ * window.height();
-
-        return g_mainWindow->isRegionVisible(segmentX, segmentY, segmentW, segmentH);
-    }
-
-    put_flog(LOG_WARN, "could not find window for segment");
-    return false;
+    return g_mainWindow->isRegionVisible(QRectF(segmentX, segmentY, segmentW, segmentH));
 }
 
-bool PixelStream::isVisible(const dc::PixelStreamSegment& segment)
+bool PixelStream::isVisible(const dc::PixelStreamSegment& segment, const QRectF& windowRect)
 {
     QRect segmentRegion(segment.parameters.x, segment.parameters.y,
                         segment.parameters.width, segment.parameters.height);
-    return isVisible(segmentRegion);
+    return isVisible(segmentRegion, windowRect);
 }
 

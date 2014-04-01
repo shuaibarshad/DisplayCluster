@@ -39,8 +39,10 @@
 
 #include "ContentFactory.h"
 
-#include "log.h"
 #include "globals.h"
+#include "configuration/Configuration.h"
+
+#include "log.h"
 #include "config.h"
 
 #include "Content.h"
@@ -50,11 +52,9 @@
 #include "MovieContent.h"
 #if ENABLE_PDF_SUPPORT
 #  include "PDFContent.h"
-#  include "PDF.h"
 #  include "DisplayGroupManager.h"
 #endif
 #include "PixelStreamContent.h"
-#include "configuration/Configuration.h"
 
 #define ERROR_IMAGE_FILENAME ":/img/error.png"
 
@@ -64,9 +64,7 @@ ContentPtr ContentFactory::getContent(const QString& uri)
     if( !QFile::exists( uri ))
     {
         put_flog(LOG_ERROR, "could not find file '%s'", uri.toLocal8Bit().constData());
-
-        ContentPtr content(new TextureContent(ERROR_IMAGE_FILENAME));
-        return content;
+        return getErrorContent();
     }
 
     // convert to lower case for case-insensitivity in determining file type
@@ -76,20 +74,15 @@ ContentPtr ContentFactory::getContent(const QString& uri)
     // See if this is a PDF document
     if(PDFContent::getSupportedExtensions().contains(extension))
     {
-        int width, height, pageCount;
-        {
-            PDF pdf(uri);
-            pdf.getDimensions(width, height);
-            pageCount = pdf.getPageCount();
-        }
-
         PDFContent* pdfContent = new PDFContent(uri);
-        pdfContent->setDimensions(width, height);
-        pdfContent->setPageCount(pageCount);
-
-        pdfContent->connect(pdfContent, SIGNAL(pageChanged()), g_displayGroupManager.get(), SLOT(sendDisplayGroup()), Qt::QueuedConnection);
-
         ContentPtr content(pdfContent);
+
+        pdfContent->connect(pdfContent, SIGNAL(pageChanged()), g_displayGroupManager.get(),
+                            SLOT(sendDisplayGroup()), Qt::QueuedConnection);
+
+        if (!content->readMetadata())
+            return getErrorContent();
+
         return content;
     }
 #endif
@@ -98,6 +91,10 @@ ContentPtr ContentFactory::getContent(const QString& uri)
     if(SVGContent::getSupportedExtensions().contains(extension))
     {
         ContentPtr content(new SVGContent(uri));
+
+        if (!content->readMetadata())
+            return getErrorContent();
+
         return content;
     }
 
@@ -106,27 +103,19 @@ ContentPtr ContentFactory::getContent(const QString& uri)
     if(imageReader.canRead())
     {
         // get its size
-        QSize size = imageReader.size();
+        const QSize size = imageReader.size();
+
+        if(!size.isValid())
+            return getErrorContent();
 
         // small images will use Texture; larger images will use DynamicTexture
         ContentPtr content;
-
         if(size.width() <= g_configuration->getTotalWidth() && size.height() <= g_configuration->getTotalHeight())
-        {
-            ContentPtr temp(new TextureContent(uri));
-            content = temp;
-        }
+            content = ContentPtr(new TextureContent(uri));
         else
-        {
-            ContentPtr temp(new DynamicTextureContent(uri));
-            content = temp;
-        }
+            content = ContentPtr(new DynamicTextureContent(uri));
 
-        // set the size if valid
-        if(size.isValid() == true)
-        {
-            content->setDimensions(size.width(), size.height());
-        }
+        content->setDimensions(size.width(), size.height());
 
         return content;
     }
@@ -135,6 +124,10 @@ ContentPtr ContentFactory::getContent(const QString& uri)
     if(extension == "pyr")
     {
         ContentPtr content(new DynamicTextureContent(uri));
+
+        if (!content->readMetadata())
+            return getErrorContent();
+
         return content;
     }
 
@@ -142,18 +135,26 @@ ContentPtr ContentFactory::getContent(const QString& uri)
     if(MovieContent::getSupportedExtensions().contains(extension))
     {
         ContentPtr content(new MovieContent(uri));
+
+        if (!content->readMetadata())
+            return getErrorContent();
+
         return content;
     }
 
     put_flog(LOG_ERROR, "Unsupported or invalid file %s", uri.toLocal8Bit().constData());
 
-    ContentPtr content(new TextureContent(ERROR_IMAGE_FILENAME));
-    return content;
+    return getErrorContent();
 }
 
 ContentPtr ContentFactory::getPixelStreamContent(const QString& uri)
 {
     return ContentPtr(new PixelStreamContent(uri));
+}
+
+ContentPtr ContentFactory::getErrorContent()
+{
+    return ContentPtr(new TextureContent(ERROR_IMAGE_FILENAME));
 }
 
 const QStringList& ContentFactory::getSupportedExtensions()

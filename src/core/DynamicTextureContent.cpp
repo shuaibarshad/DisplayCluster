@@ -52,6 +52,11 @@ CONTENT_TYPE DynamicTextureContent::getType()
     return CONTENT_TYPE_DYNAMIC_TEXTURE;
 }
 
+bool DynamicTextureContent::readMetadata()
+{
+    return true;
+}
+
 const QStringList& DynamicTextureContent::getSupportedExtensions()
 {
     static QStringList extensions;
@@ -68,7 +73,7 @@ const QStringList& DynamicTextureContent::getSupportedExtensions()
     return extensions;
 }
 
-void DynamicTextureContent::advance(ContentWindowManagerPtr window)
+void DynamicTextureContent::advance(ContentWindowManagerPtr)
 {
     if( blockAdvance_ )
         return;
@@ -82,7 +87,7 @@ void DynamicTextureContent::getFactoryObjectDimensions(int &width, int &height)
     g_mainWindow->getGLWindow()->getDynamicTextureFactory().getObject(getURI())->getDimensions(width, height);
 }
 
-void DynamicTextureContent::renderFactoryObject(float tX, float tY, float tW, float tH)
+void DynamicTextureContent::renderFactoryObject(ContentWindowManagerPtr, const QRectF& texCoords)
 {
-    g_mainWindow->getGLWindow()->getDynamicTextureFactory().getObject(getURI())->render(tX, tY, tW, tH);
+    g_mainWindow->getGLWindow()->getDynamicTextureFactory().getObject(getURI())->render(texCoords);
 }

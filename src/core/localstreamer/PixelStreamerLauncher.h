@@ -47,7 +47,7 @@
 #include <QSize>
 
 class QProcess;
-class DisplayGroupManager;
+class PixelStreamWindowManager;
 
 /**
  * Launch Pixel Streamers as separate processes.
@@ -72,10 +72,9 @@ public:
     /**
      * Create a new PixelStreamerLauncher
      *
-     * @param displayGroupManager The DisplayGroupManager instance,
-     *        where the Stream windows will be rendered.
+     * @param windowManager Manages the windows of the streamers
      */
-    PixelStreamerLauncher(DisplayGroupManager* displayGroupManager);
+    PixelStreamerLauncher(PixelStreamWindowManager& windowManager);
 
 public slots:
     /**
@@ -113,7 +112,7 @@ private:
     typedef std::map<QString, QProcess*> Streamers;
     Streamers processes_;
 
-    DisplayGroupManager* displayGroupManager_;
+    PixelStreamWindowManager& windowManager_;
 
     bool createDock(const QSize& size, const QString& rootDir);
 };

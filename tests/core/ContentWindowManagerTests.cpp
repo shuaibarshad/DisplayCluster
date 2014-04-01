@@ -41,37 +41,23 @@
 #include <boost/test/unit_test.hpp>
 namespace ut = boost::unit_test;
 
+#include <globals.h>
+#include <Options.h>
 #include <ContentWindowManager.h>
-#include <DisplayGroupManager.h>
 #include <configuration/MasterConfiguration.h>
 
-#include "MinimalGlobalQtAppMPI.h"
-BOOST_GLOBAL_FIXTURE( MinimalGlobalQtAppMPI )
+#include "MinimalGlobalQtApp.h"
+BOOST_GLOBAL_FIXTURE( MinimalGlobalQtApp )
 
-class DummyContent : public Content
-{
-public:
-    DummyContent() : Content() {}
-
-private:
-    CONTENT_TYPE getType() { return CONTENT_TYPE_ANY; }
-
-    void getFactoryObjectDimensions(int &width, int &height)
-        { getDimensions( width, height ); }
-
-    void renderFactoryObject(float, float, float, float) {}
-};
-
+#include "DummyContent.h"
 
 const int WIDTH = 100;
 const int HEIGHT = 100;
 
 BOOST_AUTO_TEST_CASE( testInitialSize )
 {
-    g_displayGroupManager.reset( new DisplayGroupManager );
     g_configuration =
-        new MasterConfiguration( "configuration.xml",
-                                 g_displayGroupManager->getOptions( ));
+        new Configuration( "configuration.xml", OptionsPtr(new Options));
 
     ContentPtr content( new DummyContent );
     content->setDimensions( WIDTH, HEIGHT );
@@ -93,10 +79,9 @@ BOOST_AUTO_TEST_CASE( testInitialSize )
 
 BOOST_AUTO_TEST_CASE( testFullScreenSize )
 {
-    g_displayGroupManager.reset( new DisplayGroupManager );
     g_configuration =
         new MasterConfiguration( "configuration.xml",
-                                 g_displayGroupManager->getOptions( ));
+                                 OptionsPtr(new Options));
 
     ContentPtr content( new DummyContent );
     content->setDimensions( WIDTH, HEIGHT );
@@ -106,7 +91,7 @@ BOOST_AUTO_TEST_CASE( testFullScreenSize )
 
     const QRectF& coords = window.getCoordinates();
 
-    const double wallAR = double(g_configuration->getTotalHeight()) / g_configuration->getTotalWidth();
+    const double wallAR = 1. / g_configuration->getAspectRatio();
     const double normWidth = 1. * wallAR;
     const double normHeight = 1.;
 
@@ -121,17 +106,16 @@ BOOST_AUTO_TEST_CASE( testFullScreenSize )
 
 BOOST_AUTO_TEST_CASE( testFromFullscreenBackToNormalized )
 {
-    g_displayGroupManager.reset( new DisplayGroupManager );
-    g_displayGroupManager->getOptions()->setConstrainAspectRatio( false );
     g_configuration =
         new MasterConfiguration( "configuration.xml",
-                                 g_displayGroupManager->getOptions( ));
+                                 OptionsPtr(new Options));
 
     ContentPtr content( new DummyContent );
     content->setDimensions( WIDTH, HEIGHT );
     ContentWindowManager window( content );
 
-    QRectF target( 0.9, 0.7, 0.1, 0.8 );
+    QRectF target( 0.9, 0.7, 0.2, 1 );
+    target.setHeight( target.width() * g_configuration->getAspectRatio());
 
     window.setSize( target.width(), target.height( ));
     window.setPosition( target.x(), target.y( ));
@@ -152,6 +136,73 @@ BOOST_AUTO_TEST_CASE( testFromFullscreenBackToNormalized )
     BOOST_CHECK_EQUAL( coords.y(), target.y( ));
     BOOST_CHECK_EQUAL( coords.width(), target.width( ));
     BOOST_CHECK_EQUAL( coords.height(), target.height( ));
+
+    delete g_configuration;
+}
+
+BOOST_AUTO_TEST_CASE( testValidID )
+{
+    g_configuration =
+        new MasterConfiguration( "configuration.xml",
+                                 OptionsPtr(new Options));
+
+    ContentPtr content( new DummyContent );
+    content->setDimensions( WIDTH, HEIGHT );
+    ContentWindowManager window( content );
+
+    BOOST_CHECK( window.getID() != QUuid());
+
+    delete g_configuration;
+}
+
+BOOST_AUTO_TEST_CASE( testUniqueID )
+{
+    g_configuration =
+        new MasterConfiguration( "configuration.xml",
+                                 OptionsPtr(new Options));
+
+    ContentPtr content( new DummyContent );
+    content->setDimensions( WIDTH, HEIGHT );
+
+    ContentWindowManager window1( content );
+    BOOST_CHECK( window1.getID() != QUuid());
+
+    ContentWindowManager window2( content );
+    BOOST_CHECK( window2.getID() != QUuid());
+
+    BOOST_CHECK( window1.getID() != window2.getID());
+
+    delete g_configuration;
+}
+
+BOOST_AUTO_TEST_CASE( testSetContent )
+{
+    g_configuration =
+        new MasterConfiguration( "configuration.xml",
+                                 OptionsPtr(new Options));
+
+    ContentPtr content( new DummyContent );
+    content->setDimensions( WIDTH, HEIGHT );
+
+    ContentWindowManager window;
+    BOOST_CHECK(!window.getContent());
+
+    int contentWidth, contentHeight;
+    window.getContentDimensions(contentWidth, contentHeight);
+    BOOST_CHECK_EQUAL(contentWidth, 0);
+    BOOST_CHECK_EQUAL(contentHeight, 0);
+
+    window.setContent(content);
+    BOOST_CHECK_EQUAL(window.getContent(), content);
+    window.getContentDimensions(contentWidth, contentHeight);
+    BOOST_CHECK_EQUAL(contentWidth, WIDTH);
+    BOOST_CHECK_EQUAL(contentHeight, HEIGHT);
+
+    window.setContent(ContentPtr());
+    BOOST_CHECK(!window.getContent());
+    window.getContentDimensions(contentWidth, contentHeight);
+    BOOST_CHECK_EQUAL(contentWidth, 0);
+    BOOST_CHECK_EQUAL(contentHeight, 0);
 
     delete g_configuration;
 }

@@ -208,9 +208,9 @@ void GLWindow::paintGL()
 #endif
 }
 
-void GLWindow::resizeGL(int width, int height)
+void GLWindow::resizeGL(int w, int h)
 {
-    glViewport(0, 0, width, height);
+    glViewport(0, 0, w, h);
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
     glMatrixMode(GL_MODELVIEW);
@@ -251,10 +251,10 @@ void GLWindow::renderContentWindows()
         //if ( isRegionVisible( (*it)->getCoordinates( )))
         {
             // the visible depths are in the range (-1,1); make the content window depths be in the range (-1,0)
-            const float depth = -(float)(windowCount - i) / (float)(windowCount + 1);
+            const float zCoordinate = -(float)(windowCount - i) / (float)(windowCount + 1);
 
             glPushMatrix();
-            glTranslatef(0.f, 0.f, depth);
+            glTranslatef(0.f, 0.f, zCoordinate);
 
             (*it)->render();
             glPopMatrix();
@@ -409,12 +409,12 @@ bool GLWindow::setPerspectiveView(double x, double y, double w, double h)
 }
 #endif
 
-bool GLWindow::isRegionVisible(const QRectF& rect) const
+bool GLWindow::isRegionVisible(const QRectF& region) const
 {
     // screen rectangle
     const QRectF screenRect(left_, bottom_, right_-left_, top_-bottom_);
 
-    return screenRect.intersects(rect);
+    return screenRect.intersects(region);
 }
 
 void GLWindow::drawRectangle(double x, double y, double w, double h)
@@ -452,16 +452,16 @@ void GLWindow::renderTestPattern()
 
     glBegin(GL_LINES);
 
-    for(double y=-1.; y<=2.; y+=0.1)
+    for(double y_coord=-1.; y_coord<=2.; y_coord+=0.1)
     {
-        QColor color = QColor::fromHsvF((y + 1.)/3., 1., 1.);
+        QColor color = QColor::fromHsvF((y_coord + 1.)/3., 1., 1.);
         glColor3f(color.redF(), color.greenF(), color.blueF());
 
-        glVertex2d(0., y);
-        glVertex2d(1., y+1.);
+        glVertex2d(0., y_coord);
+        glVertex2d(1., y_coord+1.);
 
-        glVertex2d(0., y);
-        glVertex2d(1., y-1.);
+        glVertex2d(0., y_coord);
+        glVertex2d(1., y_coord-1.);
     }
 
     glEnd();
@@ -487,17 +487,17 @@ void GLWindow::renderTestPattern()
 
     int fontSize = 64;
 
-    QFont font;
-    font.setPixelSize(fontSize);
+    QFont textFont;
+    textFont.setPixelSize(fontSize);
 
     glColor3f(1.,1.,1.);
 
-    renderText(50, 1*fontSize, label1, font);
-    renderText(50, 2*fontSize, label2, font);
-    renderText(50, 3*fontSize, label3, font);
-    renderText(50, 4*fontSize, label4, font);
-    renderText(50, 5*fontSize, label5, font);
-    renderText(50, 6*fontSize, label6, font);
+    renderText(50, 1*fontSize, label1, textFont);
+    renderText(50, 2*fontSize, label2, textFont);
+    renderText(50, 3*fontSize, label3, textFont);
+    renderText(50, 4*fontSize, label4, textFont);
+    renderText(50, 5*fontSize, label5, textFont);
+    renderText(50, 6*fontSize, label6, textFont);
 
     glPopMatrix();
     glPopAttrib();
@@ -508,15 +508,15 @@ void GLWindow::drawFps()
     fpsCounter.tick();
 
     const int fontSize = 32;
-    QFont font;
-    font.setPixelSize(fontSize);
+    QFont textFont;
+    textFont.setPixelSize(fontSize);
 
     glPushAttrib(GL_DEPTH_BUFFER_BIT | GL_CURRENT_BIT);
 
     glDisable(GL_DEPTH_TEST);
     glColor4f(0.,0.,1.,1.);
 
-    renderText(10, fontSize, fpsCounter.toString(), font);
+    renderText(10, fontSize, fpsCounter.toString(), textFont);
 
     glPopAttrib();
 }
@@ -525,7 +525,7 @@ void GLWindow::drawFps()
 QRectF GLWindow::getProjectedPixelRect(const bool clampToWindowArea)
 {
     // get four corners in object space (recall we're in normalized 0->1 dimensions)
-    const double x[4][3] =
+    const double corners[4][3] =
     {
         {0.,0.,0.},
         {1.,0.,0.},
@@ -547,7 +547,7 @@ QRectF GLWindow::getProjectedPixelRect(const bool clampToWindowArea)
 
     for(size_t i=0; i<4; i++)
     {
-        gluProject(x[i][0], x[i][1], x[i][2], modelview, projection, viewport, &xWin[i][0], &xWin[i][1], &xWin[i][2]);
+        gluProject(corners[i][0], corners[i][1], corners[i][2], modelview, projection, viewport, &xWin[i][0], &xWin[i][1], &xWin[i][2]);
 
         if( clampToWindowArea )
         {

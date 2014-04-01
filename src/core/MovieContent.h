@@ -42,12 +42,19 @@
 #include "Content.h"
 #include <boost/serialization/base_object.hpp>
 
-class MovieContent : public Content {
-
+class MovieContent : public Content
+{
     public:
         MovieContent(QString uri = "") : Content(uri) { }
 
+        /** Get the content type **/
         CONTENT_TYPE getType();
+
+        /**
+         * Read movie informations from the source URI.
+         * @return true on success, false if the URI is invalid or an error occured.
+        **/
+        virtual bool readMetadata();
 
         void getFactoryObjectDimensions(int &width, int &height);
 
@@ -59,13 +66,13 @@ class MovieContent : public Content {
         template<class Archive>
         void serialize(Archive & ar, const unsigned int)
         {
-            // serialize base class information
-            ar & boost::serialization::base_object<Content>(*this);
+            // serialize base class information (with NVP for xml archives)
+            ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Content);
         }
 
-        void advance(ContentWindowManagerPtr window);
+        virtual void advance(ContentWindowManagerPtr window);
 
-        void renderFactoryObject(float tX, float tY, float tW, float tH);
+        virtual void renderFactoryObject(ContentWindowManagerPtr window, const QRectF& texCoords);
 };
 
 #endif

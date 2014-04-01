@@ -50,6 +50,7 @@ class DisplayGroupManagerAdapter;
 class Options;
 class Marker;
 class GLWindow;
+class PixelStreamWindowManager;
 
 typedef boost::shared_ptr< Content > ContentPtr;
 typedef boost::shared_ptr< ContentWindowManager > ContentWindowManagerPtr;

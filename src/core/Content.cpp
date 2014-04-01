@@ -65,6 +65,9 @@ void Content::getDimensions(int &width, int &height)
 
 void Content::setDimensions(int width, int height)
 {
+    if(width == width_ && height == height_)
+        return;
+
     width_ = width;
     height_ = height;
 
@@ -94,10 +97,10 @@ void Content::render(ContentWindowManagerPtr window)
     glScalef(w, h, 1.);
 
     // render the factory object
-    renderFactoryObject(tX, tY, tW, tH);
+    renderFactoryObject(window, QRectF(tX, tY, tW, tH));
 
     // render the context view
-    if(g_displayGroupManager->getOptions()->getShowZoomContext() == true && zoom > 1.)
+    if(g_displayGroupManager->getOptions()->getShowZoomContext() && zoom > 1.)
     {
         float sizeFactor = 0.25;
         float padding = 0.02;
@@ -128,7 +131,7 @@ void Content::render(ContentWindowManagerPtr window)
 
         // render the factory object (full view)
         glTranslatef(0., 0., deltaZ);
-        renderFactoryObject(0., 0., 1., 1.);
+        renderFactoryObject(window, QRectF(0., 0., 1., 1.));
 
         // draw context rectangle border
         glTranslatef(0., 0., deltaZ);

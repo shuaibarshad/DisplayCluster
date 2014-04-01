@@ -46,8 +46,8 @@
 using dc::Event;
 
 TextInputDispatcher::TextInputDispatcher(DisplayGroupManagerPtr displayGroupManager,
-                                         QObject *parent)
-    : QObject(parent)
+                                         QObject *parentObject)
+    : QObject(parentObject)
     , displayGroupManager_(displayGroupManager)
 {
 }
@@ -58,16 +58,16 @@ void TextInputDispatcher::sendKeyEventToActiveWindow(const char key) const
     if (!window)
         return;
 
-    Event event;
-    event.key = keyMapper_.getQtKeyCode(key);
+    Event keyEvent;
+    keyEvent.key = keyMapper_.getQtKeyCode(key);
 
     std::string text;
     text.push_back(key);
-    strncpy(event.text, text.c_str(), sizeof(event.text));
+    strncpy(keyEvent.text, text.c_str(), sizeof(keyEvent.text));
 
-    event.type = Event::EVT_KEY_PRESS;
-    window->setEvent(event);
+    keyEvent.type = Event::EVT_KEY_PRESS;
+    window->setEvent(keyEvent);
 
-    event.type = Event::EVT_KEY_RELEASE;
-    window->setEvent(event);
+    keyEvent.type = Event::EVT_KEY_RELEASE;
+    window->setEvent(keyEvent);
 }

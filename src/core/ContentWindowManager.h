@@ -41,12 +41,15 @@
 
 #include "ContentWindowInterface.h"
 #include "Content.h" // need pyContent for pyContentWindowManager
+
 #include <QtGui>
 #include <boost/shared_ptr.hpp>
 #include <boost/weak_ptr.hpp>
 #include <boost/enable_shared_from_this.hpp>
 #include <boost/serialization/weak_ptr.hpp>
 #include <boost/date_time/posix_time/time_serialize.hpp>
+
+#include "serializationHelpers.h"
 
 class DisplayGroupManager;
 class ContentInteractionDelegate;
@@ -59,7 +62,10 @@ class ContentWindowManager : public ContentWindowInterface, public boost::enable
         ContentWindowManager(ContentPtr content);
         virtual ~ContentWindowManager();
 
+        void setContent(ContentPtr content);
         ContentPtr getContent();
+
+        void createInteractionDelegate();
 
         DisplayGroupManagerPtr getDisplayGroupManager();
         void setDisplayGroupManager(DisplayGroupManagerPtr displayGroupManager);
@@ -95,6 +101,21 @@ class ContentWindowManager : public ContentWindowInterface, public boost::enable
             ar & highlightedTimestamp_;
         }
 
+        template<class Archive>
+        void serialize_for_xml(Archive & ar, const unsigned int)
+        {
+            ar & boost::serialization::make_nvp("content", content_);
+            ar & boost::serialization::make_nvp("contentWidth", contentWidth_);
+            ar & boost::serialization::make_nvp("contentHeight", contentHeight_);
+            ar & boost::serialization::make_nvp("coordinates", coordinates_);
+            ar & boost::serialization::make_nvp("coordinatesBackup", coordinatesBackup_);
+            ar & boost::serialization::make_nvp("centerX", centerX_);
+            ar & boost::serialization::make_nvp("centerY", centerY_);
+            ar & boost::serialization::make_nvp("zoom", zoom_);
+            ar & boost::serialization::make_nvp("controlState", controlState_);
+            ar & boost::serialization::make_nvp("windowState", windowState_);
+        }
+
     private:
         ContentPtr content_;
 
@@ -103,6 +124,8 @@ class ContentWindowManager : public ContentWindowInterface, public boost::enable
         // Rank0: Delegate to handle user inputs
         ContentInteractionDelegate* interactionDelegate_;
 };
+
+DECLARE_SERIALIZE_FOR_XML(ContentWindowManager)
 
 // typedef needed for SIP
 typedef ContentWindowManagerPtr pContentWindowManager;

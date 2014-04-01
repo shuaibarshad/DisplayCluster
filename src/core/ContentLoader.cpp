@@ -65,21 +65,7 @@ bool ContentLoader::load(const QString& filename, const QPointF& windowCenterPos
     if (!windowSize.isNull())
         contentWindow->setSize(windowSize.width(), windowSize.height());
 
-    if (!windowCenterPosition.isNull())
-        contentWindow->centerPositionAround(windowCenterPosition, true);
+    contentWindow->centerPositionAround(windowCenterPosition, true);
 
     return true;
-}
-
-bool ContentLoader::load(const QString& filename, const QString& parentWindowUri)
-{
-    // Center the new content where the dock is
-    ContentWindowManagerPtr parentWindow = displayGroupManager_->getContentWindowManager(parentWindowUri);
-    if (parentWindow)
-    {
-        return load(filename, parentWindow->getWindowCenterPosition());
-    }
-
-    put_flog(LOG_WARN, "Could not find window: ", parentWindowUri.toStdString().c_str());
-    return load(filename);
 }

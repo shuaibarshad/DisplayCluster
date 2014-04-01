@@ -102,7 +102,7 @@ bool SVG::setImageData(QByteArray imageData)
     return true;
 }
 
-void SVG::render(float tX, float tY, float tW, float tH)
+void SVG::render(const QRectF& texCoords)
 {
     updateRenderedFrameIndex();
 
@@ -120,7 +120,7 @@ void SVG::render(float tX, float tY, float tW, float tH)
     // Get the texture for the current GLWindow
     SVGTextureData& textureData = textureData_[g_mainWindow->getActiveGLWindow()->getTileIndex()];
 
-    const QRectF textureRect = computeTextureRect(screenRect, fullRect, tX, tY, tW, tH);
+    const QRectF textureRect = computeTextureRect(screenRect, fullRect, texCoords);
     const QSize textureSize(round(screenRect.width()), round(screenRect.height()));
 
     const bool recreateTextureFbo = !textureData.fbo || textureData.fbo->size() != textureSize;
@@ -151,13 +151,13 @@ void SVG::render(float tX, float tY, float tW, float tH)
 }
 
 QRectF SVG::computeTextureRect(const QRectF& screenRect, const QRectF& fullRect,
-                               const float tX, const float tY, const float tW, const float tH) const
+                               const QRectF& texCoords) const
 {
     // figure out what visible [tX, tY, tW, tH] is for screenRect
-    const float tXp = tX + (screenRect.x() - fullRect.x()) / fullRect.width() * tW;
-    const float tYp = tY + (screenRect.y() - fullRect.y()) / fullRect.height() * tH;
-    const float tWp = screenRect.width() / fullRect.width() * tW;
-    const float tHp = screenRect.height() / fullRect.height() * tH;
+    const float tXp = texCoords.x() + (screenRect.x() - fullRect.x()) / fullRect.width() * texCoords.width();
+    const float tYp = texCoords.y() + (screenRect.y() - fullRect.y()) / fullRect.height() * texCoords.height();
+    const float tWp = screenRect.width() / fullRect.width() * texCoords.width();
+    const float tHp = screenRect.height() / fullRect.height() * texCoords.height();
 
     return QRectF(tXp, tYp, tWp, tHp);
 }

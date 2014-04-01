@@ -72,7 +72,7 @@ public:
 
     void getDimensions(int &width, int &height);
     bool setImageData(QByteArray imageData);
-    void render(float tX, float tY, float tW, float tH);
+    void render(const QRectF& texCoords);
 
 private:
     // image location
@@ -90,7 +90,7 @@ private:
     int height_;
 
     QRectF computeTextureRect(const QRectF& screenRect, const QRectF& fullRect,
-                              const float tX, const float tY, const float tW, const float tH) const;
+                              const QRectF& texCoords) const;
 
     void renderToTexture(const QRectF& textureRect, QGLFramebufferObjectPtr targetFbo);
 

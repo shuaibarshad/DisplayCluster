@@ -44,24 +44,44 @@
 #include "types.h"
 
 #include <QtGui>
-#include <boost/shared_ptr.hpp>
+
 #include <boost/serialization/access.hpp>
 #include <boost/serialization/assume_abstract.hpp>
 #include <boost/archive/binary_oarchive.hpp>
 #include <boost/archive/binary_iarchive.hpp>
+#include <boost/serialization/nvp.hpp>
 
 class ContentWindowManager;
 
-class Content : public QObject {
+/**
+ * An abstract Content displayed in a ContentWindowManager.
+ *
+ * This class does not actually hold any content data because it
+ * is meant to be sent through MPI to Rank>0 processes.
+ * The content data is held by FactoryObjects on Rank>0 processes.
+ * A Content object references a FactoryObject of the same ContentType based on its URI.
+ * It is possible for multiple Content objects to reference the same FactoryObject.
+ */
+class Content : public QObject
+{
     Q_OBJECT
 
     public:
-
+        /** Constructor **/
         Content(QString uri = "");
 
+        /** Get the content URI **/
         const QString& getURI() const;
 
+        /** Get the content type **/
         virtual CONTENT_TYPE getType() = 0;
+
+        /**
+         * Read content metadata from the data source.
+         * Used on Rank0 for file-based content types to refresh data from source URI.
+         * @return true if the informations could be read.
+        **/
+        virtual bool readMetadata() = 0;
 
         void getDimensions(int &width, int &height);
         void setDimensions(int width, int height);
@@ -83,10 +103,10 @@ class Content : public QObject {
         template<class Archive>
         void serialize(Archive & ar, const unsigned int)
         {
-            ar & uri_;
-            ar & width_;
-            ar & height_;
-            ar & blockAdvance_;
+            ar & boost::serialization::make_nvp("uri", uri_);
+            ar & boost::serialization::make_nvp("width", width_);
+            ar & boost::serialization::make_nvp("height", height_);
+            ar & boost::serialization::make_nvp("block_advance", blockAdvance_);
         }
 
         QString uri_;
@@ -94,7 +114,8 @@ class Content : public QObject {
         int height_;
         bool blockAdvance_;
 
-        virtual void renderFactoryObject(float tX, float tY, float tW, float tH) = 0;
+        virtual void renderFactoryObject(ContentWindowManagerPtr window,
+                                         const QRectF& texCoords) = 0;
 };
 
 BOOST_SERIALIZATION_ASSUME_ABSTRACT(Content)

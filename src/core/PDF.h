@@ -52,11 +52,12 @@ namespace Poppler {
 class PDF : public FactoryObject
 {
 public:
-    PDF(QString uri);
+    PDF(const QString& uri);
     ~PDF();
 
+    bool isValid() const;
     void getDimensions(int &width, int &height) const;
-    void render(float tX, float tY, float tW, float tH);
+    void render(const QRectF& texCoords);
     void setPage(int pageNumber);
     int getPageCount() const;
 
@@ -79,7 +80,7 @@ private:
     void closeDocument();
     void closePage();
 
-    void generateTexture(QRectF screenRect, QRectF fullRect, float tX, float tY, float tW, float tH);
+    void generateTexture(QRectF screenRect, QRectF fullRect, const QRectF& texCoords);
     void deleteTexture();
 };
 

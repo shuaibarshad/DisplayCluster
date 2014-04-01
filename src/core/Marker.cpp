@@ -117,8 +117,8 @@ void Marker::render()
     float markerWidth = MARKER_WIDTH;
 
     // marker height needs to be scaled by the tiled display aspect ratio
-    float tiledDisplayAspect = (float)g_configuration->getTotalWidth() / (float)g_configuration->getTotalHeight();
-    float markerHeight = markerWidth * tiledDisplayAspect;
+    const float tiledDisplayAspect = g_configuration->getAspectRatio();
+    const float markerHeight = markerWidth * tiledDisplayAspect;
 
     // draw the texture
     glPushAttrib(GL_ENABLE_BIT | GL_TEXTURE_BIT);

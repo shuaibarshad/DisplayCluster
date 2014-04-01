@@ -45,32 +45,33 @@
 #include "EventReceiver.h"
 
 ContentWindowInterface::ContentWindowInterface()
-    : contentWidth_(0)
+    : uuid_(QUuid::createUuid())
+    , contentWidth_(0)
     , contentHeight_(0)
-    , centerX_(0)
-    , centerY_(0)
-    , zoom_(0)
+    , centerX_(0.5)
+    , centerY_(0.5)
+    , zoom_(1)
     , windowState_( UNSELECTED )
-    , sizeState_( SIZE_1TO1 )
-    , controlState_( STATE_PAUSED )
+    , sizeState_( SIZE_NORMALIZED )
+    , controlState_( STATE_LOOP )
     , eventReceiversCount_( 0 )
 {}
 
 ContentWindowInterface::ContentWindowInterface(ContentWindowManagerPtr contentWindowManager)
-    : contentWidth_(0)
+    : uuid_(contentWindowManager ? contentWindowManager->getID() : QUuid::createUuid())
+    , contentWindowManager_(contentWindowManager)
+    , contentWidth_(0)
     , contentHeight_(0)
     , centerX_(0)
     , centerY_(0)
     , zoom_(0)
     , windowState_( UNSELECTED )
-    , sizeState_( SIZE_1TO1 )
+    , sizeState_( SIZE_NORMALIZED )
     , controlState_( STATE_PAUSED )
     , eventReceiversCount_( 0 )
 {
-    contentWindowManager_ = contentWindowManager;
-
     // copy all members from contentWindowManager
-    if(contentWindowManager != NULL)
+    if(contentWindowManager)
     {
         contentWidth_ = contentWindowManager->contentWidth_;
         contentHeight_ = contentWindowManager->contentHeight_;
@@ -81,7 +82,7 @@ ContentWindowInterface::ContentWindowInterface(ContentWindowManagerPtr contentWi
         sizeState_ = contentWindowManager->sizeState_;
         controlState_ = contentWindowManager->controlState_;
         windowState_ = contentWindowManager->windowState_;
-        event_ = contentWindowManager->event_;
+        latestEvent_ = contentWindowManager->latestEvent_;
     }
 
     // register WindowState in Qt
@@ -116,6 +117,11 @@ ContentWindowInterface::ContentWindowInterface(ContentWindowManagerPtr contentWi
 
     // destruction
     connect(contentWindowManager.get(), SIGNAL(destroyed(QObject *)), this, SLOT(deleteLater()));
+}
+
+const QUuid& ContentWindowInterface::getID() const
+{
+    return uuid_;
 }
 
 ContentWindowManagerPtr ContentWindowInterface::getContentWindowManager()
@@ -180,9 +186,9 @@ ContentWindowInterface::WindowState ContentWindowInterface::getWindowState()
     return windowState_;
 }
 
-Event ContentWindowInterface::getEvent()
+Event ContentWindowInterface::getEvent() const
 {
-    return event_;
+    return latestEvent_;
 }
 
 bool ContentWindowInterface::registerEventReceiver(EventReceiver* receiver)
@@ -216,8 +222,8 @@ SizeState ContentWindowInterface::getSizeState() const
 
 void ContentWindowInterface::getButtonDimensions(float &width, float &height)
 {
-    float sceneHeightFraction = 0.125;
-    double screenAspect = (double)g_configuration->getTotalWidth() / (double)g_configuration->getTotalHeight();
+    const float sceneHeightFraction = 0.125;
+    const double screenAspect = g_configuration->getAspectRatio();
 
     width = sceneHeightFraction / screenAspect;
     height = sceneHeightFraction;
@@ -236,13 +242,11 @@ void ContentWindowInterface::getButtonDimensions(float &width, float &height)
 
 void ContentWindowInterface::fixAspectRatio(ContentWindowInterface * source)
 {
-    if(g_displayGroupManager->getOptions()->getConstrainAspectRatio() != true || (contentWidth_ == 0 && contentHeight_ == 0))
-    {
+    if(contentWidth_ == 0 && contentHeight_ == 0)
         return;
-    }
 
     double aspect = (double)contentWidth_ / (double)contentHeight_;
-    double screenAspect = (double)g_configuration->getTotalWidth() / (double)g_configuration->getTotalHeight();
+    const double screenAspect = g_configuration->getAspectRatio();
 
     aspect /= screenAspect;
 
@@ -276,14 +280,13 @@ void ContentWindowInterface::adjustSize( const SizeState state,
 
     const double contentAR = contentHeight_ == 0 ? 16./9 :
                                  double(contentWidth_) / double(contentHeight_);
-    const double configAR = double(g_configuration->getTotalHeight()) /
-                            double(g_configuration->getTotalWidth());
+    const double wallAR = 1. / g_configuration->getAspectRatio();
 
     double height = contentHeight_ == 0
                             ? 1.
                             : double(contentHeight_) / double(g_configuration->getTotalHeight());
     double width = contentWidth_ == 0
-                            ? configAR * contentAR * height
+                            ? wallAR * contentAR * height
                             : double(contentWidth_) / double(g_configuration->getTotalWidth());
 
     QRectF coordinates;
@@ -292,7 +295,7 @@ void ContentWindowInterface::adjustSize( const SizeState state,
     {
     case SIZE_FULLSCREEN:
         {
-            backup_ = coordinates_;
+            coordinatesBackup_ = coordinates_;
             const double resize = std::min( 1. / height, 1. / width );
             width *= resize;
             height *= resize;
@@ -303,7 +306,7 @@ void ContentWindowInterface::adjustSize( const SizeState state,
 
     case SIZE_1TO1:
         height = std::min( height, 1. );
-        width = configAR * contentAR * height;
+        width = wallAR * contentAR * height;
         if( width > 1. )
         {
             height /= width;
@@ -315,7 +318,7 @@ void ContentWindowInterface::adjustSize( const SizeState state,
         break;
 
     case SIZE_NORMALIZED:
-        coordinates = backup_;
+        coordinates = coordinatesBackup_;
         break;
     default:
         return;
@@ -575,14 +578,14 @@ void ContentWindowInterface::setWindowState(ContentWindowInterface::WindowState 
     }
 }
 
-void ContentWindowInterface::setEvent(Event event, ContentWindowInterface * source)
+void ContentWindowInterface::setEvent(Event event_, ContentWindowInterface * source)
 {
     if(source == this)
     {
         return;
     }
 
-    event_ = event;
+    latestEvent_ = event_;
 
     if(source == NULL || dynamic_cast<ContentWindowManager *>(this) != NULL)
     {
