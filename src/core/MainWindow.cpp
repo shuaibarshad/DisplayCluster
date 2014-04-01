@@ -570,18 +570,18 @@ void MainWindow::loadState(const QString& filename)
 void MainWindow::computeImagePyramid()
 {
     // get image filename
-    QString imageFilename = QFileDialog::getOpenFileName(this, "Select image");
+    const QString imageFilename = QFileDialog::getOpenFileName(this, "Select image");
 
     if(!imageFilename.isEmpty())
     {
-        put_flog(LOG_DEBUG, "got image filename %s", imageFilename.toStdString().c_str());
+        put_flog(LOG_DEBUG, "source image filename %s", imageFilename.toLocal8Bit().constData());
 
-        std::string imagePyramidPath = imageFilename.toStdString() + ".pyramid/";
+        const QString imagePyramidPath = imageFilename + DynamicTexture::pyramidFolderSuffix;
 
-        put_flog(LOG_DEBUG, "got image pyramid path %s", imagePyramidPath.c_str());
+        put_flog(LOG_DEBUG, "target image pyramid folder %s", imagePyramidPath.toLocal8Bit().constData());
 
-        boost::shared_ptr<DynamicTexture> dt(new DynamicTexture(imageFilename));
-        dt->computeImagePyramid(imagePyramidPath);
+        DynamicTexturePtr dynamicTexture(new DynamicTexture(imageFilename));
+        dynamicTexture->generateImagePyramid(imagePyramidPath);
 
         put_flog(LOG_DEBUG, "done");
     }
