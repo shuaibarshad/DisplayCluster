@@ -90,11 +90,10 @@ std::string RequestBuilder::_getData(FCGX_Request& fcgiRequest)
         return "";
 
     const int length = atoi(contentLength);
-    char buffer[length + 1];
-    buffer[length] = '\0';
-    int read = FCGX_GetStr(buffer, length, fcgiRequest.in);
+    std::vector<char> buffer(length + 1, '\0');
+    int read = FCGX_GetStr(buffer.data(), length, fcgiRequest.in);
     if (read != 0)
-        return std::string(buffer);
+        return std::string(buffer.data());
     else
         return "";
 }

@@ -49,7 +49,7 @@ namespace ut = boost::unit_test;
 #include <QWebFrame>
 #include <QWebElement>
 
-#include "../GlobalQtApp.h"
+#include "GlobalQtApp.h"
 
 #define TEST_PAGE_URL               "select_test.htm"
 #define HTTP_BODY_SELECTOR          "body"
