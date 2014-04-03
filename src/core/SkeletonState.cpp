@@ -39,7 +39,8 @@
 #include "SkeletonState.h"
 #include "DisplayGroupJoystick.h"
 #include "ContentWindowInterface.h"
-#include "main.h"
+#include "globals.h"
+#include "MPIChannel.h"
 #include "log.h"
 #include "vector.h"
 
@@ -59,7 +60,7 @@ inline float calculateDistance(SkeletonPoint& a, SkeletonPoint& b)
 
 SkeletonState::SkeletonState()
 {
-    if(g_mpiRank == 0)
+    if(g_mpiChannel->getRank() == 0)
     {
         // create display group interface
         boost::shared_ptr<DisplayGroupJoystick> dgj(new DisplayGroupJoystick(g_displayGroupManager));

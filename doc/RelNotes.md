@@ -24,7 +24,7 @@ high-performance remote visualization machines
 
 # New in this release {#New}
 
-DisplayCluster 0.2.0 provides the following features:
+DisplayCluster 0.3.0 provides the following features:
 
 ## New Features {#NewFeatures}
 

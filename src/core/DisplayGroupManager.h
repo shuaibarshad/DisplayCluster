@@ -42,136 +42,116 @@
 #include "DisplayGroupInterface.h"
 #include "Options.h"
 #include "Marker.h"
+
 #include "config.h"
-#include "Factory.hpp"
+#include "types.h"
+#include "serializationHelpers.h"
+
+#if ENABLE_SKELETON_SUPPORT
+#include "SkeletonState.h"
+#endif
 
 #include <QtGui>
 #include <vector>
 #ifndef Q_MOC_RUN
 // https://bugreports.qt.nokia.com/browse/QTBUG-22829: When Qt moc runs on CGAL
 // files, do not process <boost/type_traits/has_operator.hpp>
-#  include <boost/shared_ptr.hpp>
 #  include <boost/enable_shared_from_this.hpp>
-#  include <boost/date_time/posix_time/posix_time.hpp>
 #endif
-
-#if ENABLE_SKELETON_SUPPORT
-    #include "SkeletonState.h"
-#endif
-
-#include "serializationHelpers.h"
-#include "types.h"
 
 class ContentWindowManager;
-struct MessageHeader;
 class EventReceiver;
 
-class DisplayGroupManager : public DisplayGroupInterface, public boost::enable_shared_from_this<DisplayGroupManager>
+class DisplayGroupManager : public DisplayGroupInterface,
+        public boost::enable_shared_from_this<DisplayGroupManager>
 {
     Q_OBJECT
 
-    public:
+public:
 
-        DisplayGroupManager();
-        ~DisplayGroupManager();
+    DisplayGroupManager();
+    ~DisplayGroupManager();
 
-        OptionsPtr getOptions() const;
+    OptionsPtr getOptions() const;
 
-        MarkerPtr getNewMarker();
-        const MarkerPtrs& getMarkers() const;
-        void deleteMarkers();
-
-        boost::posix_time::ptime getTimestamp() const;
+    MarkerPtr getNewMarker();
+    MarkerPtrs getMarkers() const;
+    void deleteMarkers();
 
 #if ENABLE_SKELETON_SUPPORT
-        std::vector< boost::shared_ptr<SkeletonState> > getSkeletons();
+    std::vector< boost::shared_ptr<SkeletonState> > getSkeletons();
 #endif
 
-        // re-implemented DisplayGroupInterface slots
-        void addContentWindowManager(ContentWindowManagerPtr contentWindowManager, DisplayGroupInterface * source=NULL);
-        void removeContentWindowManager(ContentWindowManagerPtr contentWindowManager, DisplayGroupInterface * source=NULL);
-        void moveContentWindowManagerToFront(ContentWindowManagerPtr contentWindowManager, DisplayGroupInterface * source=NULL);
+    // re-implemented DisplayGroupInterface slots
+    void addContentWindowManager(ContentWindowManagerPtr contentWindowManager, DisplayGroupInterface * source=NULL);
+    void removeContentWindowManager(ContentWindowManagerPtr contentWindowManager, DisplayGroupInterface * source=NULL);
+    void moveContentWindowManagerToFront(ContentWindowManagerPtr contentWindowManager, DisplayGroupInterface * source=NULL);
 
-        // find the offset between the rank 0 clock and the rank 1 clock. recall the rank 1 clock is used across rank 1 - n.
-        void calibrateTimestampOffset();
+    QColor getBackgroundColor() const;
+    void setBackgroundColor(QColor color);
 
-        QColor getBackgroundColor() const;
-        void setBackgroundColor(QColor color);
+    bool setBackgroundContentFromUri(const QString& filename);
+    void setBackgroundContentWindowManager(ContentWindowManagerPtr contentWindowManager);
+    ContentWindowManagerPtr getBackgroundContentWindowManager() const;
 
-        bool setBackgroundContentFromUri(const QString& filename);
-        void setBackgroundContentWindowManager(ContentWindowManagerPtr contentWindowManager);
-        ContentWindowManagerPtr getBackgroundContentWindowManager() const;
+    /**
+     * Is the DisplayGroup empty.
+     * @return true if the DisplayGroup has no ContentWindowManager, false otherwise.
+     */
+    bool isEmpty() const;
 
-        /**
-         * Is the DisplayGroup empty.
-         * @return true if the DisplayGroup has no ContentWindowManager, false otherwise.
-         */
-        bool isEmpty() const;
+    /**
+     * Get the active window.
+     * @return A shared pointer to the active window. Can be empty if there is
+     *         no Window available. @see isEmpty().
+     */
+    ContentWindowManagerPtr getActiveWindow() const;
 
-        /**
-         * Get the active window.
-         * @return A shared pointer to the active window. Can be empty if there is
-         *         no Window available. @see isEmpty().
-         */
-        ContentWindowManagerPtr getActiveWindow() const;
+signals:
+    /** Emitted whenever the DisplayGroup is modified */
+    void modified(DisplayGroupManagerPtr displayGroup);
 
 public slots:
-        void receiveMessages();
-
-        void sendDisplayGroup();
-        void sendContentsDimensionsRequest();
-        void sendFrameClockUpdate();
-        void receiveFrameClockUpdate();
-        void sendQuit();
-
-        void advanceContents();
+    /** Advance all contents */
+    void advanceContents();
 
 #if ENABLE_SKELETON_SUPPORT
-        void setSkeletons(std::vector<boost::shared_ptr<SkeletonState> > skeletons);
+    void setSkeletons(std::vector<boost::shared_ptr<SkeletonState> > skeletons);
 #endif
 
-    private:
-        friend class boost::serialization::access;
+private slots:
+    void sendDisplayGroup();
 
-        template<class Archive>
-        void serialize(Archive & ar, const unsigned int)
-        {
-            ar & options_;
-            ar & markers_;
-            ar & contentWindowManagers_;
-            ar & backgroundContent_;
-            ar & backgroundColor_;
+private:
+    friend class boost::serialization::access;
+
+    template<class Archive>
+    void serialize(Archive & ar, const unsigned int)
+    {
+        QMutexLocker locker(&markersMutex_);
+        ar & options_;
+        ar & markers_;
+        ar & contentWindowManagers_;
+        ar & backgroundContent_;
+        ar & backgroundColor_;
+#if ENABLE_SKELETON_SUPPORT
+        ar & skeletons_;
+#endif
+    }
+
+    void watchChanges(ContentWindowManagerPtr contentWindow);
+
+    ContentWindowManagerPtr backgroundContent_;
+    QColor backgroundColor_;
+
+    OptionsPtr options_;
+
+    mutable QMutex markersMutex_;
+    MarkerPtrs markers_;
 
 #if ENABLE_SKELETON_SUPPORT
-            ar & skeletons_;
+    std::vector<boost::shared_ptr<SkeletonState> > skeletons_;
 #endif
-        }
-
-        // background
-        ContentWindowManagerPtr backgroundContent_;
-        QColor backgroundColor_;
-
-        // options
-        OptionsPtr options_;
-
-        // marker and mutex
-        QMutex markersMutex_;
-        MarkerPtrs markers_;
-
-        // frame timing
-        boost::posix_time::ptime timestamp_;
-
-#if ENABLE_SKELETON_SUPPORT
-        std::vector<boost::shared_ptr<SkeletonState> > skeletons_;
-#endif
-
-        // rank 1 - rank 0 timestamp offset
-        boost::posix_time::time_duration timestampOffset_;
-
-        // ranks 1-n recieve data through MPI
-        void receiveDisplayGroup(const MessageHeader& messageHeader);
-        void receiveContentsDimensionsRequest();
-        void receivePixelStreams(const MessageHeader& messageHeader);
 };
 
 #endif

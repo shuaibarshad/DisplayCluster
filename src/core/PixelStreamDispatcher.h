@@ -138,8 +138,6 @@ private:
     // The buffers for each URI
     StreamBuffers streamBuffers_;
 
-    void sendPixelStreamSegments(const std::vector<PixelStreamSegment> &segments, const QString& uri);
-
 #ifdef USE_TIMER
     QTimer sendTimer_;
 #else

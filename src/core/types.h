@@ -51,6 +51,7 @@ class DynamicTexture;
 class Options;
 class Marker;
 class GLWindow;
+class MPIChannel;
 class PixelStreamWindowManager;
 
 typedef boost::shared_ptr< Content > ContentPtr;
@@ -61,6 +62,7 @@ typedef boost::shared_ptr< DynamicTexture > DynamicTexturePtr;
 typedef boost::shared_ptr< Options > OptionsPtr;
 typedef boost::shared_ptr<Marker> MarkerPtr;
 typedef boost::shared_ptr<GLWindow> GLWindowPtr;
+typedef boost::shared_ptr<MPIChannel> MPIChannelPtr;
 
 typedef std::vector< ContentWindowManagerPtr > ContentWindowManagerPtrs;
 typedef std::vector<MarkerPtr> MarkerPtrs;

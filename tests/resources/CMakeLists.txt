@@ -12,3 +12,10 @@ set(TEST_RESOURCES webgl_interaction.html select_test.htm
 foreach(FILE ${TEST_RESOURCES})
   file(COPY ${FILE} DESTINATION ${CMAKE_BINARY_DIR}/tests/cpp)
 endforeach()
+
+# Performance test resources
+set(PERF_TEST_RESOURCES configuration.xml)
+
+foreach(FILE ${PERF_TEST_RESOURCES})
+  file(COPY ${FILE} DESTINATION ${CMAKE_BINARY_DIR}/tests/perf)
+endforeach()

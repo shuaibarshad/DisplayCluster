@@ -162,17 +162,16 @@ bool DynamicTexture::readPyramidMetadataFromFile(const QString& uri)
 bool DynamicTexture::writeMetadataFile(const QString& pyramidFolder, const QString& filename) const
 {
     std::ofstream ofs(filename.toStdString().c_str());
-    if(ofs.good())
-    {
-        ofs << "\"" << pyramidFolder.toStdString() << "\" " << imageSize_.width() << " " << imageSize_.height();
-        return true;
-    }
-    else
+    if(!ofs.good())
     {
         put_flog(LOG_WARN, "could not write second metadata file %s",
                  filename.toStdString().c_str());
         return false;
     }
+
+    ofs << "\"" << pyramidFolder.toStdString() << "\" " << imageSize_.width()
+        << " " << imageSize_.height();
+    return true;
 }
 
 bool DynamicTexture::writePyramidMetadataFiles(const QString& pyramidFolder) const

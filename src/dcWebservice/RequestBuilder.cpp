@@ -94,8 +94,7 @@ std::string RequestBuilder::_getData(FCGX_Request& fcgiRequest)
     int read = FCGX_GetStr(buffer.data(), length, fcgiRequest.in);
     if (read != 0)
         return std::string(buffer.data());
-    else
-        return "";
+    return "";
 }
 
 void RequestBuilder::_populateParameters(RequestPtr fcgiRequest)

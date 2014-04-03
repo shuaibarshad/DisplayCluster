@@ -102,7 +102,6 @@ list(APPEND SRCS
     ContentWindowInterface.cpp
     ContentWindowGraphicsItem.cpp
     ContentWindowListWidgetItem.cpp
-    Marker.cpp
     DisplayGroupManager.cpp
     DisplayGroupInterface.cpp
     DisplayGroupGraphicsScene.cpp
@@ -126,8 +125,10 @@ list(APPEND SRCS
     ../MessageHeader.cpp
     ImageJpegDecompressor.cpp
     MainWindow.cpp
+    Marker.cpp
     Movie.cpp
     MovieContent.cpp
+    MPIChannel.cpp
     NetworkListener.cpp
     NetworkListenerThread.cpp
     Options.cpp
@@ -184,6 +185,7 @@ list(APPEND MOC_HEADERS
     CommandHandler.h
     Content.h
     ContentWindowInterface.h
+    ContentWindowManager.h
     DisplayGroupManager.h
     DisplayGroupInterface.h
     DisplayGroupGraphicsView.h
@@ -192,6 +194,7 @@ list(APPEND MOC_HEADERS
     EventReceiver.h
     MainWindow.h
     Marker.h
+    MPIChannel.h
     NetworkListener.h
     NetworkListenerThread.h
     Options.h

@@ -40,6 +40,7 @@
 #include "globals.h"
 #include "ContentWindowManager.h"
 #include "DisplayGroupManager.h"
+#include "MPIChannel.h"
 #include "MainWindow.h"
 #include "GLWindow.h"
 #include "log.h"
@@ -207,8 +208,6 @@ void PixelStream::insertNewFrame(const PixelStreamSegments &segments)
 bool PixelStream::isDecodingInProgress()
 {
     // determine if threads are running on any processes for this PixelStream
-
-    // first, for this local process
     int localThreadsRunning = 0;
 
     std::vector<PixelStreamSegmentDecoderPtr>::const_iterator it;
@@ -218,11 +217,7 @@ bool PixelStream::isDecodingInProgress()
             ++localThreadsRunning;
     }
 
-    // now, globally for all render processes
-    int globalThreadsRunning;
-
-    MPI_Allreduce((void *)&localThreadsRunning, (void *)&globalThreadsRunning, 1, MPI_INT, MPI_SUM, g_mpiRenderComm);
-
+    int globalThreadsRunning = g_mpiChannel->globalSum(localThreadsRunning);
     return globalThreadsRunning > 0;
 }
 

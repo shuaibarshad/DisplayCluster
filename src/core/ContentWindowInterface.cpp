@@ -40,9 +40,10 @@
 #include "ContentWindowManager.h"
 #include "globals.h"
 #include "configuration/Configuration.h"
-#include "DisplayGroupManager.h"
+#include "MPIChannel.h"
 #include "MainWindow.h"
 #include "EventReceiver.h"
+#include "MPIChannel.h"
 
 ContentWindowInterface::ContentWindowInterface()
     : uuid_(QUuid::createUuid())
@@ -203,7 +204,7 @@ bool ContentWindowInterface::registerEventReceiver(EventReceiver* receiver)
 
 bool ContentWindowInterface::getHighlighted()
 {
-    const long dtMilliseconds = (g_displayGroupManager->getTimestamp() - highlightedTimestamp_).total_milliseconds();
+    const long dtMilliseconds = (g_mpiChannel->getTime() - highlightedTimestamp_).total_milliseconds();
 
     if(dtMilliseconds > HIGHLIGHT_TIMEOUT_MILLISECONDS || dtMilliseconds % (HIGHLIGHT_BLINK_INTERVAL*2) < HIGHLIGHT_BLINK_INTERVAL)
     {
@@ -606,7 +607,7 @@ void ContentWindowInterface::highlight(ContentWindowInterface * source)
     }
 
     // set highlighted timestamp
-    highlightedTimestamp_ = g_displayGroupManager->getTimestamp();
+    highlightedTimestamp_ = g_mpiChannel->getTime();
 
     if(source == NULL || dynamic_cast<ContentWindowManager *>(this) != NULL)
     {

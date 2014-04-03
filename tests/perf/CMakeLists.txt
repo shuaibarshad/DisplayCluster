@@ -14,13 +14,12 @@ enable_testing()
 add_definitions(-DBOOST_TEST_DYN_LINK) # generates main() for unit tests
 
 if(NOT WIN32) # tests want to be with DLLs on Windows - no rpath
-  set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/tests)
+  set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
 endif()
 
 set(TEST_LIBRARIES
   ${DC_LIBRARIES}
   ${Boost_LIBRARIES}
-  ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY}
 )
 
 if(BUILD_CORE_LIBRARY)
