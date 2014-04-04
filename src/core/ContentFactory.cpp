@@ -74,11 +74,7 @@ ContentPtr ContentFactory::getContent(const QString& uri)
     // See if this is a PDF document
     if(PDFContent::getSupportedExtensions().contains(extension))
     {
-        PDFContent* pdfContent = new PDFContent(uri);
-        ContentPtr content(pdfContent);
-
-        pdfContent->connect(pdfContent, SIGNAL(pageChanged()), g_displayGroupManager.get(),
-                            SLOT(sendDisplayGroup()), Qt::QueuedConnection);
+        ContentPtr content(new PDFContent(uri));
 
         if (!content->readMetadata())
             return getErrorContent();

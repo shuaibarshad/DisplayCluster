@@ -48,6 +48,8 @@ namespace ut = boost::unit_test;
 #include "NetworkListener.h"
 #include "configuration/MasterConfiguration.h"
 #include "dcstream/Stream.h"
+#include "globals.h"
+#include "MPIChannel.h"
 
 // Tests local throughput of the streaming library by sending raw as well as
 // blank and random images through dc::Stream. Baseline test for best-case
@@ -148,7 +150,7 @@ class DCThread : public QThread
 BOOST_AUTO_TEST_CASE( testSocketConnection )
 {
     ut::master_test_suite_t& testSuite = ut::framework::master_test_suite();
-    MPI_Init( &testSuite.argc, &testSuite.argv );
+    g_mpiChannel.reset(new MPIChannel(testSuite.argc, testSuite.argv));
 
     g_displayGroupManager.reset( new DisplayGroupManager );
     g_configuration =
@@ -165,6 +167,4 @@ BOOST_AUTO_TEST_CASE( testSocketConnection )
     thread.start();
     QApplication::instance()->exec();
     BOOST_CHECK( thread.wait( ));
-
-    MPI_Finalize();
 }

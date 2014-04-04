@@ -108,26 +108,26 @@ BOOST_AUTO_TEST_CASE( testCommandLineFromCommandLineArguments )
     // Create a c-style representation of the command line options
     QStringList arguments = options.getCommandLineArguments();
     int argc = arguments.size() + 1;
-    char* argv[argc];
+    std::vector<char*> argv(argc);
     std::vector<char>* argList = new std::vector<char>[argc];
 
     // Program name
     {
-        std::string tmp("/test/program");
+        const std::string tmp("/test/program");
         argList[0].assign(tmp.begin(), tmp.end());
         argList[0].push_back('\0');
-        argv[0] = &(argList[0][0]);
+        argv[0] = argList[0].data();
     }
     // Command line arguments
     for (int i = 1; i < argc; i++)
     {
-        std::string tmp = arguments.at(i-1).toStdString();
+        const std::string tmp = arguments.at(i-1).toStdString();
         argList[i].assign(tmp.begin(), tmp.end());
         argList[i].push_back('\0');
-        argv[i] = &(argList[i][0]);
+        argv[i] = argList[i].data();
     }
 
-    CommandLineOptions optionsDeserialized( argc, argv );
+    CommandLineOptions optionsDeserialized( argc, argv.data() );
     checkOptionParameters(optionsDeserialized);
     delete [] argList;
 }

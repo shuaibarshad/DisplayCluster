@@ -8,7 +8,7 @@ include(GitExternal)
 set(RELEASE_VERSION 1) # OFF or ABI version
 set(LAST_RELEASE 1.0.0)
 set(VERSION_MAJOR 0)
-set(VERSION_MINOR 2)
+set(VERSION_MINOR 3)
 set(VERSION_PATCH 0)
 
 # Scripts

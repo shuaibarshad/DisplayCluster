@@ -38,7 +38,7 @@
 
 #include "Movie.h"
 #include "globals.h"
-#include "DisplayGroupManager.h"
+#include "MPIChannel.h"
 #include "MainWindow.h"
 #include "GLWindow.h"
 #include "log.h"
@@ -242,14 +242,14 @@ void Movie::nextFrame(bool skip)
     // rate limiting
     double elapsedSeconds = 999999.;
     if( !nextTimestamp_.is_not_a_date_time( ))
-        elapsedSeconds = (g_displayGroupManager->getTimestamp() -
+        elapsedSeconds = (g_mpiChannel->getTime() -
                            nextTimestamp_).total_microseconds() / 1000000.;
 
     if( elapsedSeconds < frameDuration_ )
         return;
 
     // update timestamp of last frame
-    nextTimestamp_ = g_displayGroupManager->getTimestamp();
+    nextTimestamp_ = g_mpiChannel->getTime();
 
     // seeking
 

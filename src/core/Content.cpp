@@ -74,7 +74,7 @@ void Content::setDimensions(int width, int height)
     emit(dimensionsChanged(width_, height_));
 }
 
-void Content::render(ContentWindowManagerPtr window)
+void Content::render(ContentWindowManagerPtr window, const bool showZoomContext)
 {
     double x, y, w, h;
     window->getCoordinates(x, y, w, h);
@@ -100,7 +100,7 @@ void Content::render(ContentWindowManagerPtr window)
     renderFactoryObject(window, QRectF(tX, tY, tW, tH));
 
     // render the context view
-    if(g_displayGroupManager->getOptions()->getShowZoomContext() && zoom > 1.)
+    if(showZoomContext && zoom > 1.)
     {
         float sizeFactor = 0.25;
         float padding = 0.02;
