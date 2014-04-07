@@ -48,7 +48,6 @@
 
 class MultiTouchListener;
 class BackgroundWidget;
-class GLWindow;
 
 class MainWindow : public QMainWindow
 {
