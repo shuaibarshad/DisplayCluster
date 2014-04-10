@@ -82,7 +82,7 @@ public:
 class FakeFCGI : public dcWebservice::FastCGIWrapper
 {
 public:
-    virtual bool init(const int)
+    virtual bool init(const int, const unsigned int)
     {
         return true;
     }

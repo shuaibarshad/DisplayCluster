@@ -56,6 +56,8 @@ class ContentInteractionDelegate;
 
 class ContentWindowManager : public ContentWindowInterface, public boost::enable_shared_from_this<ContentWindowManager>
 {
+    Q_OBJECT
+
     public:
 
         ContentWindowManager(); // no-argument constructor required for serialization
@@ -81,6 +83,10 @@ class ContentWindowManager : public ContentWindowInterface, public boost::enable
 
         // GLWindow rendering
         void render();
+
+    signals:
+        /** Emitted when the Content signals that it has been modified */
+        void contentModified();
 
     protected:
         friend class boost::serialization::access;

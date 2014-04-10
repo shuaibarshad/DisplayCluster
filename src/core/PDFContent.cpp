@@ -53,6 +53,7 @@ PDFContent::PDFContent(const QString& uri)
     , pageNumber_(0)
     , pageCount_(0)
 {
+    connect(this, SIGNAL(pageChanged()), this, SIGNAL(modified()));
 }
 
 CONTENT_TYPE PDFContent::getType()

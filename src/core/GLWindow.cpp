@@ -38,6 +38,7 @@
 
 #include "GLWindow.h"
 #include "globals.h"
+#include "MPIChannel.h"
 #include "Marker.h"
 #include "configuration/WallConfiguration.h"
 #include "ContentWindowManager.h"
@@ -152,28 +153,29 @@ void GLWindow::initializeGL()
 
 void GLWindow::paintGL()
 {
-    setOrthographicView();
+    setOrthographicView(g_displayGroupManager->getBackgroundColor());
+
+    OptionsPtr options = g_displayGroupManager->getOptions();
 
     // if the show test pattern option is enabled, render the test pattern and return
-    if(g_displayGroupManager->getOptions()->getShowTestPattern())
+    if(options->getShowTestPattern())
     {
         renderTestPattern();
         return;
     }
 
-    renderBackgroundContent();
-    renderContentWindows();
+    renderBackgroundContent(g_displayGroupManager->getBackgroundContentWindowManager());
+    renderContentWindows(g_displayGroupManager->getContentWindowManagers());
 
     // Show the FPS for each window
-    if (g_displayGroupManager->getOptions()->getShowStreamingStatistics())
-    {
+    if (options->getShowStreamingStatistics())
         drawFps();
-    }
 
-    renderMarkers(); // Markers should be rendered last since they're blended
+    // Markers should be rendered last since they're blended
+    renderMarkers(g_displayGroupManager->getMarkers());
 
 #if ENABLE_SKELETON_SUPPORT
-    if(g_displayGroupManager->getOptions()->getShowSkeletons() == true)
+    if(options->getShowSkeletons())
     {
         // render perspective overlay for skeletons
 
@@ -219,26 +221,22 @@ void GLWindow::resizeGL(int w, int h)
     update();
 }
 
-void GLWindow::renderBackgroundContent()
+void GLWindow::renderBackgroundContent(ContentWindowManagerPtr backgroundContentWindow)
 {
     // Render background content window
-    ContentWindowManagerPtr backgroundContentWindowManager = g_displayGroupManager->getBackgroundContentWindowManager();
-    if (backgroundContentWindowManager != NULL)
+    if (backgroundContentWindow)
     {
         glPushMatrix();
         glTranslatef(0., 0., -1.f + std::numeric_limits<float>::epsilon());
 
-        backgroundContentWindowManager->render();
+        backgroundContentWindow->render();
 
         glPopMatrix();
     }
 }
 
-void GLWindow::renderContentWindows()
+void GLWindow::renderContentWindows(ContentWindowManagerPtrs contentWindowManagers)
 {
-    // render content windows
-    ContentWindowManagerPtrs contentWindowManagers = g_displayGroupManager->getContentWindowManagers();
-
     const unsigned int windowCount = contentWindowManagers.size();
     unsigned int i = 0;
     for(ContentWindowManagerPtrs::iterator it = contentWindowManagers.begin(); it != contentWindowManagers.end(); ++it)
@@ -264,16 +262,15 @@ void GLWindow::renderContentWindows()
     }
 }
 
-void GLWindow::renderMarkers()
+void GLWindow::renderMarkers(const MarkerPtrs& markers)
 {
-    MarkerPtrs markers = g_displayGroupManager->getMarkers();
-    for(MarkerPtrs::iterator it = markers.begin(); it != markers.end(); ++it)
+    for(MarkerPtrs::const_iterator it = markers.begin(); it != markers.end(); ++it)
     {
         (*it)->render();
     }
 }
 
-void GLWindow::setOrthographicView()
+void GLWindow::setOrthographicView(const QColor& clearColor)
 {
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
@@ -313,8 +310,7 @@ void GLWindow::setOrthographicView()
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
 
-    QColor color = g_displayGroupManager->getBackgroundColor();
-    glClearColor(color.redF(), color.greenF(), color.blueF(), color.alpha());
+    glClearColor(clearColor.redF(), clearColor.greenF(), clearColor.blueF(), clearColor.alpha());
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
@@ -469,7 +465,7 @@ void GLWindow::renderTestPattern()
     // screen information in front of cross pattern
     glTranslatef(0., 0., 0.1);
 
-    QString label1 = "Rank: " + QString::number(g_mpiRank);
+    QString label1 = "Rank: " + QString::number(g_mpiChannel->getRank());
     QString label2 = "Host: " + configuration_->getHost();
     QString label3 = "Display: " + configuration_->getDisplay();
     QString label4 = "Tile coordinates: (" + QString::number(configuration_->getGlobalScreenIndex(tileIndex_).x()) + ", " + QString::number(configuration_->getGlobalScreenIndex(tileIndex_).y()) + ")";

@@ -86,7 +86,7 @@ class Content : public QObject
         void getDimensions(int &width, int &height);
         void setDimensions(int width, int height);
         virtual void getFactoryObjectDimensions(int &width, int &height) = 0;
-        void render(ContentWindowManagerPtr window);
+        void render(ContentWindowManagerPtr window, const bool showZoomContext);
         void blockAdvance( bool block ) { blockAdvance_ = block; }
 
         // virtual method for implementing actions on advancing to a new frame
@@ -95,7 +95,11 @@ class Content : public QObject
 
     signals:
 
+        /** Emitted when dimensions have changed */
         void dimensionsChanged(int width, int height);
+
+        /** Emitted by any Content subclass when its state has been modified */
+        void modified();
 
     protected:
         friend class boost::serialization::access;

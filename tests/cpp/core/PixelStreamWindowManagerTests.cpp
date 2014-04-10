@@ -41,25 +41,29 @@
 #include <boost/test/unit_test.hpp>
 namespace ut = boost::unit_test;
 
-#include <ContentWindowManager.h>
-#include <DisplayGroupManager.h>
-#include <PixelStreamWindowManager.h>
-#include <configuration/MasterConfiguration.h>
+#include "ContentWindowManager.h"
+#include "DisplayGroupManager.h"
+#include "Options.h"
+#include "PixelStreamWindowManager.h"
+#include "configuration/MasterConfiguration.h"
+#include "globals.h"
 
-#include "MinimalGlobalQtAppMPI.h"
-BOOST_GLOBAL_FIXTURE( MinimalGlobalQtAppMPI )
+#include "MinimalGlobalQtApp.h"
+BOOST_GLOBAL_FIXTURE( MinimalGlobalQtApp )
 
+#define CONFIGURATION_FILE "configuration.xml"
+#define CONTENT_URI "bla"
 
 BOOST_AUTO_TEST_CASE( testNoStreamerWindowCreation )
 {
-    g_displayGroupManager.reset( new DisplayGroupManager );
+    DisplayGroupManagerPtr displayGroupManager( new DisplayGroupManager );
     g_configuration =
-        new MasterConfiguration( "configuration.xml",
-                                 g_displayGroupManager->getOptions( ));
+        new MasterConfiguration( CONFIGURATION_FILE,
+                                 displayGroupManager->getOptions( ));
 
-    PixelStreamWindowManager windowManager( *g_displayGroupManager );
+    PixelStreamWindowManager windowManager( *displayGroupManager );
 
-    const QString uri = "bla";
+    const QString uri = CONTENT_URI;
     const QPointF pos( .4, .3 );
     const QSizeF size( .1, .2 );
 
@@ -82,14 +86,14 @@ BOOST_AUTO_TEST_CASE( testNoStreamerWindowCreation )
 
 BOOST_AUTO_TEST_CASE( testExplicitWindowCreation )
 {
-    g_displayGroupManager.reset( new DisplayGroupManager );
+    DisplayGroupManagerPtr displayGroupManager( new DisplayGroupManager );
     g_configuration =
-        new MasterConfiguration( "configuration.xml",
-                                 g_displayGroupManager->getOptions( ));
+        new MasterConfiguration( CONFIGURATION_FILE,
+                                 displayGroupManager->getOptions( ));
 
-    PixelStreamWindowManager windowManager( *g_displayGroupManager );
+    PixelStreamWindowManager windowManager( *displayGroupManager );
 
-    const QString uri = "bla";
+    const QString uri = CONTENT_URI;
     const QPointF pos( .4, .3 );
     const QSizeF size( .1, .2 );
     const QSize pixels( g_configuration->getTotalWidth() * size.width(),
@@ -122,14 +126,14 @@ BOOST_AUTO_TEST_CASE( testExplicitWindowCreation )
 
 BOOST_AUTO_TEST_CASE( testImplicitWindowCreation )
 {
-    g_displayGroupManager.reset( new DisplayGroupManager );
+    DisplayGroupManagerPtr displayGroupManager( new DisplayGroupManager );
     g_configuration =
-        new MasterConfiguration( "configuration.xml",
-                                 g_displayGroupManager->getOptions( ));
+        new MasterConfiguration( CONFIGURATION_FILE,
+                                 displayGroupManager->getOptions( ));
 
-    PixelStreamWindowManager windowManager( *g_displayGroupManager );
+    PixelStreamWindowManager windowManager( *displayGroupManager );
 
-    const QString uri = "bla";
+    const QString uri = CONTENT_URI;
     const QPointF pos( .5, .5 ); // window will be positioned centerred
     const QSizeF size( .4, .3 ); // window will be 1to1 size
     const QSize pixels( g_configuration->getTotalWidth() * size.width(),

@@ -48,8 +48,6 @@
 #include <boost/shared_ptr.hpp>
 #include <map>
 
-class GLWindow;
-
 typedef boost::shared_ptr<QGLFramebufferObject> QGLFramebufferObjectPtr;
 
 /**

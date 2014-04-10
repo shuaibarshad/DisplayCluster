@@ -39,6 +39,7 @@
 #include <QApplication>
 
 #include "globals.h"
+#include "MPIChannel.h"
 #include "config.h"
 #include "configuration/MasterConfiguration.h"
 #include "configuration/WallConfiguration.h"
@@ -60,7 +61,6 @@
 #include "ws/TextInputHandler.h"
 #include "ws/DisplayGroupManagerAdapter.h"
 
-#include <mpi.h>
 #include <unistd.h>
 
 #if ENABLE_TUIO_TOUCH_LISTENER
@@ -100,28 +100,31 @@ int main(int argc, char * argv[])
 
     QApplication app(argc, argv);
 
-    MPI_Init(&argc, &argv);
-    MPI_Comm_rank(MPI_COMM_WORLD, &g_mpiRank);
-    MPI_Comm_size(MPI_COMM_WORLD, &g_mpiSize);
-    MPI_Comm_split(MPI_COMM_WORLD, g_mpiRank != 0, g_mpiRank, &g_mpiRenderComm);
-
+    g_mpiChannel.reset( new MPIChannel( argc, argv ) );
     g_displayGroupManager.reset( new DisplayGroupManager );
 
+    // Distribute the DisplayGroup through MPI whenever it is modified
+    g_displayGroupManager->connect(g_displayGroupManager.get(),
+                                   SIGNAL(modified(DisplayGroupManagerPtr)),
+                                   g_mpiChannel.get(),
+                                   SLOT(send(DisplayGroupManagerPtr)));
+
     // Load configuration
-    if(g_mpiRank == 0)
+    if(g_mpiChannel->getRank() == 0)
         g_configuration = new MasterConfiguration(configFilename,
                                                   g_displayGroupManager->getOptions());
     else
         g_configuration = new WallConfiguration(configFilename,
-                                                g_displayGroupManager->getOptions(), g_mpiRank);
+                                                g_displayGroupManager->getOptions(),
+                                                g_mpiChannel->getRank());
 
     // calibrate timestamp offset between rank 0 and rank 1 clocks
-    g_displayGroupManager->calibrateTimestampOffset();
+    g_mpiChannel->calibrateTimestampOffset();
 
     g_mainWindow = new MainWindow();
 
 #if ENABLE_JOYSTICK_SUPPORT
-    if(g_mpiRank == 0)
+    if(g_mpiChannel->getRank() == 0)
     {
         // do this before the thread starts to avoid X callback race conditions
         // we need SDL_INIT_VIDEO for events to work
@@ -146,7 +149,7 @@ int main(int argc, char * argv[])
 #if ENABLE_SKELETON_SUPPORT
     SkeletonThread* skeletonThread = 0;
 
-    if(g_mpiRank == 0)
+    if(g_mpiChannel->getRank() == 0)
     {
         skeletonThread = new SkeletonThread();
         skeletonThread->start();
@@ -172,7 +175,7 @@ int main(int argc, char * argv[])
     WebServiceServer* webServiceServer = 0;
     TextInputDispatcher* textInputDispatcher = 0;
 
-    if(g_mpiRank == 0)
+    if(g_mpiChannel->getRank() == 0)
     {
         pixelStreamWindowManager = new PixelStreamWindowManager(*g_displayGroupManager);
         pixelStreamerLauncher = new PixelStreamerLauncher(*pixelStreamWindowManager);
@@ -217,7 +220,7 @@ int main(int argc, char * argv[])
     // wait for render comms to be ready for receiving and rendering background
     MPI_Barrier(MPI_COMM_WORLD);
 
-    if(g_mpiRank == 0)
+    if(g_mpiChannel->getRank() == 0)
     {
         // Must be done after everything else is setup (or in the MainWindow constructor)
         g_displayGroupManager->setBackgroundColor( g_configuration->getBackgroundColor( ));
@@ -235,7 +238,7 @@ int main(int argc, char * argv[])
     // wait for all threads to finish
     QThreadPool::globalInstance()->waitForDone();
 
-    if(g_mpiRank != 0)
+    if(g_mpiChannel->getRank() != 0)
         g_displayGroupManager->deleteMarkers();
 
 #if ENABLE_SKELETON_SUPPORT
@@ -255,9 +258,12 @@ int main(int argc, char * argv[])
     delete g_mainWindow;
     g_mainWindow = 0;
 
-    if(g_mpiRank == 0)
+    if(g_mpiChannel->getRank() == 0)
     {
-        g_displayGroupManager->sendQuit();
+        // Clear all windows - was in DisplayGroupManager::sendQuit()
+        g_displayGroupManager->setContentWindowManagers( ContentWindowManagerPtrs() );
+
+        g_mpiChannel->sendQuit();
         delete pixelStreamerLauncher;
         pixelStreamerLauncher = 0;
         delete networkListener;
@@ -278,8 +284,7 @@ int main(int argc, char * argv[])
     g_displayGroupManager.reset();
 
     // clean up the MPI environment after the Qt event loop exits
-    MPI_Comm_free(&g_mpiRenderComm);
-    MPI_Finalize();
+    g_mpiChannel.reset();
 
     return EXIT_SUCCESS;
 }

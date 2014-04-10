@@ -38,6 +38,7 @@
 
 #include "MainWindow.h"
 #include "globals.h"
+#include "MPIChannel.h"
 #include "configuration/WallConfiguration.h"
 #include "configuration/MasterConfiguration.h"
 #include "ContentLoader.h"
@@ -76,7 +77,7 @@ MainWindow::MainWindow()
     QObject::connect(QApplication::instance(), SIGNAL(lastWindowClosed()),
                      QApplication::instance(), SLOT(quit()));
 
-    if(g_mpiRank == 0)
+    if(g_mpiChannel->getRank() == 0)
     {
 #if ENABLE_PYTHON_SUPPORT
         PythonConsole::init();
@@ -499,7 +500,7 @@ void MainWindow::openContentsDirectory()
 
 void MainWindow::showBackgroundWidget()
 {
-    assert(g_mpiRank == 0 && "Background widget is intended only for rank 0 application");
+    assert(g_mpiChannel->getRank() == 0 && "Background widget is intended only for rank 0 application");
 
     if(!backgroundWidget_)
     {
@@ -570,18 +571,18 @@ void MainWindow::loadState(const QString& filename)
 void MainWindow::computeImagePyramid()
 {
     // get image filename
-    QString imageFilename = QFileDialog::getOpenFileName(this, "Select image");
+    const QString imageFilename = QFileDialog::getOpenFileName(this, "Select image");
 
     if(!imageFilename.isEmpty())
     {
-        put_flog(LOG_DEBUG, "got image filename %s", imageFilename.toStdString().c_str());
+        put_flog(LOG_DEBUG, "source image filename %s", imageFilename.toLocal8Bit().constData());
 
-        std::string imagePyramidPath = imageFilename.toStdString() + ".pyramid/";
+        const QString imagePyramidPath = imageFilename + DynamicTexture::pyramidFolderSuffix;
 
-        put_flog(LOG_DEBUG, "got image pyramid path %s", imagePyramidPath.c_str());
+        put_flog(LOG_DEBUG, "target image pyramid folder %s", imagePyramidPath.toLocal8Bit().constData());
 
-        boost::shared_ptr<DynamicTexture> dt(new DynamicTexture(imageFilename));
-        dt->computeImagePyramid(imagePyramidPath);
+        DynamicTexturePtr dynamicTexture(new DynamicTexture(imageFilename));
+        dynamicTexture->generateImagePyramid(imagePyramidPath);
 
         put_flog(LOG_DEBUG, "done");
     }
@@ -700,24 +701,18 @@ void MainWindow::openDock(const QPointF position)
 
 void MainWindow::updateGLWindows()
 {
+    // receive any waiting messages
+    g_mpiChannel->receiveMessages(g_displayGroupManager,
+                                  getGLWindow()->getPixelStreamFactory());
+
+    // synchronize clock right after receiving messages to ensure we have an
+    // accurate time for rendering, etc. below
+    g_mpiChannel->synchronizeClock();
+
     if( g_displayGroupManager->getOptions()->getShowMouseCursor( ))
         unsetCursor();
     else
         setCursor( QCursor( Qt::BlankCursor ));
-
-    // receive any waiting messages
-    g_displayGroupManager->receiveMessages();
-
-    // synchronize clock
-    // do this right after receiving messages to ensure we have an accurate clock for rendering, etc. below
-    if(g_mpiRank == 1)
-    {
-        g_displayGroupManager->sendFrameClockUpdate();
-    }
-    else
-    {
-        g_displayGroupManager->receiveFrameClockUpdate();
-    }
 
     // render all GLWindows
     for(size_t i=0; i<glWindows_.size(); i++)
@@ -727,7 +722,7 @@ void MainWindow::updateGLWindows()
     }
 
     // all render processes render simultaneously
-    MPI_Barrier(g_mpiRenderComm);
+    g_mpiChannel->globalBarrier();
 
     // swap buffers on all windows
     for(size_t i=0; i<glWindows_.size(); i++)
