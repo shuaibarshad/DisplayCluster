@@ -20,6 +20,17 @@ if(NOT X11_FOUND)
   )
 endif()
 
+if(NOT BUILD_CORE_LIBRARY)
+  file(GLOB DC_COMMON_TEST_FILES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} common/*.cpp)
+  file(GLOB DC_CORE_TEST_FILES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} core/*.cpp)
+  file(GLOB DC_WEBSERVICE_TEST_FILES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} dcWebservice/*.cpp)
+  list(APPEND EXCLUDE_FROM_TESTS
+    ${DC_COMMON_TEST_FILES}
+    ${DC_CORE_TEST_FILES}
+    ${DC_WEBSERVICE_TEST_FILES}
+  )
+endif()
+
 # Recursively compile unit tests for *.cpp files in the current folder,
 # linking with TEST_LIBRARIES and excluding EXCLUDE_FROM_TESTS
 include(CommonCTest)
