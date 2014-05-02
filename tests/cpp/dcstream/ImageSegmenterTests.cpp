@@ -54,6 +54,7 @@ static bool append( dc::PixelStreamSegments& segments,
     static QMutex _lock;
     QMutexLocker locker( &_lock );
     segments.push_back( segment );
+    return true;
 }
 
 

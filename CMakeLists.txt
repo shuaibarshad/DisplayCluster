@@ -4,8 +4,8 @@ list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/CMake
                               ${CMAKE_SOURCE_DIR}/CMake/common)
 include(GitExternal)
 
-# Versionning
-set(RELEASE_VERSION 1) # OFF or ABI version
+# Versioning
+set(RELEASE_VERSION OFF) # OFF or ABI version
 set(LAST_RELEASE 1.0.0)
 set(VERSION_MAJOR 0)
 set(VERSION_MINOR 3)
