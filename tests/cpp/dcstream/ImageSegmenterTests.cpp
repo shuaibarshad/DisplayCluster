@@ -45,6 +45,18 @@ namespace ut = boost::unit_test;
 #include "dcstream/ImageSegmenter.h"
 #include "PixelStreamSegment.h"
 
+#include <QMutex>
+#include <boost/bind.hpp>
+
+static bool append( dc::PixelStreamSegments& segments,
+                    const dc::PixelStreamSegment& segment )
+{
+    static QMutex _lock;
+    QMutexLocker locker( &_lock );
+    segments.push_back( segment );
+}
+
+
 BOOST_AUTO_TEST_CASE( testImageSegmenterSegmentParameters )
 {
     char data[] =
@@ -60,10 +72,14 @@ BOOST_AUTO_TEST_CASE( testImageSegmenterSegmentParameters )
     };
     dc::ImageWrapper imageWrapper(data, 4, 8, dc::RGB);
 
+    dc::PixelStreamSegments segments;
+    const dc::ImageSegmenter::Handler appendFunc =
+        boost::bind( &append, boost::ref( segments ), _1 );
+
     {
         dc::ImageSegmenter segmenter;
 
-        dc::PixelStreamSegments segments = segmenter.generateSegments(imageWrapper);
+        segmenter.generate( imageWrapper, appendFunc );
         BOOST_REQUIRE_EQUAL( segments.size(), 1 );
 
         dc::PixelStreamSegment& segment = segments.front();
@@ -77,7 +93,8 @@ BOOST_AUTO_TEST_CASE( testImageSegmenterSegmentParameters )
         dc::ImageSegmenter segmenter;
         segmenter.setNominalSegmentDimensions(2,2);
 
-        dc::PixelStreamSegments segments = segmenter.generateSegments(imageWrapper);
+        segments.clear();
+        segmenter.generate( imageWrapper, appendFunc );
         BOOST_REQUIRE_EQUAL( segments.size(), 8 );
 
         unsigned int i = 0;
@@ -96,7 +113,8 @@ BOOST_AUTO_TEST_CASE( testImageSegmenterSegmentParameters )
         dc::ImageSegmenter segmenter;
         segmenter.setNominalSegmentDimensions(3,5);
 
-        dc::PixelStreamSegments segments = segmenter.generateSegments(imageWrapper);
+        segments.clear();
+        segmenter.generate( imageWrapper, appendFunc );
         BOOST_REQUIRE_EQUAL( segments.size(), 4 );
 
         dc::PixelStreamSegment& segment = segments[0];
@@ -143,9 +161,11 @@ BOOST_AUTO_TEST_CASE( testImageSegmenterSingleSegmentData )
     imageWrapper.compressionPolicy = dc::COMPRESSION_OFF;
 
     dc::ImageSegmenter segmenter;
-
     dc::PixelStreamSegments segments;
-    segments = segmenter.generateSegments(imageWrapper);
+    const dc::ImageSegmenter::Handler appendFunc =
+        boost::bind( &append, boost::ref( segments ), _1 );
+
+    segmenter.generate( imageWrapper, appendFunc );
     BOOST_REQUIRE_EQUAL( segments.size(), 1 );
 
     dc::PixelStreamSegment& segment = segments.front();
@@ -202,10 +222,12 @@ BOOST_AUTO_TEST_CASE( testImageSegmenterUniformSegmentationData )
     imageWrapper.compressionPolicy = dc::COMPRESSION_OFF;
 
     dc::ImageSegmenter segmenter;
-    segmenter.setNominalSegmentDimensions(2,4);
-
     dc::PixelStreamSegments segments;
-    segments = segmenter.generateSegments(imageWrapper);
+    const dc::ImageSegmenter::Handler appendFunc =
+        boost::bind( &append, boost::ref( segments ), _1 );
+
+    segmenter.setNominalSegmentDimensions(2,4);
+    segmenter.generate( imageWrapper, appendFunc );
     BOOST_REQUIRE_EQUAL( segments.size(), 4 );
 
     size_t i = 0;
@@ -273,10 +295,12 @@ BOOST_AUTO_TEST_CASE( testImageSegmenterNonUniformSegmentationData )
     imageWrapper.compressionPolicy = dc::COMPRESSION_OFF;
 
     dc::ImageSegmenter segmenter;
-    segmenter.setNominalSegmentDimensions(3,5);
-
     dc::PixelStreamSegments segments;
-    segments = segmenter.generateSegments(imageWrapper);
+    const dc::ImageSegmenter::Handler appendFunc =
+        boost::bind( &append, boost::ref( segments ), _1 );
+
+    segmenter.setNominalSegmentDimensions(3,5);
+    segmenter.generate( imageWrapper, appendFunc );
     BOOST_REQUIRE_EQUAL( segments.size(), 4 );
 
     size_t i = 0;
@@ -288,4 +312,3 @@ BOOST_AUTO_TEST_CASE( testImageSegmenterNonUniformSegmentationData )
                                        dataOut, dataOut+segment.imageData.size() );
     }
 }
-

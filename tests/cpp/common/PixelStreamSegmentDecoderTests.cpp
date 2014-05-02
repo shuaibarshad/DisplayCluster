@@ -49,6 +49,8 @@ namespace ut = boost::unit_test;
 #include "PixelStreamSegment.h"
 #include "PixelStreamSegmentDecoder.h"
 
+#include <boost/bind.hpp>
+
 void fillTestImage(std::vector<char>& data)
 {
     data.reserve(8*8*4);
@@ -88,6 +90,13 @@ BOOST_AUTO_TEST_CASE( testImageCompressionAndDecompression )
                                    dataOut, dataOut+data.size() );
 }
 
+static bool append( dc::PixelStreamSegments& segments,
+                    const dc::PixelStreamSegment& segment )
+{
+    static QMutex _lock;
+    QMutexLocker locker( &_lock );
+    segments.push_back( segment );
+}
 
 BOOST_AUTO_TEST_CASE( testImageSegmentationWithCompressionAndDecompression )
 {
@@ -100,10 +109,11 @@ BOOST_AUTO_TEST_CASE( testImageSegmentationWithCompressionAndDecompression )
     imageWrapper.compressionPolicy = dc::COMPRESSION_ON;
 
     dc::PixelStreamSegments segments;
-    {
-        dc::ImageSegmenter segmenter;
-        segments = segmenter.generateSegments(imageWrapper);
-    }
+    dc::ImageSegmenter segmenter;
+    const dc::ImageSegmenter::Handler appendFunc =
+        boost::bind( &append, boost::ref( segments ), _1 );
+
+    segmenter.generate( imageWrapper, appendFunc );
     BOOST_REQUIRE_EQUAL( segments.size(), 1 );
 
     dc::PixelStreamSegment& segment = segments.front();
