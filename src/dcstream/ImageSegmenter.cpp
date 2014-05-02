@@ -128,7 +128,7 @@ bool ImageSegmenter::generateRaw( const ImageWrapper &image,
 
     // Send resulting Raw segments
     for( SegmentParameters::const_iterator it = segmentParams.begin();
-         it != segmentParams.end(); it++)
+         it != segmentParams.end(); ++it )
     {
         PixelStreamSegment segment;
         segment.parameters = *it;
