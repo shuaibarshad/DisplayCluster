@@ -126,7 +126,7 @@ bool ImageSegmenter::generateRaw( const ImageWrapper &image,
 {
     const SegmentParameters& segmentParams = generateSegmentParameters( image );
 
-    // Send resulting Raw segments
+    // resulting Raw segments
     for( SegmentParameters::const_iterator it = segmentParams.begin();
          it != segmentParams.end(); ++it )
     {

@@ -93,8 +93,8 @@ BOOST_AUTO_TEST_CASE( testImageCompressionAndDecompression )
 static bool append( dc::PixelStreamSegments& segments,
                     const dc::PixelStreamSegment& segment )
 {
-    static QMutex _lock;
-    QMutexLocker locker( &_lock );
+    static QMutex lock_;
+    QMutexLocker locker( &lock_ );
     segments.push_back( segment );
     return true;
 }

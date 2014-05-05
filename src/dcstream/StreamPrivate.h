@@ -113,7 +113,7 @@ public:
     bool sendCommand(const QString& command);
 
 private:
-    QMutex _sendLock;
+    QMutex sendLock_;
 };
 
 }

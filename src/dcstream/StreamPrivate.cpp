@@ -98,7 +98,7 @@ bool StreamPrivate::sendPixelStreamSegment(const PixelStreamSegment &segment)
     // Message payload part 2: image data
     message.append(segment.imageData);
 
-    QMutexLocker locker( &_sendLock );
+    QMutexLocker locker( &sendLock_ );
     return dcSocket_.send(mh, message);
 }
 
