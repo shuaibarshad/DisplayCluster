@@ -84,18 +84,21 @@ StreamPrivate::~StreamPrivate()
 bool StreamPrivate::sendPixelStreamSegment(const PixelStreamSegment &segment)
 {
     // Create message header
-    size_t segmentSize = sizeof(PixelStreamSegmentParameters) + segment.imageData.size();
+    size_t segmentSize = sizeof(PixelStreamSegmentParameters) +
+                         segment.imageData.size();
     MessageHeader mh(MESSAGE_TYPE_PIXELSTREAM, segmentSize, name_);
 
     // This byte array will hold the message to be sent over the socket
     QByteArray message;
 
     // Message payload part 1: segment parameters
-    message.append((const char *)(&segment.parameters), sizeof(PixelStreamSegmentParameters));
+    message.append( (const char *)(&segment.parameters),
+                    sizeof(PixelStreamSegmentParameters));
 
     // Message payload part 2: image data
     message.append(segment.imageData);
 
+    QMutexLocker locker( &sendLock_ );
     return dcSocket_.send(mh, message);
 }
 
