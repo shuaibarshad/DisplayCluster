@@ -92,20 +92,20 @@ public:
     int getScreenWidth() const;
 
     /**
-     * @brief getScreenWidth Get the height of a screen.
+     * @brief getScreenHeight Get the height of a screen.
      * @return height in pixel units
      * @note All the screens have the same size.
      */
     int getScreenHeight() const;
 
     /**
-     * @brief getMullionWidth Get the padding nedded to compensate for the physical displays' bezel
+     * @brief getMullionWidth Get the horizontal padding nedded to compensate for the physical displays' bezel
      * @return horizontal padding between two screens in pixel units
      */
     int getMullionWidth() const;
 
     /**
-     * @brief getMullionHeight Get the padding nedded to compensate for the physical displays' bezel
+     * @brief getMullionHeight Get the vertical padding nedded to compensate for the physical displays' bezel
      * @return vertical padding between two screens in pixel units
      */
     int getMullionHeight() const;
@@ -124,7 +124,7 @@ public:
 
     /**
      * @brief getFullscreen Display the windows in fullscreen mode
-     * @return
+     * @return the fullscreen status
      */
     bool getFullscreen() const;
 
