@@ -83,6 +83,7 @@ MainWindow::MainWindow()
 #endif
         // rank 0 window setup
         resize(800,600);
+        // this window accepts drag and drop events
         setAcceptDrops(true);
 
         setupMasterWindowUI();
@@ -113,6 +114,8 @@ MainWindow::~MainWindow()
 void MainWindow::setupMasterWindowUI()
 {
     // create menus in menu bar
+    // NOTE: this is not going to work on Mac as multiple windows share a menu bar 
+    //       check QMainWindow documentation for how to change 
     QMenu * fileMenu = menuBar()->addMenu("&File");
     QMenu * viewMenu = menuBar()->addMenu("&View");
     QMenu * viewStreamingMenu = viewMenu->addMenu("&Streaming");
@@ -308,13 +311,15 @@ void MainWindow::setupMasterWindowUI()
 #if ENABLE_PYTHON_SUPPORT
     toolbar->addAction(pythonConsoleAction);
 #endif
-    // main widget / layout area
+
+    // central widget / layout area
     QTabWidget * mainWidget = new QTabWidget();
     setCentralWidget(mainWidget);
 
     // add the local renderer group
     DisplayGroupGraphicsViewProxy * dggv = new DisplayGroupGraphicsViewProxy(g_displayGroupManager);
     mainWidget->addTab((QWidget *)dggv->getGraphicsView(), "Display group 0");
+
     // Forward background touch events
     connect(dggv->getGraphicsView(), SIGNAL(backgroundTap(QPointF)), this, SIGNAL(hideDock()));
     connect(dggv->getGraphicsView(), SIGNAL(backgroundTapAndHold(QPointF)), this, SLOT(openDock(QPointF)));
