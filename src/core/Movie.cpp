@@ -43,6 +43,9 @@
 #include "GLWindow.h"
 #include "log.h"
 
+#pragma clang diagnostic ignored "-Wdeprecated"
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+
 Movie::Movie(QString uri)
     : uri_(uri)
     , textureId_(0)
