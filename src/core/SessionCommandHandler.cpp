@@ -55,7 +55,7 @@ CommandType SessionCommandHandler::getType() const
     return COMMAND_TYPE_SESSION;
 }
 
-void SessionCommandHandler::handle(const Command& command, const QString& senderUri)
+void SessionCommandHandler::handle(const Command& command, const QString&)
 {
     const QString& arguments = command.getArguments();
 

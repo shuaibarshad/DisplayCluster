@@ -42,12 +42,19 @@
 #include "Content.h"
 #include <boost/serialization/base_object.hpp>
 
-class TextureContent : public Content {
-
+class TextureContent : public Content
+{
     public:
         TextureContent(QString uri = "") : Content(uri) { }
 
+        /** Get the content type **/
         CONTENT_TYPE getType();
+
+        /**
+         * Read texture metadata.
+         * @return true on success, false if the URI is invalid or an error occured.
+        **/
+        virtual bool readMetadata();
 
         void getFactoryObjectDimensions(int &width, int &height);
 
@@ -59,11 +66,11 @@ class TextureContent : public Content {
         template<class Archive>
         void serialize(Archive & ar, const unsigned int)
         {
-            // serialize base class information
-            ar & boost::serialization::base_object<Content>(*this);
+            // serialize base class information (with NVP for xml archives)
+            ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Content);
         }
 
-        void renderFactoryObject(float tX, float tY, float tW, float tH);
+        virtual void renderFactoryObject(ContentWindowManagerPtr window, const QRectF& texCoords);
 };
 
 #endif

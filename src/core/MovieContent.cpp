@@ -52,6 +52,11 @@ CONTENT_TYPE MovieContent::getType()
     return CONTENT_TYPE_MOVIE;
 }
 
+bool MovieContent::readMetadata()
+{
+    return true;
+}
+
 const QStringList& MovieContent::getSupportedExtensions()
 {
     static QStringList extensions;
@@ -79,7 +84,7 @@ void MovieContent::advance(ContentWindowManagerPtr window)
     window->getCoordinates(x, y, w, h);
 
     // skip a frame if the Content rectangle is not visible in ANY windows; otherwise decode normally
-    const bool skip = !g_mainWindow->isRegionVisible(x, y, w, h);
+    const bool skip = !g_mainWindow->isRegionVisible(QRectF(x, y, w, h));
 
     boost::shared_ptr< Movie > movie = g_mainWindow->getGLWindow()->getMovieFactory().getObject(getURI());
     movie->setPause( window->getControlState() & STATE_PAUSED );
@@ -87,7 +92,7 @@ void MovieContent::advance(ContentWindowManagerPtr window)
     movie->nextFrame(skip);
 }
 
-void MovieContent::renderFactoryObject(float tX, float tY, float tW, float tH)
+void MovieContent::renderFactoryObject(ContentWindowManagerPtr, const QRectF& texCoords)
 {
-    g_mainWindow->getGLWindow()->getMovieFactory().getObject(getURI())->render(tX, tY, tW, tH);
+    g_mainWindow->getGLWindow()->getMovieFactory().getObject(getURI())->render(texCoords);
 }

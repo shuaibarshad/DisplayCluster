@@ -188,20 +188,20 @@ void PixelStreamInteractionDelegate::mouseReleaseEvent(QGraphicsSceneMouseEvent 
     }
 }
 
-void PixelStreamInteractionDelegate::wheelEvent(QGraphicsSceneWheelEvent* wheelEvent)
+void PixelStreamInteractionDelegate::wheelEvent(QGraphicsSceneWheelEvent* evt)
 {
-    Event event = getMouseEvent(wheelEvent);
+    Event event = getMouseEvent(evt);
 
     event.type = Event::EVT_WHEEL;
 
-    if (wheelEvent->orientation() == Qt::Vertical)
+    if (evt->orientation() == Qt::Vertical)
     {
         event.dx = 0.;
-        event.dy = (double)wheelEvent->delta() / WHEEL_EVENT_FACTOR * g_configuration->getTotalHeight();
+        event.dy = (double)evt->delta() / WHEEL_EVENT_FACTOR * g_configuration->getTotalHeight();
     }
     else
     {
-        event.dx = (double)wheelEvent->delta() / WHEEL_EVENT_FACTOR * g_configuration->getTotalWidth();
+        event.dx = (double)evt->delta() / WHEEL_EVENT_FACTOR * g_configuration->getTotalWidth();
         event.dy = 0.;
     }
 

@@ -80,7 +80,7 @@ public:
      *        of tiled display is (0,0) and bottom-right is (1,1)
      * @return true if (partially) visible, false otherwise
      */
-    bool isRegionVisible(const QRectF& rect) const;
+    bool isRegionVisible(const QRectF& region) const;
 
     /** Used by PDF and SVG renderers */
     QRectF getProjectedPixelRect(const bool clampToWindowArea);
@@ -94,7 +94,7 @@ public:
 protected:
     void initializeGL();
     void paintGL();
-    void resizeGL(int width, int height);
+    void resizeGL(int w, int h);
 
 private:
     const WallConfiguration* configuration_;
@@ -121,11 +121,11 @@ private:
 
     FpsCounter fpsCounter;
 
-    void renderBackgroundContent();
-    void renderContentWindows();
-    void renderMarkers();
+    void renderBackgroundContent(ContentWindowManagerPtr backgroundContentWindow);
+    void renderContentWindows(ContentWindowManagerPtrs contentWindowManagers);
+    void renderMarkers(const MarkerPtrs& markers);
 
-    void setOrthographicView();
+    void setOrthographicView(const QColor& clearColor);
 #if ENABLE_SKELETON_SUPPORT
     bool setPerspectiveView(double x=0., double y=0., double w=1., double h=1.);
 #endif

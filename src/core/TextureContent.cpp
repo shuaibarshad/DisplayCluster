@@ -52,6 +52,11 @@ CONTENT_TYPE TextureContent::getType()
     return CONTENT_TYPE_TEXTURE;
 }
 
+bool TextureContent::readMetadata()
+{
+    return true;
+}
+
 const QStringList& TextureContent::getSupportedExtensions()
 {
     static QStringList extensions;
@@ -71,7 +76,7 @@ void TextureContent::getFactoryObjectDimensions(int &width, int &height)
     g_mainWindow->getGLWindow()->getTextureFactory().getObject(getURI())->getDimensions(width, height);
 }
 
-void TextureContent::renderFactoryObject(float tX, float tY, float tW, float tH)
+void TextureContent::renderFactoryObject(ContentWindowManagerPtr, const QRectF& texCoords)
 {
-    g_mainWindow->getGLWindow()->getTextureFactory().getObject(getURI())->render(tX, tY, tW, tH);
+    g_mainWindow->getGLWindow()->getTextureFactory().getObject(getURI())->render(texCoords);
 }

@@ -102,7 +102,6 @@ list(APPEND SRCS
     ContentWindowInterface.cpp
     ContentWindowGraphicsItem.cpp
     ContentWindowListWidgetItem.cpp
-    Marker.cpp
     DisplayGroupManager.cpp
     DisplayGroupInterface.cpp
     DisplayGroupGraphicsScene.cpp
@@ -126,8 +125,10 @@ list(APPEND SRCS
     ../MessageHeader.cpp
     ImageJpegDecompressor.cpp
     MainWindow.cpp
+    Marker.cpp
     Movie.cpp
     MovieContent.cpp
+    MPIChannel.cpp
     NetworkListener.cpp
     NetworkListenerThread.cpp
     Options.cpp
@@ -138,6 +139,7 @@ list(APPEND SRCS
     PixelStreamInteractionDelegate.cpp
     PixelStreamSegmentDecoder.cpp
     PixelStreamSegmentRenderer.cpp
+    PixelStreamWindowManager.cpp
     SessionCommandHandler.cpp
     State.cpp
     StatePreview.cpp
@@ -183,6 +185,7 @@ list(APPEND MOC_HEADERS
     CommandHandler.h
     Content.h
     ContentWindowInterface.h
+    ContentWindowManager.h
     DisplayGroupManager.h
     DisplayGroupInterface.h
     DisplayGroupGraphicsView.h
@@ -191,10 +194,12 @@ list(APPEND MOC_HEADERS
     EventReceiver.h
     MainWindow.h
     Marker.h
+    MPIChannel.h
     NetworkListener.h
     NetworkListenerThread.h
     Options.h
     PixelStreamDispatcher.h
+    PixelStreamWindowManager.h
     WebbrowserCommandHandler.h
     localstreamer/AsyncImageLoader.h
     localstreamer/DockPixelStreamer.h
@@ -226,8 +231,8 @@ set_target_properties(dccore PROPERTIES
   VERSION ${VERSION} SOVERSION ${VERSION_ABI} OUTPUT_NAME dccore)
 install(TARGETS dccore
     ARCHIVE DESTINATION lib COMPONENT dev
-    RUNTIME DESTINATION bin COMPONENT lib
-    LIBRARY DESTINATION lib COMPONENT lib)
+    RUNTIME DESTINATION bin COMPONENT core
+    LIBRARY DESTINATION lib COMPONENT core)
 
 # build Python module if Python support is enabled
 if(ENABLE_PYTHON_SUPPORT)
@@ -241,5 +246,5 @@ endif()
 
 # install Python module
 if(ENABLE_PYTHON_SUPPORT)
-  install(FILES ${CMAKE_BINARY_DIR}/pydc.so DESTINATION python COMPONENT lib)
+  install(FILES ${CMAKE_BINARY_DIR}/pydc.so DESTINATION python COMPONENT core)
 endif()

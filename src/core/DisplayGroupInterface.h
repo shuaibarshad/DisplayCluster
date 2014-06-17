@@ -58,7 +58,7 @@ class DisplayGroupInterface : public QObject {
         DisplayGroupManagerPtr getDisplayGroupManager();
 
         ContentWindowManagerPtrs getContentWindowManagers();
-        ContentWindowManagerPtr getContentWindowManager(const QString& uri, CONTENT_TYPE contentType=CONTENT_TYPE_ANY);
+        ContentWindowManagerPtr getContentWindowManager(const QUuid& id) const;
 
         // remove all current ContentWindowManagers and add the vector of provided ContentWindowManagers
         void setContentWindowManagers(ContentWindowManagerPtrs contentWindowManagers);

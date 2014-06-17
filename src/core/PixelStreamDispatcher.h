@@ -49,6 +49,8 @@
 #include "PixelStreamSegment.h"
 #include "PixelStreamBuffer.h"
 
+class PixelStreamWindowManager;
+
 //#define USE_TIMER
 
 using dc::PixelStreamSegment;
@@ -64,7 +66,7 @@ class PixelStreamDispatcher : public QObject
 
 public:
     /** Construct a dispatcher */
-    PixelStreamDispatcher();
+    PixelStreamDispatcher(PixelStreamWindowManager& windowManager);
 
 public slots:
     /**
@@ -111,10 +113,9 @@ signals:
      * Notify that a PixelStream has been opened
      *
      * @param uri Identifier for the Stream
-     * @param width Width of the stream
-     * @param height Height of the stream
+     * @param size Size in pixels of the stream
      */
-    void openPixelStream(QString uri, int width, int height);
+    void openPixelStream(QString uri, QSize size);
 
     /**
      * Notify that a pixel stream has been deleted
@@ -132,10 +133,10 @@ private slots:
     void dispatchFrames();
 
 private:
+    PixelStreamWindowManager& windowManager_;
+
     // The buffers for each URI
     StreamBuffers streamBuffers_;
-
-    void sendPixelStreamSegments(const std::vector<PixelStreamSegment> &segments, const QString& uri);
 
 #ifdef USE_TIMER
     QTimer sendTimer_;

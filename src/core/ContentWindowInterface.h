@@ -45,7 +45,9 @@
 #include "Event.h"
 #include "types.h"
 
-#include <QtGui>
+#include <QObject>
+#include <QUuid>
+#include <QRectF>
 #ifndef Q_MOC_RUN
 // https://bugreports.qt.nokia.com/browse/QTBUG-22829: When Qt moc runs on CGAL
 // files, do not process <boost/type_traits/has_operator.hpp>
@@ -68,7 +70,7 @@ enum SizeState
 {
     SIZE_1TO1,
     SIZE_FULLSCREEN,
-    SIZE_CUSTOM
+    SIZE_NORMALIZED
 };
 
 class ContentWindowInterface : public QObject
@@ -85,6 +87,9 @@ class ContentWindowInterface : public QObject
 
         ContentWindowInterface();
         ContentWindowInterface(ContentWindowManagerPtr contentWindowManager);
+
+        /** @return the unique identifier for this window. */
+        const QUuid& getID() const;
 
         /** Get the ContentWindowManger associated to this object if it has one, otherwise returns 0. */
         ContentWindowManagerPtr getContentWindowManager();
@@ -123,10 +128,14 @@ class ContentWindowInterface : public QObject
         ControlState getControlState() const { return controlState_; }
 
         /** Get the last event for this window. */
-        Event getEvent();
+        Event getEvent() const;
 
         /** Toggle the window state. */
         void toggleWindowState();
+
+        /** Toggle between fullscreen and 'normalized' by keeping the position
+         *  and size after leaving fullscreen */
+        void toggleFullscreen();
 
         /** Get the window state. */
         ContentWindowInterface::WindowState getWindowState();
@@ -153,7 +162,7 @@ class ContentWindowInterface : public QObject
         // the source argument should not be provided by users -- only by these functions
         virtual void adjustSize( const SizeState state, ContentWindowInterface * source=NULL );
         virtual void setContentDimensions(int contentWidth, int contentHeight, ContentWindowInterface * source=NULL);
-        virtual void setCoordinates(double x, double y, double w, double h, ContentWindowInterface * source=NULL);
+        virtual void setCoordinates(QRectF coordinates, ContentWindowInterface * source=NULL);
         virtual void setPosition(double x, double y, ContentWindowInterface * source=NULL);
         virtual void setSize(double w, double h, ContentWindowInterface * source=NULL);
         virtual void scaleSize(double factor, ContentWindowInterface * source=NULL);
@@ -170,7 +179,7 @@ class ContentWindowInterface : public QObject
         // emitting these signals will trigger updates on the corresponding ContentWindowManager
         // as well as all other ContentWindowInterfaces to that ContentWindowManager
         void contentDimensionsChanged(int contentWidth, int contentHeight, ContentWindowInterface * source);
-        void coordinatesChanged(double x, double y, double w, double h, ContentWindowInterface * source);
+        void coordinatesChanged(QRectF coordinates, ContentWindowInterface * source);
         void positionChanged(double x, double y, ContentWindowInterface * source);
         void sizeChanged(double w, double h, ContentWindowInterface * source);
         void centerChanged(double centerX, double centerY, ContentWindowInterface * source);
@@ -185,18 +194,19 @@ class ContentWindowInterface : public QObject
 
         void setEventToNewDimensions();
 
+        const QUuid uuid_;
+
         // optional: reference to ContentWindowManager for non-ContentWindowManager objects
         boost::weak_ptr<ContentWindowManager> contentWindowManager_;
 
         // content dimensions in pixels
+        // TODO remove those (DISCL-231)
         int contentWidth_;
         int contentHeight_;
 
         // normalized window coordinates
-        double x_;
-        double y_;
-        double w_;
-        double h_;
+        QRectF coordinates_;
+        QRectF coordinatesBackup_;
 
         // panning and zooming
         double centerX_;
@@ -208,7 +218,7 @@ class ContentWindowInterface : public QObject
         ContentWindowInterface::WindowState windowState_;
 
         // Window interaction
-        Event event_;
+        Event latestEvent_;
 
         SizeState sizeState_;
 

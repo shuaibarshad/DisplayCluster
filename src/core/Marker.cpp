@@ -40,7 +40,7 @@
 #include "log.h"
 #include "configuration/Configuration.h"
 #include "globals.h"
-#include "DisplayGroupManager.h"
+#include "MPIChannel.h"
 #include "MainWindow.h"
 #include "GLWindow.h"
 
@@ -54,7 +54,7 @@ Marker::Marker()
 {
     x_ = y_ = 0.;
 
-    if(g_mpiRank != 0 && textureId_ == 0 && g_mainWindow->getGLWindow( ))
+    if(g_mpiChannel->getRank() != 0 && textureId_ == 0 && g_mainWindow->getGLWindow( ))
     {
         // load marker texture
         QImage image(MARKER_IMAGE_FILENAME);
@@ -83,7 +83,7 @@ void Marker::setPosition(float x, float y)
 {
     x_ = x;
     y_ = y;
-    updatedTimestamp_ = g_displayGroupManager->getTimestamp();
+    updatedTimestamp_ = g_mpiChannel->getTime();
 
     emit(positionChanged());
 }
@@ -96,14 +96,10 @@ void Marker::getPosition(float &x, float &y)
 
 bool Marker::getActive()
 {
-    if((g_displayGroupManager->getTimestamp() - updatedTimestamp_).total_seconds() > MARKER_TIMEOUT_SECONDS)
-    {
+    if((g_mpiChannel->getTime() - updatedTimestamp_).total_seconds() > MARKER_TIMEOUT_SECONDS)
         return false;
-    }
     else
-    {
         return true;
-    }
 }
 
 void Marker::render()
@@ -117,8 +113,8 @@ void Marker::render()
     float markerWidth = MARKER_WIDTH;
 
     // marker height needs to be scaled by the tiled display aspect ratio
-    float tiledDisplayAspect = (float)g_configuration->getTotalWidth() / (float)g_configuration->getTotalHeight();
-    float markerHeight = markerWidth * tiledDisplayAspect;
+    const float tiledDisplayAspect = g_configuration->getAspectRatio();
+    const float markerHeight = markerWidth * tiledDisplayAspect;
 
     // draw the texture
     glPushAttrib(GL_ENABLE_BIT | GL_TEXTURE_BIT);

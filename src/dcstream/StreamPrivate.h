@@ -41,12 +41,13 @@
 #ifndef DCSTREAMPRIVATE_H
 #define DCSTREAMPRIVATE_H
 
-#include <string>
-
 #include "Event.h"
 #include "MessageHeader.h"
 #include "ImageSegmenter.h"
 #include "Socket.h" // member
+
+#include <QMutex>
+#include <string>
 
 class QString;
 
@@ -110,6 +111,9 @@ public:
      * @return true if the request could be sent, false otherwise.
      */
     bool sendCommand(const QString& command);
+
+private:
+    QMutex sendLock_;
 };
 
 }

@@ -115,7 +115,9 @@ struct Event
         , mouseMiddle(false)
         , key(0)
         , modifiers(0)
-    {}
+        , text()
+    {
+    }
 
     /** The size of the QDataStream serialized output. */
     static const size_t serializedSize;

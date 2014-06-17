@@ -41,14 +41,37 @@
 #include "MainWindow.h"
 #include "GLWindow.h"
 #include "globals.h"
-#include <boost/serialization/export.hpp>
+#include "PDF.h"
+
 #include "serializationHelpers.h"
+#include <boost/serialization/export.hpp>
 
 BOOST_CLASS_EXPORT_GUID(PDFContent, "PDFContent")
+
+PDFContent::PDFContent(const QString& uri)
+    : Content(uri)
+    , pageNumber_(0)
+    , pageCount_(0)
+{
+    connect(this, SIGNAL(pageChanged()), this, SIGNAL(modified()));
+}
 
 CONTENT_TYPE PDFContent::getType()
 {
     return CONTENT_TYPE_PDF;
+}
+
+bool PDFContent::readMetadata()
+{
+    PDF pdf(uri_);
+    if (!pdf.isValid())
+        return false;
+
+    pdf.getDimensions(width_, height_);
+    pageCount_ = pdf.getPageCount();
+    pageNumber_ = std::min(pageNumber_, pageCount_-1);
+
+    return true;
 }
 
 const QStringList& PDFContent::getSupportedExtensions()
@@ -61,11 +84,6 @@ const QStringList& PDFContent::getSupportedExtensions()
     }
 
     return extensions;
-}
-
-void PDFContent::setPageCount(int count)
-{
-    pageCount_ = count;
 }
 
 void PDFContent::nextPage()
@@ -91,8 +109,8 @@ void PDFContent::getFactoryObjectDimensions(int &width, int &height)
     g_mainWindow->getGLWindow()->getPDFFactory().getObject(getURI())->getDimensions(width, height);
 }
 
-void PDFContent::renderFactoryObject(float tX, float tY, float tW, float tH)
+void PDFContent::renderFactoryObject(ContentWindowManagerPtr, const QRectF& texCoords)
 {
     g_mainWindow->getGLWindow()->getPDFFactory().getObject(getURI())->setPage(pageNumber_);
-    g_mainWindow->getGLWindow()->getPDFFactory().getObject(getURI())->render(tX, tY, tW, tH);
+    g_mainWindow->getGLWindow()->getPDFFactory().getObject(getURI())->render(texCoords);
 }

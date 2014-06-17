@@ -77,10 +77,10 @@ ContentWindowGraphicsItem::~ContentWindowGraphicsItem()
 
 QRectF ContentWindowGraphicsItem::boundingRect() const
 {
-    return QRectF(x_, y_, w_, h_);
+    return coordinates_;
 }
 
-void ContentWindowGraphicsItem::paint(QPainter * painter, const QStyleOptionGraphicsItem * option, QWidget * widget)
+void ContentWindowGraphicsItem::paint(QPainter * painter, const QStyleOptionGraphicsItem* , QWidget* )
 {
     if( !getContentWindowManager( ))
         return;
@@ -107,20 +107,20 @@ void ContentWindowGraphicsItem::adjustSize( const SizeState state,
     ContentWindowInterface::adjustSize( state, source );
 }
 
-void ContentWindowGraphicsItem::setCoordinates(double x, double y, double w, double h, ContentWindowInterface * source)
+void ContentWindowGraphicsItem::setCoordinates(QRectF coordinates, ContentWindowInterface * source)
 {
     if(source != this)
         prepareGeometryChange();
 
-    ContentWindowInterface::setCoordinates(x, y, w, h, source);
+    ContentWindowInterface::setCoordinates(coordinates, source);
 }
 
-void ContentWindowGraphicsItem::setPosition(double x, double y, ContentWindowInterface * source)
+void ContentWindowGraphicsItem::setPosition(double x_, double y_, ContentWindowInterface * source)
 {
     if(source != this)
         prepareGeometryChange();
 
-    ContentWindowInterface::setPosition(x, y, source);
+    ContentWindowInterface::setPosition(x_, y_, source);
 }
 
 void ContentWindowGraphicsItem::setSize(double w, double h, ContentWindowInterface * source)
@@ -191,9 +191,9 @@ void ContentWindowGraphicsItem::mouseMoveEvent(QGraphicsSceneMouseEvent * event)
     // handle mouse movements differently depending on selected mode of item
     if(!selected())
     {
-        if(event->buttons().testFlag(Qt::LeftButton) == true)
+        if(event->buttons().testFlag(Qt::LeftButton))
         {
-            if(resizing_ == true)
+            if(resizing_)
             {
                 QRectF r = boundingRect();
                 QPointF eventPos = event->pos();
@@ -211,10 +211,10 @@ void ContentWindowGraphicsItem::mouseMoveEvent(QGraphicsSceneMouseEvent * event)
             {
                 QPointF delta = event->pos() - event->lastPos();
 
-                double x = x_ + delta.x();
-                double y = y_ + delta.y();
+                double new_x = coordinates_.x() + delta.x();
+                double new_y = coordinates_.y() + delta.y();
 
-                setPosition(x, y);
+                setPosition(new_x, new_y);
             }
         }
     }
@@ -264,17 +264,17 @@ void ContentWindowGraphicsItem::mousePressEvent(QGraphicsSceneMouseEvent * event
     // move to the front of the GUI display
     moveToFront();
 
-    ContentWindowManagerPtr window = getContentWindowManager();
-    if (!window)
+    ContentWindowManagerPtr contentWindow = getContentWindowManager();
+    if (!contentWindow)
         return;
 
     if (selected())
     {
-        window->getInteractionDelegate().mousePressEvent(event);
+        contentWindow->getInteractionDelegate().mousePressEvent(event);
         return;
     }
 
-    window->getContent()->blockAdvance( true );
+    contentWindow->getContent()->blockAdvance( true );
 
     // check to see if user clicked on the resize button
     if(fabs((r.x()+r.width()) - eventPos.x()) <= buttonWidth &&
@@ -286,19 +286,19 @@ void ContentWindowGraphicsItem::mousePressEvent(QGraphicsSceneMouseEvent * event
     else if(fabs(r.x() - eventPos.x()) <= buttonWidth &&
             fabs((r.y()+r.height()) - eventPos.y()) <= buttonHeight)
     {
-        adjustSize( getSizeState() == SIZE_FULLSCREEN ? SIZE_1TO1 : SIZE_FULLSCREEN );
+        toggleFullscreen();
     }
     else if(fabs(((r.x()+r.width())/2) - eventPos.x() - buttonWidth) <= buttonWidth &&
             fabs((r.y()+r.height()) - eventPos.y()) <= buttonHeight &&
             g_displayGroupManager->getOptions()->getShowMovieControls( ))
     {
-        window->setControlState( ControlState(window->getControlState() ^ STATE_PAUSED) );
+        contentWindow->setControlState( ControlState(contentWindow->getControlState() ^ STATE_PAUSED) );
     }
     else if(fabs(((r.x()+r.width())/2) - eventPos.x()) <= buttonWidth &&
             fabs((r.y()+r.height()) - eventPos.y()) <= buttonHeight &&
             g_displayGroupManager->getOptions()->getShowMovieControls( ))
     {
-        window->setControlState( ControlState(window->getControlState() ^ STATE_LOOP) );
+        contentWindow->setControlState( ControlState(contentWindow->getControlState() ^ STATE_LOOP) );
     }
     else
         moving_ = true;
@@ -406,13 +406,15 @@ void ContentWindowGraphicsItem::drawCloseButton_( QPainter* painter )
     float buttonWidth, buttonHeight;
     getButtonDimensions(buttonWidth, buttonHeight);
 
-    QRectF closeRect(x_ + w_ - buttonWidth, y_, buttonWidth, buttonHeight);
+    QRectF closeRect(coordinates_.x() + coordinates_.width() - buttonWidth, coordinates_.y(), buttonWidth, buttonHeight);
     QPen pen;
     pen.setColor(QColor(255,0,0));
     painter->setPen(pen);
     painter->drawRect(closeRect);
-    painter->drawLine(QPointF(x_ + w_ - buttonWidth, y_), QPointF(x_ + w_, y_ + buttonHeight));
-    painter->drawLine(QPointF(x_ + w_, y_), QPointF(x_ + w_ - buttonWidth, y_ + buttonHeight));
+    painter->drawLine(QPointF(coordinates_.x() + coordinates_.width() - buttonWidth, coordinates_.y()),
+                      QPointF(coordinates_.x() + coordinates_.width(), coordinates_.y() + buttonHeight));
+    painter->drawLine(QPointF(coordinates_.x() + coordinates_.width(), coordinates_.y()),
+                      QPointF(coordinates_.x() + coordinates_.width() - buttonWidth, coordinates_.y() + buttonHeight));
 }
 
 void ContentWindowGraphicsItem::drawResizeIndicator_( QPainter* painter )
@@ -420,12 +422,13 @@ void ContentWindowGraphicsItem::drawResizeIndicator_( QPainter* painter )
     float buttonWidth, buttonHeight;
     getButtonDimensions(buttonWidth, buttonHeight);
 
-    QRectF resizeRect(x_ + w_ - buttonWidth, y_ + h_ - buttonHeight, buttonWidth, buttonHeight);
+    QRectF resizeRect(coordinates_.x() + coordinates_.width() - buttonWidth, coordinates_.y() + coordinates_.height() - buttonHeight, buttonWidth, buttonHeight);
     QPen pen;
     pen.setColor(QColor(128,128,128));
     painter->setPen(pen);
     painter->drawRect(resizeRect);
-    painter->drawLine(QPointF(x_ + w_, y_ + h_ - buttonHeight), QPointF(x_ + w_ - buttonWidth, y_ + h_));
+    painter->drawLine(QPointF(coordinates_.x() + coordinates_.width(), coordinates_.y() + coordinates_.height() - buttonHeight),
+                      QPointF(coordinates_.x() + coordinates_.width() - buttonWidth, coordinates_.y() + coordinates_.height()));
 }
 
 void ContentWindowGraphicsItem::drawFullscreenButton_( QPainter* painter )
@@ -433,7 +436,7 @@ void ContentWindowGraphicsItem::drawFullscreenButton_( QPainter* painter )
     float buttonWidth, buttonHeight;
     getButtonDimensions(buttonWidth, buttonHeight);
 
-    QRectF fullscreenRect(x_, y_ + h_ - buttonHeight, buttonWidth, buttonHeight);
+    QRectF fullscreenRect(coordinates_.x(), coordinates_.y() + coordinates_.height() - buttonHeight, buttonWidth, buttonHeight);
     QPen pen;
     pen.setColor(QColor(128,128,128));
     painter->setPen(pen);
@@ -453,14 +456,14 @@ void ContentWindowGraphicsItem::drawMovieControls_( QPainter* painter )
         g_displayGroupManager->getOptions()->getShowMovieControls( ))
     {
         // play/pause
-        QRectF playPauseRect(x_ + w_/2 - buttonWidth, y_ + h_ - buttonHeight,
+        QRectF playPauseRect(coordinates_.x() + coordinates_.width()/2 - buttonWidth, coordinates_.y() + coordinates_.height() - buttonHeight,
                               buttonWidth, buttonHeight);
         pen.setColor(QColor(contentWindowManager->getControlState() & STATE_PAUSED ? 128 :200,0,0));
         painter->setPen(pen);
         painter->fillRect(playPauseRect, pen.color());
 
         // loop
-        QRectF loopRect(x_ + w_/2, y_ + h_ - buttonHeight,
+        QRectF loopRect(coordinates_.x() + coordinates_.width()/2, coordinates_.y() + coordinates_.height() - buttonHeight,
                         buttonWidth, buttonHeight);
         pen.setColor(QColor(0,contentWindowManager->getControlState() & STATE_LOOP ? 200 :128,0));
         painter->setPen(pen);
@@ -494,7 +497,7 @@ void ContentWindowGraphicsItem::drawTextLabel_( QPainter* painter )
     float viewWidth = (float)scene()->views()[0]->width();
     float viewHeight = (float)scene()->views()[0]->height();
 
-    float tiledDisplayAspect = (float)g_configuration->getTotalWidth() / (float)g_configuration->getTotalHeight();
+    const float tiledDisplayAspect = g_configuration->getAspectRatio();
 
     if(viewWidth / viewHeight > tiledDisplayAspect)
     {
@@ -510,7 +513,10 @@ void ContentWindowGraphicsItem::drawTextLabel_( QPainter* painter )
 
     painter->scale(horizontalTextScale, verticalTextScale);
 
-    QRectF textBoundingRect = QRectF(x_ / horizontalTextScale, y_ / verticalTextScale, w_ / horizontalTextScale, h_ / verticalTextScale);
+    QRectF textBoundingRect = QRectF(coordinates_.x() / horizontalTextScale,
+                                     coordinates_.y() / verticalTextScale,
+                                     coordinates_.width() / horizontalTextScale,
+                                     coordinates_.height() / verticalTextScale);
 
     // get the label and render it
     QString label(contentWindowManager->getContent()->getURI());
@@ -523,16 +529,24 @@ void ContentWindowGraphicsItem::drawTextLabel_( QPainter* painter )
 
     painter->scale(0.5, 0.5);
 
-    textBoundingRect = QRectF((x_+buttonWidth) / horizontalTextScale, y_ / verticalTextScale, (w_-buttonWidth) / horizontalTextScale, h_ / verticalTextScale);
+    textBoundingRect = QRectF((coordinates_.x()+buttonWidth) / horizontalTextScale,
+                               coordinates_.y() / verticalTextScale,
+                              (coordinates_.width()-buttonWidth) / horizontalTextScale,
+                               coordinates_.height() / verticalTextScale);
 
-    QString coordinatesLabel = QString(" (") + QString::number(x_, 'f', 2) + QString(" ,") + QString::number(y_, 'f', 2) + QString(", ") + QString::number(w_, 'f', 2) + QString(", ") + QString::number(h_, 'f', 2) + QString(")\n");
-    QString zoomCenterLabel = QString(" zoom = ") + QString::number(zoom_, 'f', 2) + QString(" @ (") + QString::number(centerX_, 'f', 2) + QString(", ") + QString::number(centerY_, 'f', 2) + QString(")");
+    QString coordinatesLabel = QString(" (") + QString::number(coordinates_.x(), 'f', 2) + QString(" ,") +
+                                               QString::number(coordinates_.y(), 'f', 2) + QString(", ") +
+                                               QString::number(coordinates_.width(), 'f', 2) + QString(", ") +
+                                               QString::number(coordinates_.height(), 'f', 2) + QString(")\n");
+    QString zoomCenterLabel = QString(" zoom = ") + QString::number(zoom_, 'f', 2) + QString(" @ (") +
+                              QString::number(centerX_, 'f', 2) + QString(", ") +
+                              QString::number(centerY_, 'f', 2) + QString(")");
     QString interactionLabel = QString(" x: ") +
-            QString::number(event_.mouseX, 'f', 2) +
-            QString(" y: ") + QString::number(event_.mouseY, 'f', 2) +
-            QString(" mouseLeft: ") + QString::number((int) event_.mouseLeft, 'b', 1) +
-            QString(" mouseMiddle: ") + QString::number((int) event_.mouseMiddle, 'b', 1) +
-            QString(" mouseRight: ") + QString::number((int) event_.mouseRight, 'b', 1);
+            QString::number(latestEvent_.mouseX, 'f', 2) +
+            QString(" y: ") + QString::number(latestEvent_.mouseY, 'f', 2) +
+            QString(" mouseLeft: ") + QString::number((int) latestEvent_.mouseLeft, 'b', 1) +
+            QString(" mouseMiddle: ") + QString::number((int) latestEvent_.mouseMiddle, 'b', 1) +
+            QString(" mouseRight: ") + QString::number((int) latestEvent_.mouseRight, 'b', 1);
 
     QString windowInfoLabel = coordinatesLabel + zoomCenterLabel + interactionLabel;
     painter->drawText(textBoundingRect, Qt::AlignLeft | Qt::AlignBottom, windowInfoLabel);

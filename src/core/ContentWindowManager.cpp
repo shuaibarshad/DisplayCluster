@@ -40,6 +40,7 @@
 #include "Content.h"
 #include "DisplayGroupManager.h"
 #include "globals.h"
+#include "MPIChannel.h"
 #include "ContentInteractionDelegate.h"
 #include "configuration/Configuration.h"
 #include "GLWindow.h"
@@ -53,6 +54,7 @@
 #  include "PDFInteractionDelegate.h"
 #endif
 
+IMPLEMENT_SERIALIZE_FOR_XML(ContentWindowManager)
 
 ContentWindowManager::ContentWindowManager()
     : interactionDelegate_( 0 )
@@ -62,47 +64,9 @@ ContentWindowManager::ContentWindowManager()
 ContentWindowManager::ContentWindowManager(ContentPtr content)
     : interactionDelegate_( 0 )
 {
-    // ContentWindowManagers must always belong to the main thread!
-    moveToThread(QApplication::instance()->thread());
-
-    // content dimensions
-    content->getDimensions(contentWidth_, contentHeight_);
+    setContent(content);
 
     adjustSize( SIZE_1TO1 );
-
-    // default to centered
-    centerX_ = 0.5;
-    centerY_ = 0.5;
-
-    // default to no zoom
-    zoom_ = 1.;
-
-    controlState_ = STATE_LOOP;
-
-    // set content object
-    content_ = content;
-
-    // receive updates to content dimensions
-    connect(content.get(), SIGNAL(dimensionsChanged(int, int)),
-            this, SLOT(setContentDimensions(int, int)));
-
-    if (g_mpiRank == 0)
-    {
-        if (getContent()->getType() == CONTENT_TYPE_PIXEL_STREAM)
-        {
-            interactionDelegate_ = new PixelStreamInteractionDelegate(*this);
-        }
-#if ENABLE_PDF_SUPPORT
-        else if (getContent()->getType() == CONTENT_TYPE_PDF)
-        {
-            interactionDelegate_ = new PDFInteractionDelegate(*this);
-        }
-#endif
-        else
-        {
-            interactionDelegate_ = new ZoomInteractionDelegate(*this);
-        }
-    }
 }
 
 ContentWindowManager::~ContentWindowManager()
@@ -110,9 +74,66 @@ ContentWindowManager::~ContentWindowManager()
     delete interactionDelegate_;
 }
 
+void ContentWindowManager::setContent(ContentPtr content)
+{
+    if(content_)
+    {
+        content_->disconnect(this, SLOT(setContentDimensions(int, int)));
+        content_->disconnect(this, SIGNAL(modified()));
+    }
+
+    // set content object
+    content_ = content;
+
+    // content dimensions
+    if(content_)
+    {
+        content_->getDimensions(contentWidth_, contentHeight_);
+
+        // receive updates to content dimensions
+        connect(content.get(), SIGNAL(dimensionsChanged(int, int)),
+                this, SLOT(setContentDimensions(int, int)));
+
+        // Notify DisplayGroup that the content was modified
+        connect(content.get(), SIGNAL(modified()),
+                this, SIGNAL(contentModified()));
+    }
+    else
+        contentWidth_ = contentHeight_ = 0;
+
+    createInteractionDelegate();
+}
+
 ContentPtr ContentWindowManager::getContent()
 {
     return content_;
+}
+
+void ContentWindowManager::createInteractionDelegate()
+{
+    if (!g_mpiChannel || g_mpiChannel->getRank() != 0)
+        return;
+
+    delete interactionDelegate_;
+    interactionDelegate_ = 0;
+
+    if(!getContent())
+        return;
+
+    if (getContent()->getType() == CONTENT_TYPE_PIXEL_STREAM)
+    {
+        interactionDelegate_ = new PixelStreamInteractionDelegate(*this);
+    }
+#if ENABLE_PDF_SUPPORT
+    else if (getContent()->getType() == CONTENT_TYPE_PDF)
+    {
+        interactionDelegate_ = new PDFInteractionDelegate(*this);
+    }
+#endif
+    else
+    {
+        interactionDelegate_ = new ZoomInteractionDelegate(*this);
+    }
 }
 
 DisplayGroupManagerPtr ContentWindowManager::getDisplayGroupManager()
@@ -122,37 +143,7 @@ DisplayGroupManagerPtr ContentWindowManager::getDisplayGroupManager()
 
 void ContentWindowManager::setDisplayGroupManager(DisplayGroupManagerPtr displayGroupManager)
 {
-    // disconnect any existing signals to previous DisplayGroupManager
-    DisplayGroupManagerPtr oldDisplayGroupManager = getDisplayGroupManager();
-
-    if(oldDisplayGroupManager != NULL)
-    {
-        disconnect(this, 0, oldDisplayGroupManager.get(), 0);
-    }
-
     displayGroupManager_ = displayGroupManager;
-
-    // make connections to new DisplayGroupManager
-    // don't use queued connections; we want these to execute immediately and we're in the same thread
-    if(displayGroupManager != NULL)
-    {
-        connect(this, SIGNAL(contentDimensionsChanged(int, int, ContentWindowInterface *)),
-                displayGroupManager.get(), SLOT(sendDisplayGroup()));
-        connect(this, SIGNAL(coordinatesChanged(double, double, double, double, ContentWindowInterface *)),
-                displayGroupManager.get(), SLOT(sendDisplayGroup()));
-        connect(this, SIGNAL(positionChanged(double, double, ContentWindowInterface *)),
-                displayGroupManager.get(), SLOT(sendDisplayGroup()));
-        connect(this, SIGNAL(sizeChanged(double, double, ContentWindowInterface *)),
-                displayGroupManager.get(), SLOT(sendDisplayGroup()));
-        connect(this, SIGNAL(centerChanged(double, double, ContentWindowInterface *)),
-                displayGroupManager.get(), SLOT(sendDisplayGroup()));
-        connect(this, SIGNAL(zoomChanged(double, ContentWindowInterface *)),
-                displayGroupManager.get(), SLOT(sendDisplayGroup()));
-        connect(this, SIGNAL(windowStateChanged(ContentWindowInterface::WindowState, ContentWindowInterface *)),
-                displayGroupManager.get(), SLOT(sendDisplayGroup()));
-
-        // we don't call sendDisplayGroup() on movedToFront() or destroyed() since it happens already
-    }
 }
 
 ContentInteractionDelegate& ContentWindowManager::getInteractionDelegate()
@@ -186,20 +177,23 @@ void ContentWindowManager::close(ContentWindowInterface * source)
 
 QPointF ContentWindowManager::getWindowCenterPosition() const
 {
-    return QPointF(x_ + 0.5 * w_, y_ + 0.5 * h_);
+    return QPointF(coordinates_.x() + 0.5 * coordinates_.width(), coordinates_.y() + 0.5 * coordinates_.height());
 }
 
 void ContentWindowManager::centerPositionAround(const QPointF& position, const bool constrainToWindowBorders)
 {
-    double newX = position.x() - 0.5 * w_;
-    double newY = position.y() - 0.5 * h_;
+    if(position.isNull())
+        return;
+
+    double newX = position.x() - 0.5 * coordinates_.width();
+    double newY = position.y() - 0.5 * coordinates_.height();
 
     if (constrainToWindowBorders)
     {
-        if (newX + w_ > 1.0)
-            newX = 1.0-w_;
-        if (newY + h_ > 1.0)
-            newY = 1.0-h_;
+        if (newX + coordinates_.width() > 1.0)
+            newX = 1.0-coordinates_.width();
+        if (newY + coordinates_.height() > 1.0)
+            newY = 1.0-coordinates_.height();
 
         newX = std::max(0.0, newX);
         newY = std::max(0.0, newY);
@@ -210,27 +204,25 @@ void ContentWindowManager::centerPositionAround(const QPointF& position, const b
 
 void ContentWindowManager::render()
 {
-    content_->render(shared_from_this());
-
-    // optionally render the border
     bool showWindowBorders = true;
+    bool showZoomContext = false;
 
-    DisplayGroupManagerPtr dgm = getDisplayGroupManager();
-
-    if(dgm != NULL)
+    DisplayGroupManagerPtr displayGroup = getDisplayGroupManager();
+    if(displayGroup)
     {
-        showWindowBorders = dgm->getOptions()->getShowWindowBorders();
+        showWindowBorders = displayGroup->getOptions()->getShowWindowBorders();
+        showZoomContext = displayGroup->getOptions()->getShowZoomContext();
     }
 
-    if(showWindowBorders || selected() )
+    content_->render(shared_from_this(), showZoomContext);
+
+    if(showWindowBorders || selected())
     {
         double horizontalBorder = 5. / (double)g_configuration->getTotalHeight(); // 5 pixels
 
         // enlarge the border if we're highlighted
-        if(getHighlighted() == true)
-        {
+        if(getHighlighted())
             horizontalBorder *= 4.;
-        }
 
         double verticalBorder = (double)g_configuration->getTotalHeight() /
                                 (double)g_configuration->getTotalWidth() * horizontalBorder;
@@ -239,16 +231,12 @@ void ContentWindowManager::render()
 
         // color the border based on window state
         if(selected())
-        {
             glColor4f(1,0,0,1);
-        }
         else
-        {
             glColor4f(1,1,1,1);
-        }
 
-        GLWindow::drawRectangle(x_-verticalBorder, y_-horizontalBorder,
-                                w_+2.*verticalBorder, h_+2.*horizontalBorder);
+        GLWindow::drawRectangle(coordinates_.x()-verticalBorder, coordinates_.y()-horizontalBorder,
+                                coordinates_.width()+2.*verticalBorder, coordinates_.height()+2.*horizontalBorder);
 
         glPopAttrib();
     }

@@ -78,15 +78,12 @@ ContentWindowManagerPtrs DisplayGroupInterface::getContentWindowManagers()
     return contentWindowManagers_;
 }
 
-ContentWindowManagerPtr DisplayGroupInterface::getContentWindowManager(const QString& uri, CONTENT_TYPE contentType)
+ContentWindowManagerPtr DisplayGroupInterface::getContentWindowManager(const QUuid& id) const
 {
-    for(size_t i=0; i<contentWindowManagers_.size(); i++)
+    for(size_t i=0; i<contentWindowManagers_.size(); ++i)
     {
-        if( contentWindowManagers_[i]->getContent()->getURI() == uri &&
-           (contentType == CONTENT_TYPE_ANY || contentWindowManagers_[i]->getContent()->getType() == contentType))
-        {
+        if( contentWindowManagers_[i]->getID() == id )
             return contentWindowManagers_[i];
-        }
     }
 
     return ContentWindowManagerPtr();
@@ -95,7 +92,7 @@ ContentWindowManagerPtr DisplayGroupInterface::getContentWindowManager(const QSt
 void DisplayGroupInterface::setContentWindowManagers(ContentWindowManagerPtrs contentWindowManagers)
 {
     // remove existing content window managers
-    while(contentWindowManagers_.size() > 0)
+    while(!contentWindowManagers_.empty())
     {
         removeContentWindowManager(contentWindowManagers_[0]);
     }
@@ -134,9 +131,9 @@ void DisplayGroupInterface::removeContentWindowManager(ContentWindowManagerPtr c
         return;
     }
 
-    Event event;
-    event.type = Event::EVT_CLOSE;
-    contentWindowManager->setEvent( event );
+    Event closeEvent;
+    closeEvent.type = Event::EVT_CLOSE;
+    contentWindowManager->setEvent( closeEvent );
 
     // find vector entry for content window manager
     ContentWindowManagerPtrs::iterator it = find(contentWindowManagers_.begin(),

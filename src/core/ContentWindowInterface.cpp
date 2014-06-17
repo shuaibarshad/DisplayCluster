@@ -40,46 +40,58 @@
 #include "ContentWindowManager.h"
 #include "globals.h"
 #include "configuration/Configuration.h"
-#include "DisplayGroupManager.h"
+#include "MPIChannel.h"
 #include "MainWindow.h"
 #include "EventReceiver.h"
+#include "MPIChannel.h"
 
 ContentWindowInterface::ContentWindowInterface()
-    : windowState_( UNSELECTED )
+    : uuid_(QUuid::createUuid())
+    , contentWidth_(0)
+    , contentHeight_(0)
+    , centerX_(0.5)
+    , centerY_(0.5)
+    , zoom_(1)
+    , windowState_( UNSELECTED )
+    , sizeState_( SIZE_NORMALIZED )
+    , controlState_( STATE_LOOP )
     , eventReceiversCount_( 0 )
 {}
 
 ContentWindowInterface::ContentWindowInterface(ContentWindowManagerPtr contentWindowManager)
-    : windowState_( UNSELECTED )
+    : uuid_(contentWindowManager ? contentWindowManager->getID() : QUuid::createUuid())
+    , contentWindowManager_(contentWindowManager)
+    , contentWidth_(0)
+    , contentHeight_(0)
+    , centerX_(0)
+    , centerY_(0)
+    , zoom_(0)
+    , windowState_( UNSELECTED )
+    , sizeState_( SIZE_NORMALIZED )
+    , controlState_( STATE_PAUSED )
     , eventReceiversCount_( 0 )
 {
-    contentWindowManager_ = contentWindowManager;
-
     // copy all members from contentWindowManager
-    if(contentWindowManager != NULL)
+    if(contentWindowManager)
     {
         contentWidth_ = contentWindowManager->contentWidth_;
         contentHeight_ = contentWindowManager->contentHeight_;
-        x_ = contentWindowManager->x_;
-        y_ = contentWindowManager->y_;
-        w_ = contentWindowManager->w_;
-        h_ = contentWindowManager->h_;
+        coordinates_ = contentWindowManager->coordinates_;
         centerX_ = contentWindowManager->centerX_;
         centerY_ = contentWindowManager->centerY_;
         zoom_ = contentWindowManager->zoom_;
         sizeState_ = contentWindowManager->sizeState_;
         controlState_ = contentWindowManager->controlState_;
         windowState_ = contentWindowManager->windowState_;
-        event_ = contentWindowManager->event_;
+        latestEvent_ = contentWindowManager->latestEvent_;
     }
 
     // register WindowState in Qt
     qRegisterMetaType<ContentWindowInterface::WindowState>("ContentWindowInterface::WindowState");
-
     // connect signals from this to slots on the ContentWindowManager
     // use queued connections for thread-safety
     connect(this, SIGNAL(contentDimensionsChanged(int, int, ContentWindowInterface *)), contentWindowManager.get(), SLOT(setContentDimensions(int, int, ContentWindowInterface *)), Qt::QueuedConnection);
-    connect(this, SIGNAL(coordinatesChanged(double, double, double, double, ContentWindowInterface *)), contentWindowManager.get(), SLOT(setCoordinates(double, double, double, double, ContentWindowInterface *)), Qt::QueuedConnection);
+    connect(this, SIGNAL(coordinatesChanged(QRectF, ContentWindowInterface *)), contentWindowManager.get(), SLOT(setCoordinates(QRectF, ContentWindowInterface *)), Qt::QueuedConnection);
     connect(this, SIGNAL(positionChanged(double, double, ContentWindowInterface *)), contentWindowManager.get(), SLOT(setPosition(double, double, ContentWindowInterface *)), Qt::QueuedConnection);
     connect(this, SIGNAL(sizeChanged(double, double, ContentWindowInterface *)), contentWindowManager.get(), SLOT(setSize(double, double, ContentWindowInterface *)), Qt::QueuedConnection);
     connect(this, SIGNAL(centerChanged(double, double, ContentWindowInterface *)), contentWindowManager.get(), SLOT(setCenter(double, double, ContentWindowInterface *)), Qt::QueuedConnection);
@@ -93,7 +105,7 @@ ContentWindowInterface::ContentWindowInterface(ContentWindowManagerPtr contentWi
     // connect signals on the ContentWindowManager object to slots on this
     // use queued connections for thread-safety
     connect(contentWindowManager.get(), SIGNAL(contentDimensionsChanged(int, int, ContentWindowInterface *)), this, SLOT(setContentDimensions(int, int, ContentWindowInterface *)), Qt::QueuedConnection);
-    connect(contentWindowManager.get(), SIGNAL(coordinatesChanged(double, double, double, double, ContentWindowInterface *)), this, SLOT(setCoordinates(double, double, double, double, ContentWindowInterface *)), Qt::QueuedConnection);
+    connect(contentWindowManager.get(), SIGNAL(coordinatesChanged(QRectF, ContentWindowInterface *)), this, SLOT(setCoordinates(QRectF, ContentWindowInterface *)), Qt::QueuedConnection);
     connect(contentWindowManager.get(), SIGNAL(positionChanged(double, double, ContentWindowInterface *)), this, SLOT(setPosition(double, double, ContentWindowInterface *)), Qt::QueuedConnection);
     connect(contentWindowManager.get(), SIGNAL(sizeChanged(double, double, ContentWindowInterface *)), this, SLOT(setSize(double, double, ContentWindowInterface *)), Qt::QueuedConnection);
     connect(contentWindowManager.get(), SIGNAL(centerChanged(double, double, ContentWindowInterface *)), this, SLOT(setCenter(double, double, ContentWindowInterface *)), Qt::QueuedConnection);
@@ -106,6 +118,11 @@ ContentWindowInterface::ContentWindowInterface(ContentWindowManagerPtr contentWi
 
     // destruction
     connect(contentWindowManager.get(), SIGNAL(destroyed(QObject *)), this, SLOT(deleteLater()));
+}
+
+const QUuid& ContentWindowInterface::getID() const
+{
+    return uuid_;
 }
 
 ContentWindowManagerPtr ContentWindowInterface::getContentWindowManager()
@@ -121,27 +138,27 @@ void ContentWindowInterface::getContentDimensions(int &contentWidth, int &conten
 
 void ContentWindowInterface::getCoordinates(double &x, double &y, double &w, double &h)
 {
-    x = x_;
-    y = y_;
-    w = w_;
-    h = h_;
+    x = coordinates_.x();
+    y = coordinates_.y();
+    w = coordinates_.width();
+    h = coordinates_.height();
 }
 
 QRectF ContentWindowInterface::getCoordinates() const
 {
-    return QRectF(x_, y_, w_, h_);
+    return coordinates_;
 }
 
 void ContentWindowInterface::getPosition(double &x, double &y)
 {
-    x = x_;
-    y = y_;
+    x = coordinates_.x();
+    y = coordinates_.y();
 }
 
 void ContentWindowInterface::getSize(double &w, double &h)
 {
-    w = w_;
-    h = h_;
+    w = coordinates_.width();
+    h = coordinates_.height();
 }
 
 void ContentWindowInterface::getCenter(double &centerX, double &centerY)
@@ -160,14 +177,19 @@ void ContentWindowInterface::toggleWindowState()
     setWindowState( windowState_ == UNSELECTED ? SELECTED : UNSELECTED );
 }
 
+void ContentWindowInterface::toggleFullscreen()
+{
+    adjustSize( getSizeState() == SIZE_FULLSCREEN ? SIZE_NORMALIZED : SIZE_FULLSCREEN );
+}
+
 ContentWindowInterface::WindowState ContentWindowInterface::getWindowState()
 {
     return windowState_;
 }
 
-Event ContentWindowInterface::getEvent()
+Event ContentWindowInterface::getEvent() const
 {
-    return event_;
+    return latestEvent_;
 }
 
 bool ContentWindowInterface::registerEventReceiver(EventReceiver* receiver)
@@ -182,7 +204,7 @@ bool ContentWindowInterface::registerEventReceiver(EventReceiver* receiver)
 
 bool ContentWindowInterface::getHighlighted()
 {
-    const long dtMilliseconds = (g_displayGroupManager->getTimestamp() - highlightedTimestamp_).total_milliseconds();
+    const long dtMilliseconds = (g_mpiChannel->getTime() - highlightedTimestamp_).total_milliseconds();
 
     if(dtMilliseconds > HIGHLIGHT_TIMEOUT_MILLISECONDS || dtMilliseconds % (HIGHLIGHT_BLINK_INTERVAL*2) < HIGHLIGHT_BLINK_INTERVAL)
     {
@@ -201,63 +223,54 @@ SizeState ContentWindowInterface::getSizeState() const
 
 void ContentWindowInterface::getButtonDimensions(float &width, float &height)
 {
-    float sceneHeightFraction = 0.125;
-    double screenAspect = (double)g_configuration->getTotalWidth() / (double)g_configuration->getTotalHeight();
+    const float sceneHeightFraction = 0.125;
+    const double screenAspect = g_configuration->getAspectRatio();
 
     width = sceneHeightFraction / screenAspect;
     height = sceneHeightFraction;
 
     // clamp to half rect dimensions
-    if(width > 0.5 * w_)
+    if(width > 0.5 * coordinates_.width())
     {
-        width = 0.49 * w_;
+        width = 0.49 * coordinates_.width();
     }
 
-    if(height > 0.5 * h_)
+    if(height > 0.5 * coordinates_.height())
     {
-        height = 0.49 * h_;
+        height = 0.49 * coordinates_.height();
     }
 }
 
 void ContentWindowInterface::fixAspectRatio(ContentWindowInterface * source)
 {
-    if(g_displayGroupManager->getOptions()->getConstrainAspectRatio() != true || (contentWidth_ == 0 && contentHeight_ == 0))
-    {
+    if(contentWidth_ == 0 && contentHeight_ == 0)
         return;
-    }
 
     double aspect = (double)contentWidth_ / (double)contentHeight_;
-    double screenAspect = (double)g_configuration->getTotalWidth() / (double)g_configuration->getTotalHeight();
+    const double screenAspect = g_configuration->getAspectRatio();
 
     aspect /= screenAspect;
 
-    double w = w_;
-    double h = h_;
+    double w = coordinates_.width();
+    double h = coordinates_.height();
 
-    if(aspect > w_ / h_)
+    if(aspect > coordinates_.width() / coordinates_.height())
     {
-        h = w_ / aspect;
+        h = coordinates_.width() / aspect;
     }
-    else if(aspect <= w_ / h_)
+    else if(aspect <= coordinates_.width() / coordinates_.height())
     {
-        w = h_ * aspect;
+        w = coordinates_.height() * aspect;
     }
 
     // we don't want to call setSize unless necessary, since it will emit a signal
-    if(w != w_ || h != h_)
+    if(w != coordinates_.width() || h != coordinates_.height())
     {
-        w_ = w;
-        h_ = h;
+        coordinates_.setWidth( w );
+        coordinates_.setHeight( h );
 
         if(source == NULL || dynamic_cast<ContentWindowManager *>(this) != NULL)
-        {
-            if(source == NULL)
-            {
-                source = this;
-            }
-
-            setSize(w_, h_);
-        }
+            setSize(coordinates_.width(), coordinates_.height());
     }
 }
 
@@ -268,44 +281,51 @@ void ContentWindowInterface::adjustSize( const SizeState state,
 
     const double contentAR = contentHeight_ == 0 ? 16./9 :
                                  double(contentWidth_) / double(contentHeight_);
-    const double configAR = double(g_configuration->getTotalHeight()) /
-                            double(g_configuration->getTotalWidth());
+    const double wallAR = 1. / g_configuration->getAspectRatio();
 
-    double h = contentHeight_ == 0 ? 1. : double(contentHeight_) /
-                                    double(g_configuration->getTotalHeight());
-    double w = contentWidth_ == 0 ? configAR * contentAR * h :
-                                    double(contentWidth_) /
-                                       double(g_configuration->getTotalWidth());
+    double height = contentHeight_ == 0
+                            ? 1.
+                            : double(contentHeight_) / double(g_configuration->getTotalHeight());
+    double width = contentWidth_ == 0
+                            ? wallAR * contentAR * height
+                            : double(contentWidth_) / double(g_configuration->getTotalWidth());
+
+    QRectF coordinates;
 
     switch( state )
     {
     case SIZE_FULLSCREEN:
         {
-            const double resize = std::min( 1. / h, 1. / w );
-            h *= resize;
-            w *= resize;
+            coordinatesBackup_ = coordinates_;
+            const double resize = std::min( 1. / height, 1. / width );
+            width *= resize;
+            height *= resize;
+
+            // center on the wall
+            coordinates.setRect( (1. - width) * .5 , (1. - height) * .5, width, height );
         } break;
 
     case SIZE_1TO1:
-        h = std::min( h, 1. );
-        w = configAR * contentAR * h;
-        if( w > 1. )
+        height = std::min( height, 1. );
+        width = wallAR * contentAR * height;
+        if( width > 1. )
         {
-            h /= w;
-            w /= w;
+            height /= width;
+            width /= width;
         }
+
+        // center on the wall
+        coordinates.setRect( (1. - width) * .5 , (1. - height) * .5, width, height );
         break;
 
-    case SIZE_CUSTOM:
+    case SIZE_NORMALIZED:
+        coordinates = coordinatesBackup_;
+        break;
     default:
         return;
     }
 
-    // center on the wall
-    const double y = (1. - h) * .5;
-    const double x = (1. - w) * .5;
-
-    setCoordinates( x, y, w, h, source );
+    setCoordinates( coordinates, source );
 }
 
 void ContentWindowInterface::setContentDimensions(int contentWidth, int contentHeight, ContentWindowInterface * source)
@@ -329,22 +349,18 @@ void ContentWindowInterface::setContentDimensions(int contentWidth, int contentH
     }
 }
 
-void ContentWindowInterface::setCoordinates(double x, double y, double w, double h, ContentWindowInterface * source)
+void ContentWindowInterface::setCoordinates(QRectF coordinates, ContentWindowInterface * source)
 {
     if(source == this)
     {
         return;
     }
 
-    x_ = x;
-    y_ = y;
-
     // don't allow negative width or height
-    if(w > 0. && h > 0.)
-    {
-        w_ = w;
-        h_ = h;
-    }
+    if( coordinates.isValid( ))
+        coordinates_ = coordinates;
+    else
+        coordinates_.moveTo( coordinates.x(), coordinates.y( ));
 
     if(source == NULL || dynamic_cast<ContentWindowManager *>(this) != NULL)
     {
@@ -355,7 +371,7 @@ void ContentWindowInterface::setCoordinates(double x, double y, double w, double
 
         fixAspectRatio(source);
 
-        emit(coordinatesChanged(x_, y_, w_, h_, source));
+        emit(coordinatesChanged(coordinates_, source));
 
         setEventToNewDimensions();
     }
@@ -368,8 +384,7 @@ void ContentWindowInterface::setPosition(double x, double y, ContentWindowInterf
         return;
     }
 
-    x_ = x;
-    y_ = y;
+    coordinates_.moveTo( x, y );
 
     if(source == NULL || dynamic_cast<ContentWindowManager *>(this) != NULL)
     {
@@ -378,7 +393,7 @@ void ContentWindowInterface::setPosition(double x, double y, ContentWindowInterf
             source = this;
         }
 
-        emit(positionChanged(x_, y_, source));
+        emit(positionChanged(coordinates_.x(), coordinates_.y(), source));
     }
 }
 
@@ -392,8 +407,8 @@ void ContentWindowInterface::setSize(double w, double h, ContentWindowInterface 
     // don't allow negative width or height
     if(w > 0. && h > 0.)
     {
-        w_ = w;
-        h_ = h;
+        coordinates_.setWidth( w );
+        coordinates_.setHeight( h );
     }
 
     if(source == NULL || dynamic_cast<ContentWindowManager *>(this) != NULL)
@@ -405,7 +420,7 @@ void ContentWindowInterface::setSize(double w, double h, ContentWindowInterface 
 
         fixAspectRatio(source);
 
-        emit(sizeChanged(w_, h_, source));
+        emit(sizeChanged(coordinates_.width(), coordinates_.height(), source));
 
         setEventToNewDimensions();
     }
@@ -425,12 +440,12 @@ void ContentWindowInterface::scaleSize(double factor, ContentWindowInterface * s
     }
 
     // calculate new coordinates
-    double x = x_ - (factor - 1.) * w_ / 2.;
-    double y = y_ - (factor - 1.) * h_ / 2.;
-    double w = w_ * factor;
-    double h = h_ * factor;
+    coordinates_.setX( coordinates_.x() - (factor - 1.) * coordinates_.width() / 2. );
+    coordinates_.setY( coordinates_.y() - (factor - 1.) * coordinates_.height() / 2. );
+    coordinates_.setWidth( coordinates_.width() * factor );
+    coordinates_.setHeight( coordinates_.height() * factor );
 
-    setCoordinates(x, y, w, h);
+    setCoordinates(coordinates_);
 
     // we don't need to emit any signals since setCoordinates() takes care of this
 }
@@ -564,14 +579,14 @@ void ContentWindowInterface::setWindowState(ContentWindowInterface::WindowState 
     }
 }
 
-void ContentWindowInterface::setEvent(Event event, ContentWindowInterface * source)
+void ContentWindowInterface::setEvent(Event event_, ContentWindowInterface * source)
 {
     if(source == this)
     {
         return;
     }
 
-    event_ = event;
+    latestEvent_ = event_;
 
     if(source == NULL || dynamic_cast<ContentWindowManager *>(this) != NULL)
     {
@@ -592,7 +607,7 @@ void ContentWindowInterface::highlight(ContentWindowInterface * source)
     }
 
     // set highlighted timestamp
-    highlightedTimestamp_ = g_displayGroupManager->getTimestamp();
+    highlightedTimestamp_ = g_mpiChannel->getTime();
 
     if(source == NULL || dynamic_cast<ContentWindowManager *>(this) != NULL)
     {
@@ -645,7 +660,7 @@ void ContentWindowInterface::setEventToNewDimensions()
 {
     Event state;
     state.type = Event::EVT_VIEW_SIZE_CHANGED;
-    state.dx = w_ * g_configuration->getTotalWidth();
-    state.dy = h_ * g_configuration->getTotalHeight();
+    state.dx = coordinates_.width() * g_configuration->getTotalWidth();
+    state.dy = coordinates_.height() * g_configuration->getTotalHeight();
     setEvent(state);
 }

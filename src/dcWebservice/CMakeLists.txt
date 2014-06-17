@@ -27,6 +27,6 @@ target_link_libraries(dcwebservice ${Boost_LIBRARIES}  ${FCGI_LIBRARIES})
 # install library
 install(TARGETS dcwebservice
     ARCHIVE DESTINATION lib COMPONENT dev
-    RUNTIME DESTINATION bin COMPONENT lib
-    LIBRARY DESTINATION lib COMPONENT lib)
+    RUNTIME DESTINATION bin COMPONENT core
+    LIBRARY DESTINATION lib COMPONENT core)
 

@@ -38,6 +38,7 @@
 
 #include "GLWindow.h"
 #include "globals.h"
+#include "MPIChannel.h"
 #include "Marker.h"
 #include "configuration/WallConfiguration.h"
 #include "ContentWindowManager.h"
@@ -55,9 +56,12 @@
 
 GLWindow::GLWindow(int tileIndex)
     : configuration_(static_cast<WallConfiguration*>(g_configuration))
+    , tileIndex_(tileIndex)
+    , left_(0)
+    , right_(0)
+    , bottom_(0)
+    , top_(0)
 {
-    tileIndex_ = tileIndex;
-
     // disable automatic buffer swapping
     setAutoBufferSwap(false);
 }
@@ -65,8 +69,12 @@ GLWindow::GLWindow(int tileIndex)
 GLWindow::GLWindow(int tileIndex, QRect windowRect, QGLWidget * shareWidget)
   : QGLWidget(0, shareWidget)
   , configuration_(static_cast<WallConfiguration*>(g_configuration))
+  , tileIndex_(tileIndex)
+  , left_(0)
+  , right_(0)
+  , bottom_(0)
+  , top_(0)
 {
-    tileIndex_ = tileIndex;
     setGeometry(windowRect);
 
     // make sure sharing succeeded
@@ -145,28 +153,29 @@ void GLWindow::initializeGL()
 
 void GLWindow::paintGL()
 {
-    setOrthographicView();
+    setOrthographicView(g_displayGroupManager->getBackgroundColor());
+
+    OptionsPtr options = g_displayGroupManager->getOptions();
 
     // if the show test pattern option is enabled, render the test pattern and return
-    if(g_displayGroupManager->getOptions()->getShowTestPattern())
+    if(options->getShowTestPattern())
     {
         renderTestPattern();
         return;
     }
 
-    renderBackgroundContent();
-    renderContentWindows();
+    renderBackgroundContent(g_displayGroupManager->getBackgroundContentWindowManager());
+    renderContentWindows(g_displayGroupManager->getContentWindowManagers());
 
     // Show the FPS for each window
-    if (g_displayGroupManager->getOptions()->getShowStreamingStatistics())
-    {
+    if (options->getShowStreamingStatistics())
         drawFps();
-    }
 
-    renderMarkers(); // Markers should be rendered last since they're blended
+    // Markers should be rendered last since they're blended
+    renderMarkers(g_displayGroupManager->getMarkers());
 
 #if ENABLE_SKELETON_SUPPORT
-    if(g_displayGroupManager->getOptions()->getShowSkeletons() == true)
+    if(options->getShowSkeletons())
     {
         // render perspective overlay for skeletons
 
@@ -201,9 +210,9 @@ void GLWindow::paintGL()
 #endif
 }
 
-void GLWindow::resizeGL(int width, int height)
+void GLWindow::resizeGL(int w, int h)
 {
-    glViewport(0, 0, width, height);
+    glViewport(0, 0, w, h);
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
     glMatrixMode(GL_MODELVIEW);
@@ -212,29 +221,25 @@ void GLWindow::resizeGL(int width, int height)
     update();
 }
 
-void GLWindow::renderBackgroundContent()
+void GLWindow::renderBackgroundContent(ContentWindowManagerPtr backgroundContentWindow)
 {
     // Render background content window
-    ContentWindowManagerPtr backgroundContentWindowManager = g_displayGroupManager->getBackgroundContentWindowManager();
-    if (backgroundContentWindowManager != NULL)
+    if (backgroundContentWindow)
     {
         glPushMatrix();
         glTranslatef(0., 0., -1.f + std::numeric_limits<float>::epsilon());
 
-        backgroundContentWindowManager->render();
+        backgroundContentWindow->render();
 
         glPopMatrix();
     }
 }
 
-void GLWindow::renderContentWindows()
+void GLWindow::renderContentWindows(ContentWindowManagerPtrs contentWindowManagers)
 {
-    // render content windows
-    ContentWindowManagerPtrs contentWindowManagers = g_displayGroupManager->getContentWindowManagers();
-
     const unsigned int windowCount = contentWindowManagers.size();
     unsigned int i = 0;
-    for(ContentWindowManagerPtrs::iterator it = contentWindowManagers.begin(); it != contentWindowManagers.end(); it++)
+    for(ContentWindowManagerPtrs::iterator it = contentWindowManagers.begin(); it != contentWindowManagers.end(); ++it)
     {
         // It is currently not possible to cull windows that are invisible as this conflics
         // with the "garbage collection" mechanism for Contents. In fact, "stale" objects are objects
@@ -244,10 +249,10 @@ void GLWindow::renderContentWindows()
         //if ( isRegionVisible( (*it)->getCoordinates( )))
         {
             // the visible depths are in the range (-1,1); make the content window depths be in the range (-1,0)
-            const float depth = -(float)(windowCount - i) / (float)(windowCount + 1);
+            const float zCoordinate = -(float)(windowCount - i) / (float)(windowCount + 1);
 
             glPushMatrix();
-            glTranslatef(0.f, 0.f, depth);
+            glTranslatef(0.f, 0.f, zCoordinate);
 
             (*it)->render();
             glPopMatrix();
@@ -257,16 +262,15 @@ void GLWindow::renderContentWindows()
     }
 }
 
-void GLWindow::renderMarkers()
+void GLWindow::renderMarkers(const MarkerPtrs& markers)
 {
-    MarkerPtrs markers = g_displayGroupManager->getMarkers();
-    for(MarkerPtrs::iterator it = markers.begin(); it != markers.end(); it++)
+    for(MarkerPtrs::const_iterator it = markers.begin(); it != markers.end(); ++it)
     {
         (*it)->render();
     }
 }
 
-void GLWindow::setOrthographicView()
+void GLWindow::setOrthographicView(const QColor& clearColor)
 {
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
@@ -306,8 +310,7 @@ void GLWindow::setOrthographicView()
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
 
-    QColor color = g_displayGroupManager->getBackgroundColor();
-    glClearColor(color.redF(), color.greenF(), color.blueF(), color.alpha());
+    glClearColor(clearColor.redF(), clearColor.greenF(), clearColor.blueF(), clearColor.alpha());
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
@@ -402,12 +405,12 @@ bool GLWindow::setPerspectiveView(double x, double y, double w, double h)
 }
 #endif
 
-bool GLWindow::isRegionVisible(const QRectF& rect) const
+bool GLWindow::isRegionVisible(const QRectF& region) const
 {
     // screen rectangle
     const QRectF screenRect(left_, bottom_, right_-left_, top_-bottom_);
 
-    return screenRect.intersects(rect);
+    return screenRect.intersects(region);
 }
 
 void GLWindow::drawRectangle(double x, double y, double w, double h)
@@ -445,16 +448,16 @@ void GLWindow::renderTestPattern()
 
     glBegin(GL_LINES);
 
-    for(double y=-1.; y<=2.; y+=0.1)
+    for(double y_coord=-1.; y_coord<=2.; y_coord+=0.1)
     {
-        QColor color = QColor::fromHsvF((y + 1.)/3., 1., 1.);
+        QColor color = QColor::fromHsvF((y_coord + 1.)/3., 1., 1.);
         glColor3f(color.redF(), color.greenF(), color.blueF());
 
-        glVertex2d(0., y);
-        glVertex2d(1., y+1.);
+        glVertex2d(0., y_coord);
+        glVertex2d(1., y_coord+1.);
 
-        glVertex2d(0., y);
-        glVertex2d(1., y-1.);
+        glVertex2d(0., y_coord);
+        glVertex2d(1., y_coord-1.);
     }
 
     glEnd();
@@ -462,7 +465,7 @@ void GLWindow::renderTestPattern()
     // screen information in front of cross pattern
     glTranslatef(0., 0., 0.1);
 
-    QString label1 = "Rank: " + QString::number(g_mpiRank);
+    QString label1 = "Rank: " + QString::number(g_mpiChannel->getRank());
     QString label2 = "Host: " + configuration_->getHost();
     QString label3 = "Display: " + configuration_->getDisplay();
     QString label4 = "Tile coordinates: (" + QString::number(configuration_->getGlobalScreenIndex(tileIndex_).x()) + ", " + QString::number(configuration_->getGlobalScreenIndex(tileIndex_).y()) + ")";
@@ -480,17 +483,17 @@ void GLWindow::renderTestPattern()
 
     int fontSize = 64;
 
-    QFont font;
-    font.setPixelSize(fontSize);
+    QFont textFont;
+    textFont.setPixelSize(fontSize);
 
     glColor3f(1.,1.,1.);
 
-    renderText(50, 1*fontSize, label1, font);
-    renderText(50, 2*fontSize, label2, font);
-    renderText(50, 3*fontSize, label3, font);
-    renderText(50, 4*fontSize, label4, font);
-    renderText(50, 5*fontSize, label5, font);
-    renderText(50, 6*fontSize, label6, font);
+    renderText(50, 1*fontSize, label1, textFont);
+    renderText(50, 2*fontSize, label2, textFont);
+    renderText(50, 3*fontSize, label3, textFont);
+    renderText(50, 4*fontSize, label4, textFont);
+    renderText(50, 5*fontSize, label5, textFont);
+    renderText(50, 6*fontSize, label6, textFont);
 
     glPopMatrix();
     glPopAttrib();
@@ -501,15 +504,15 @@ void GLWindow::drawFps()
     fpsCounter.tick();
 
     const int fontSize = 32;
-    QFont font;
-    font.setPixelSize(fontSize);
+    QFont textFont;
+    textFont.setPixelSize(fontSize);
 
     glPushAttrib(GL_DEPTH_BUFFER_BIT | GL_CURRENT_BIT);
 
     glDisable(GL_DEPTH_TEST);
     glColor4f(0.,0.,1.,1.);
 
-    renderText(10, fontSize, fpsCounter.toString(), font);
+    renderText(10, fontSize, fpsCounter.toString(), textFont);
 
     glPopAttrib();
 }
@@ -518,7 +521,7 @@ void GLWindow::drawFps()
 QRectF GLWindow::getProjectedPixelRect(const bool clampToWindowArea)
 {
     // get four corners in object space (recall we're in normalized 0->1 dimensions)
-    const double x[4][3] =
+    const double corners[4][3] =
     {
         {0.,0.,0.},
         {1.,0.,0.},
@@ -540,7 +543,7 @@ QRectF GLWindow::getProjectedPixelRect(const bool clampToWindowArea)
 
     for(size_t i=0; i<4; i++)
     {
-        gluProject(x[i][0], x[i][1], x[i][2], modelview, projection, viewport, &xWin[i][0], &xWin[i][1], &xWin[i][2]);
+        gluProject(corners[i][0], corners[i][1], corners[i][2], modelview, projection, viewport, &xWin[i][0], &xWin[i][1], &xWin[i][2]);
 
         if( clampToWindowArea )
         {

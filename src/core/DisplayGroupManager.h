@@ -42,172 +42,116 @@
 #include "DisplayGroupInterface.h"
 #include "Options.h"
 #include "Marker.h"
+
 #include "config.h"
-#include "Factory.hpp"
+#include "types.h"
+#include "serializationHelpers.h"
+
+#if ENABLE_SKELETON_SUPPORT
+#include "SkeletonState.h"
+#endif
 
 #include <QtGui>
 #include <vector>
 #ifndef Q_MOC_RUN
 // https://bugreports.qt.nokia.com/browse/QTBUG-22829: When Qt moc runs on CGAL
 // files, do not process <boost/type_traits/has_operator.hpp>
-#  include <boost/shared_ptr.hpp>
 #  include <boost/enable_shared_from_this.hpp>
-#  include <boost/date_time/posix_time/posix_time.hpp>
 #endif
-
-#if ENABLE_SKELETON_SUPPORT
-    #include "SkeletonState.h"
-#endif
-
-#include "serializationHelpers.h"
-#include "types.h"
 
 class ContentWindowManager;
-struct MessageHeader;
 class EventReceiver;
 
-class DisplayGroupManager : public DisplayGroupInterface, public boost::enable_shared_from_this<DisplayGroupManager>
+class DisplayGroupManager : public DisplayGroupInterface,
+        public boost::enable_shared_from_this<DisplayGroupManager>
 {
     Q_OBJECT
 
-    public:
+public:
 
-        DisplayGroupManager();
-        ~DisplayGroupManager();
+    DisplayGroupManager();
+    ~DisplayGroupManager();
 
-        OptionsPtr getOptions() const;
+    OptionsPtr getOptions() const;
 
-        MarkerPtr getNewMarker();
-        const MarkerPtrs& getMarkers() const;
-        void deleteMarkers();
-
-        boost::posix_time::ptime getTimestamp() const;
+    MarkerPtr getNewMarker();
+    MarkerPtrs getMarkers() const;
+    void deleteMarkers();
 
 #if ENABLE_SKELETON_SUPPORT
-        std::vector< boost::shared_ptr<SkeletonState> > getSkeletons();
+    std::vector< boost::shared_ptr<SkeletonState> > getSkeletons();
 #endif
 
-        // re-implemented DisplayGroupInterface slots
-        void addContentWindowManager(ContentWindowManagerPtr contentWindowManager, DisplayGroupInterface * source=NULL);
-        void removeContentWindowManager(ContentWindowManagerPtr contentWindowManager, DisplayGroupInterface * source=NULL);
-        void moveContentWindowManagerToFront(ContentWindowManagerPtr contentWindowManager, DisplayGroupInterface * source=NULL);
+    // re-implemented DisplayGroupInterface slots
+    void addContentWindowManager(ContentWindowManagerPtr contentWindowManager, DisplayGroupInterface * source=NULL);
+    void removeContentWindowManager(ContentWindowManagerPtr contentWindowManager, DisplayGroupInterface * source=NULL);
+    void moveContentWindowManagerToFront(ContentWindowManagerPtr contentWindowManager, DisplayGroupInterface * source=NULL);
 
-        // find the offset between the rank 0 clock and the rank 1 clock. recall the rank 1 clock is used across rank 1 - n.
-        void calibrateTimestampOffset();
+    QColor getBackgroundColor() const;
+    void setBackgroundColor(QColor color);
 
-        QColor getBackgroundColor() const;
-        void setBackgroundColor(QColor color);
+    bool setBackgroundContentFromUri(const QString& filename);
+    void setBackgroundContentWindowManager(ContentWindowManagerPtr contentWindowManager);
+    ContentWindowManagerPtr getBackgroundContentWindowManager() const;
 
-        bool setBackgroundContentFromUri(const QString filename);
-        void setBackgroundContentWindowManager(ContentWindowManagerPtr contentWindowManager);
-        ContentWindowManagerPtr getBackgroundContentWindowManager() const;
+    /**
+     * Is the DisplayGroup empty.
+     * @return true if the DisplayGroup has no ContentWindowManager, false otherwise.
+     */
+    bool isEmpty() const;
 
-        /**
-         * Is the DisplayGroup empty.
-         * @return true if the DisplayGroup has no ContentWindowManager, false otherwise.
-         */
-        bool isEmpty() const;
+    /**
+     * Get the active window.
+     * @return A shared pointer to the active window. Can be empty if there is
+     *         no Window available. @see isEmpty().
+     */
+    ContentWindowManagerPtr getActiveWindow() const;
 
-        /**
-         * Get the active window.
-         * @return A shared pointer to the active window. Can be empty if there is
-         *         no Window available. @see isEmpty().
-         */
-        ContentWindowManagerPtr getActiveWindow() const;
+signals:
+    /** Emitted whenever the DisplayGroup is modified */
+    void modified(DisplayGroupManagerPtr displayGroup);
 
 public slots:
-
-        // this can be invoked from other threads to construct a DisplayGroupInterface and move it to that thread
-        boost::shared_ptr<DisplayGroupInterface> getDisplayGroupInterface(QThread * thread);
-
-        /**
-         * Position a ContentWindowManager.
-         *
-         * Immediately position the window if it is already open, or postion it
-         * at the time the window first opens (useful for PixelStreamers).
-         * @param uri Window identifier
-         * @param position The position of the center of the window
-         */
-        void positionWindow( const QString uri, const QPointF position );
-
-        /**
-         * Hide a ContentWindowManager.
-         *
-         * @param uri Window identifier
-         */
-        void hideWindow( const QString uri );
-
-        void receiveMessages();
-
-        void sendDisplayGroup();
-        void sendContentsDimensionsRequest();
-        void sendFrameClockUpdate();
-        void receiveFrameClockUpdate();
-        void sendQuit();
-
-        void advanceContents();
+    /** Advance all contents */
+    void advanceContents();
 
 #if ENABLE_SKELETON_SUPPORT
-        void setSkeletons(std::vector<boost::shared_ptr<SkeletonState> > skeletons);
+    void setSkeletons(std::vector<boost::shared_ptr<SkeletonState> > skeletons);
 #endif
-        // Rank0 manages pixel stream events
-        void openPixelStream(QString uri, int width, int height);
-        void closePixelStream(const QString& uri);
-        void adjustPixelStreamContentDimensions(QString uri, int width, int height, bool changeViewSize);
 
-        void registerEventReceiver(QString uri, bool exclusive, EventReceiver* receiver);
+private slots:
+    void sendDisplayGroup();
 
-    signals:
-        // Rank0 signals pixel streams events
-        void pixelStreamViewAdded(QString uri);
-        void pixelStreamViewClosed(QString uri);
-        void eventRegistrationReply(QString uri, bool success);
+private:
+    friend class boost::serialization::access;
 
-    private:
-        friend class boost::serialization::access;
+    template<class Archive>
+    void serialize(Archive & ar, const unsigned int)
+    {
+        QMutexLocker locker(&markersMutex_);
+        ar & options_;
+        ar & markers_;
+        ar & contentWindowManagers_;
+        ar & backgroundContent_;
+        ar & backgroundColor_;
+#if ENABLE_SKELETON_SUPPORT
+        ar & skeletons_;
+#endif
+    }
 
-        template<class Archive>
-        void serialize(Archive & ar, const unsigned int)
-        {
-            ar & options_;
-            ar & markers_;
-            ar & contentWindowManagers_;
-            ar & backgroundContent_;
-            ar & backgroundColor_;
+    void watchChanges(ContentWindowManagerPtr contentWindow);
+
+    ContentWindowManagerPtr backgroundContent_;
+    QColor backgroundColor_;
+
+    OptionsPtr options_;
+
+    mutable QMutex markersMutex_;
+    MarkerPtrs markers_;
 
 #if ENABLE_SKELETON_SUPPORT
-            ar & skeletons_;
+    std::vector<boost::shared_ptr<SkeletonState> > skeletons_;
 #endif
-        }
-
-        // background
-        ContentWindowManagerPtr backgroundContent_;
-        QColor backgroundColor_;
-
-        // options
-        OptionsPtr options_;
-
-        // marker and mutex
-        QMutex markersMutex_;
-        MarkerPtrs markers_;
-
-        // frame timing
-        boost::posix_time::ptime timestamp_;
-
-#if ENABLE_SKELETON_SUPPORT
-        std::vector<boost::shared_ptr<SkeletonState> > skeletons_;
-#endif
-
-        // rank 1 - rank 0 timestamp offset
-        boost::posix_time::time_duration timestampOffset_;
-
-        typedef std::map<QString, QPointF> WindowPositions;
-        WindowPositions windowPositions_;
-
-        // ranks 1-n recieve data through MPI
-        void receiveDisplayGroup(const MessageHeader& messageHeader);
-        void receiveContentsDimensionsRequest(const MessageHeader& messageHeader);
-        void receivePixelStreams(const MessageHeader& messageHeader);
 };
 
 #endif

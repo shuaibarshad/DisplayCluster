@@ -38,10 +38,7 @@
 
 #include "globals.h"
 
-int g_mpiRank = -1;
-int g_mpiSize = -1;
-MPI_Comm g_mpiRenderComm;
-
+MPIChannelPtr g_mpiChannel;
 Configuration * g_configuration = NULL;
 DisplayGroupManagerPtr g_displayGroupManager;
 MainWindow * g_mainWindow = NULL;

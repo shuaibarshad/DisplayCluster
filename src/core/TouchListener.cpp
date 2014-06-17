@@ -55,17 +55,17 @@ TouchListener::TouchListener()
 #endif
 }
 
-void TouchListener::addTuioObject(TUIO::TuioObject *tobj)
+void TouchListener::addTuioObject(TUIO::TuioObject*)
 {
 
 }
 
-void TouchListener::updateTuioObject(TUIO::TuioObject *tobj)
+void TouchListener::updateTuioObject(TUIO::TuioObject*)
 {
 
 }
 
-void TouchListener::removeTuioObject(TUIO::TuioObject *tobj)
+void TouchListener::removeTuioObject(TUIO::TuioObject*)
 {
 
 }
@@ -223,7 +223,7 @@ void TouchListener::removeTuioCursor(TUIO::TuioCursor *tcur)
 #endif
 }
 
-void TouchListener::refresh(TUIO::TuioTime frameTime)
+void TouchListener::refresh(TUIO::TuioTime)
 {
 
 }

@@ -38,6 +38,7 @@
 
 #include "MainWindow.h"
 #include "globals.h"
+#include "MPIChannel.h"
 #include "configuration/WallConfiguration.h"
 #include "configuration/MasterConfiguration.h"
 #include "ContentLoader.h"
@@ -76,7 +77,7 @@ MainWindow::MainWindow()
     QObject::connect(QApplication::instance(), SIGNAL(lastWindowClosed()),
                      QApplication::instance(), SLOT(quit()));
 
-    if(g_mpiRank == 0)
+    if(g_mpiChannel->getRank() == 0)
     {
 #if ENABLE_PYTHON_SUPPORT
         PythonConsole::init();
@@ -183,13 +184,6 @@ void MainWindow::setupMasterWindowUI()
     quitAction->setStatusTip("Quit application");
     connect(quitAction, SIGNAL(triggered()), this, SLOT(close()));
 
-    // constrain aspect ratio action
-    QAction * constrainAspectRatioAction = new QAction("Constrain Aspect Ratio", this);
-    constrainAspectRatioAction->setStatusTip("Constrain aspect ratio");
-    constrainAspectRatioAction->setCheckable(true);
-    constrainAspectRatioAction->setChecked(g_displayGroupManager->getOptions()->getConstrainAspectRatio());
-    connect(constrainAspectRatioAction, SIGNAL(toggled(bool)), this, SLOT(constrainAspectRatio(bool)));
-
     // show window borders action
     QAction * showWindowBordersAction = new QAction("Show Window Borders", this);
     showWindowBordersAction->setStatusTip("Show window borders");
@@ -279,7 +273,6 @@ void MainWindow::setupMasterWindowUI()
     fileMenu->addAction(computeImagePyramidAction);
     fileMenu->addAction(quitAction);
     viewMenu->addAction(backgroundAction);
-    viewMenu->addAction(constrainAspectRatioAction);
     viewMenu->addAction(showWindowBordersAction);
     viewMenu->addAction(showMouseCursorAction);
     viewMenu->addAction(showTouchPoints);
@@ -407,11 +400,11 @@ GLWindowPtr MainWindow::getActiveGLWindow()
     return activeGLWindow_;
 }
 
-bool MainWindow::isRegionVisible(double x, double y, double w, double h) const
+bool MainWindow::isRegionVisible(const QRectF& region) const
 {
     for(unsigned int i=0; i<glWindows_.size(); i++)
     {
-        if(glWindows_[i]->isRegionVisible(QRectF(x, y, w, h)))
+        if(glWindows_[i]->isRegionVisible(region))
         {
             return true;
         }
@@ -467,8 +460,8 @@ void MainWindow::addContentDirectory(const QString& directoryName, unsigned int 
         estimateGridSize(list.size(), gridX, gridY);
     }
 
-    float w = 1./(float)gridX;
-    float h = 1./(float)gridY;
+    const float w = 1./(float)gridX;
+    const float h = 1./(float)gridY;
 
     unsigned int contentIndex = 0;
 
@@ -477,12 +470,12 @@ void MainWindow::addContentDirectory(const QString& directoryName, unsigned int 
         const QFileInfo& fileInfo = list.at(i);
         const QString& filename = fileInfo.absoluteFilePath();
 
-        const unsigned int x = contentIndex % gridX;
-        const unsigned int y = contentIndex / gridX;
-        const QPointF position(x*w + 0.5*w, y*h + 0.5*h);
-        const QSizeF size(w, h);
+        const unsigned int x_coord = contentIndex % gridX;
+        const unsigned int y_coord = contentIndex / gridX;
+        const QPointF position(x_coord*w + 0.5*w, y_coord*h + 0.5*h);
+        const QSizeF windowSize(w, h);
 
-        const bool success = ContentLoader(g_displayGroupManager).load(filename, position, size);
+        const bool success = ContentLoader(g_displayGroupManager).load(filename, position, windowSize);
 
         if(success)
         {
@@ -512,7 +505,7 @@ void MainWindow::openContentsDirectory()
 
 void MainWindow::showBackgroundWidget()
 {
-    assert(g_mpiRank == 0 && "Background widget is intended only for rank 0 application");
+    assert(g_mpiChannel->getRank() == 0 && "Background widget is intended only for rank 0 application");
 
     if(!backgroundWidget_)
     {
@@ -531,7 +524,7 @@ void MainWindow::openWebBrowser()
                                          WEBBROWSER_DEFAULT_URL, &ok);
     if (ok && !url.isEmpty())
     {
-        emit openWebBrowser(QPointF(), QSize(), url);
+        emit openWebBrowser(QPointF(.5,.5), QSize(), url);
     }
 }
 
@@ -583,38 +576,20 @@ void MainWindow::loadState(const QString& filename)
 void MainWindow::computeImagePyramid()
 {
     // get image filename
-    QString imageFilename = QFileDialog::getOpenFileName(this, "Select image");
+    const QString imageFilename = QFileDialog::getOpenFileName(this, "Select image");
 
     if(!imageFilename.isEmpty())
     {
-        put_flog(LOG_DEBUG, "got image filename %s", imageFilename.toStdString().c_str());
+        put_flog(LOG_DEBUG, "source image filename %s", imageFilename.toLocal8Bit().constData());
 
-        std::string imagePyramidPath = imageFilename.toStdString() + ".pyramid/";
+        const QString imagePyramidPath = imageFilename + DynamicTexture::pyramidFolderSuffix;
 
-        put_flog(LOG_DEBUG, "got image pyramid path %s", imagePyramidPath.c_str());
+        put_flog(LOG_DEBUG, "target image pyramid folder %s", imagePyramidPath.toLocal8Bit().constData());
 
-        boost::shared_ptr<DynamicTexture> dt(new DynamicTexture(imageFilename));
-        dt->computeImagePyramid(imagePyramidPath);
+        DynamicTexturePtr dynamicTexture(new DynamicTexture(imageFilename));
+        dynamicTexture->generateImagePyramid(imagePyramidPath);
 
         put_flog(LOG_DEBUG, "done");
-    }
-}
-
-void MainWindow::constrainAspectRatio(bool set)
-{
-    g_displayGroupManager->getOptions()->setConstrainAspectRatio( set );
-
-    if(set)
-    {
-        ContentWindowManagerPtrs contentWindowManagers = g_displayGroupManager->getContentWindowManagers();
-
-        for(unsigned int i=0; i<contentWindowManagers.size(); i++)
-        {
-            contentWindowManagers[i]->fixAspectRatio();
-        }
-
-        // force a display group synchronization
-        g_displayGroupManager->sendDisplayGroup();
     }
 }
 
@@ -632,13 +607,13 @@ void MainWindow::setEnableSkeletonTracking(bool enable)
 }
 #endif
 
-QStringList MainWindow::extractValidContentUrls(const QMimeData* data)
+QStringList MainWindow::extractValidContentUrls(const QMimeData* mimeData)
 {
     QStringList pathList;
 
-    if (data->hasUrls())
+    if (mimeData->hasUrls())
     {
-        QList<QUrl> urlList = data->urls();
+        QList<QUrl> urlList = mimeData->urls();
 
         foreach (QUrl url, urlList)
         {
@@ -651,13 +626,13 @@ QStringList MainWindow::extractValidContentUrls(const QMimeData* data)
     return pathList;
 }
 
-QStringList MainWindow::extractFolderUrls(const QMimeData* data)
+QStringList MainWindow::extractFolderUrls(const QMimeData* mimeData)
 {
     QStringList pathList;
 
-    if (data->hasUrls())
+    if (mimeData->hasUrls())
     {
-        QList<QUrl> urlList = data->urls();
+        QList<QUrl> urlList = mimeData->urls();
 
         foreach (QUrl url, urlList)
         {
@@ -669,9 +644,9 @@ QStringList MainWindow::extractFolderUrls(const QMimeData* data)
     return pathList;
 }
 
-QString MainWindow::extractStateFile(const QMimeData* data)
+QString MainWindow::extractStateFile(const QMimeData* mimeData)
 {
-    QList<QUrl> urlList = data->urls();
+    QList<QUrl> urlList = mimeData->urls();
     if (urlList.size() == 1)
     {
         QUrl url = urlList[0];
@@ -682,27 +657,27 @@ QString MainWindow::extractStateFile(const QMimeData* data)
     return QString();
 }
 
-void MainWindow::dragEnterEvent(QDragEnterEvent* event)
+void MainWindow::dragEnterEvent(QDragEnterEvent* dragEvent)
 {
-    const QStringList& pathList = extractValidContentUrls(event->mimeData());
-    const QStringList& dirList = extractFolderUrls(event->mimeData());
-    const QString& stateFile = extractStateFile(event->mimeData());
+    const QStringList& pathList = extractValidContentUrls(dragEvent->mimeData());
+    const QStringList& dirList = extractFolderUrls(dragEvent->mimeData());
+    const QString& stateFile = extractStateFile(dragEvent->mimeData());
 
     if (!pathList.empty() || !dirList.empty() || !stateFile.isNull())
     {
-        event->acceptProposedAction();
+        dragEvent->acceptProposedAction();
     }
 }
 
-void MainWindow::dropEvent(QDropEvent* event)
+void MainWindow::dropEvent(QDropEvent* dropEvt)
 {
-    const QStringList& pathList = extractValidContentUrls(event->mimeData());
+    const QStringList& pathList = extractValidContentUrls(dropEvt->mimeData());
     foreach (QString url, pathList)
     {
         ContentLoader(g_displayGroupManager).load(url);
     }
 
-    const QStringList& dirList = extractFolderUrls(event->mimeData());
+    const QStringList& dirList = extractFolderUrls(dropEvt->mimeData());
     if (dirList.size() > 0)
     {
         QString url = dirList[0]; // Only one directory at a time
@@ -710,45 +685,39 @@ void MainWindow::dropEvent(QDropEvent* event)
         addContentDirectory(url);
     }
 
-    const QString& stateFile = extractStateFile(event->mimeData());
+    const QString& stateFile = extractStateFile(dropEvt->mimeData());
     if (!stateFile.isNull())
     {
         loadState(stateFile);
     }
 
-    event->acceptProposedAction();
+    dropEvt->acceptProposedAction();
 }
 
-void MainWindow::openDock(const QPointF pos)
+void MainWindow::openDock(const QPointF position)
 {
     const unsigned int dockWidth = g_configuration->getTotalWidth()*DOCK_WIDTH_RELATIVE_TO_WALL;
     const unsigned int dockHeight = dockWidth * DockPixelStreamer::getDefaultAspectRatio();
 
     const QString& dockRootDir = static_cast<MasterConfiguration*>(g_configuration)->getDockStartDir();
 
-    emit openDock(pos, QSize(dockWidth, dockHeight), dockRootDir);
+    emit openDock(position, QSize(dockWidth, dockHeight), dockRootDir);
 }
 
 void MainWindow::updateGLWindows()
 {
+    // receive any waiting messages
+    g_mpiChannel->receiveMessages(g_displayGroupManager,
+                                  getGLWindow()->getPixelStreamFactory());
+
+    // synchronize clock right after receiving messages to ensure we have an
+    // accurate time for rendering, etc. below
+    g_mpiChannel->synchronizeClock();
+
     if( g_displayGroupManager->getOptions()->getShowMouseCursor( ))
         unsetCursor();
     else
         setCursor( QCursor( Qt::BlankCursor ));
-
-    // receive any waiting messages
-    g_displayGroupManager->receiveMessages();
-
-    // synchronize clock
-    // do this right after receiving messages to ensure we have an accurate clock for rendering, etc. below
-    if(g_mpiRank == 1)
-    {
-        g_displayGroupManager->sendFrameClockUpdate();
-    }
-    else
-    {
-        g_displayGroupManager->receiveFrameClockUpdate();
-    }
 
     // render all GLWindows
     for(size_t i=0; i<glWindows_.size(); i++)
@@ -758,7 +727,7 @@ void MainWindow::updateGLWindows()
     }
 
     // all render processes render simultaneously
-    MPI_Barrier(g_mpiRenderComm);
+    g_mpiChannel->globalBarrier();
 
     // swap buffers on all windows
     for(size_t i=0; i<glWindows_.size(); i++)
@@ -770,7 +739,7 @@ void MainWindow::updateGLWindows()
     g_displayGroupManager->advanceContents();
 
     // clear old factory objects and purge any textures
-    if(glWindows_.size() > 0)
+    if(!glWindows_.empty())
     {
         glWindows_[0]->getTextureFactory().clearStaleObjects();
         glWindows_[0]->getDynamicTextureFactory().clearStaleObjects();

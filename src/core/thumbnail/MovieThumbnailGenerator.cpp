@@ -41,6 +41,9 @@
 
 #include "Movie.h"
 
+#pragma clang diagnostic ignored "-Wdeprecated"
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+
 MovieThumbnailGenerator::MovieThumbnailGenerator(const QSize &size)
     : ThumbnailGenerator(size)
 {

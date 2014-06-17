@@ -57,7 +57,7 @@
 
 #define INVALID_PAGE_NUMBER -1
 
-PDF::PDF(QString uri)
+PDF::PDF(const QString& uri)
     : uri_(uri)
     , pdfDoc_(0)
     , pdfPage_(0)
@@ -70,6 +70,11 @@ PDF::PDF(QString uri)
 PDF::~PDF()
 {
     closeDocument();
+}
+
+bool PDF::isValid() const
+{
+    return (pdfDoc_ != 0);
 }
 
 void PDF::closePage()
@@ -150,7 +155,7 @@ void PDF::getDimensions(int &width, int &height) const
     height = pdfPage_ ? pdfPage_->pageSize().height() : 0;
 }
 
-void PDF::render(float tX, float tY, float tW, float tH)
+void PDF::render(const QRectF& texCoords)
 {
     updateRenderedFrameIndex();
 
@@ -166,7 +171,7 @@ void PDF::render(float tX, float tY, float tW, float tH)
     }
 
     // generate texture corresponding to the visible part of these texture coordinates
-    generateTexture(screenRect, fullRect, tX, tY, tW, tH);
+    generateTexture(screenRect, fullRect, texCoords);
 
     if(textureId_ == 0)
     {
@@ -174,8 +179,10 @@ void PDF::render(float tX, float tY, float tW, float tH)
     }
 
     // we'll now render the entire generated texture
-    tX = tY = 0.;
-    tW = tH = 1.;
+    const float tX = 0.f;
+    const float tY = 0.f;
+    const float tW = 1.f;
+    const float tH = 1.f;
 
     // figure out what visible region is for screenRect, a subregion of [0, 0, 1, 1]
     double xp = (screenRect.x() - fullRect.x()) / fullRect.width();
@@ -191,10 +198,10 @@ void PDF::render(float tX, float tY, float tW, float tH)
 
     glBegin(GL_QUADS);
 
-    glTexCoord2f(tX,tY);
+    glTexCoord2f(tX, tY);
     glVertex2f(xp, yp);
 
-    glTexCoord2f(tX+tW,tY);
+    glTexCoord2f(tX+tW, tY);
     glVertex2f(xp+wp,yp);
 
     glTexCoord2f(tX+tW,(tY+tH));
@@ -209,11 +216,11 @@ void PDF::render(float tX, float tY, float tW, float tH)
 }
 
 
-void PDF::generateTexture(QRectF screenRect, QRectF fullRect, float tX, float tY, float tW, float tH)
+void PDF::generateTexture(QRectF screenRect, QRectF fullRect, const QRectF& texCoords)
 {
     // figure out the coordinates of the topLeft corner of the texture in the PDF page
-    double tXp = tX/tW*fullRect.width()  + (screenRect.x() - fullRect.x());
-    double tYp = tY/tH*fullRect.height() + (screenRect.y() - fullRect.y());
+    double tXp = texCoords.x()/texCoords.width()*fullRect.width()  + (screenRect.x() - fullRect.x());
+    double tYp = texCoords.y()/texCoords.height()*fullRect.height() + (screenRect.y() - fullRect.y());
 
     // Compute the actual texture dimensions
     QRect textureRect(tXp, tYp, screenRect.width(), screenRect.height());
@@ -228,8 +235,8 @@ void PDF::generateTexture(QRectF screenRect, QRectF fullRect, float tX, float tY
 
     // Adjust the quality to match the actual displayed size
     // Multiply resolution by the zoom factor (1/t[W,H])
-    double resFactorX = fullRect.width() / pdfPage_->pageSize().width() / tW;
-    double resFactorY = fullRect.height() / pdfPage_->pageSize().height() / tH;
+    double resFactorX = fullRect.width() / pdfPage_->pageSize().width() / texCoords.width();
+    double resFactorY = fullRect.height() / pdfPage_->pageSize().height() / texCoords.height();
 
     // Generate a QImage of the rendered page
     QImage image = pdfPage_->renderToImage(72.0*resFactorX , 72.0*resFactorY,

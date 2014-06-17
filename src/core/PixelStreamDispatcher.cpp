@@ -38,18 +38,17 @@
 /*********************************************************************/
 
 #include "PixelStreamDispatcher.h"
-#include "DisplayGroupManager.h"
-#include "globals.h"
+#include "PixelStreamWindowManager.h"
 
-#include "MessageHeader.h"
-#include <boost/serialization/vector.hpp>
-#include <mpi.h>
+#include "globals.h"
+#include "MPIChannel.h"
 
 #define DISPATCH_FREQUENCY 100
 
 #define STREAM_WINDOW_DEFAULT_SIZE 100
 
-PixelStreamDispatcher::PixelStreamDispatcher()
+PixelStreamDispatcher::PixelStreamDispatcher(PixelStreamWindowManager& windowManager)
+    : windowManager_(windowManager)
 {
 #ifdef USE_TIMER
     connect(&sendTimer_, SIGNAL(timeout()), this, SLOT(dispatchFrames()));
@@ -61,9 +60,9 @@ PixelStreamDispatcher::PixelStreamDispatcher()
 #endif
 
     // Connect with the DisplayGroupManager
-    connect(this, SIGNAL(openPixelStream(QString, int, int)), g_displayGroupManager.get(), SLOT(openPixelStream(QString, int, int)));
-    connect(this, SIGNAL(deletePixelStream(QString)), g_displayGroupManager.get(), SLOT(closePixelStream(QString)));
-    connect(g_displayGroupManager.get(), SIGNAL(pixelStreamViewClosed(QString)), this, SLOT(deleteStream(QString)));
+    connect(this, SIGNAL(openPixelStream(QString, QSize)), &windowManager, SLOT(openPixelStreamWindow(QString, QSize)));
+    connect(this, SIGNAL(deletePixelStream(QString)), &windowManager, SLOT(closePixelStreamWindow(QString)));
+    connect(&windowManager, SIGNAL(pixelStreamWindowClosed(QString)), this, SLOT(deleteStream(QString)));
 }
 
 void PixelStreamDispatcher::addSource(const QString uri, const size_t sourceIndex)
@@ -101,7 +100,7 @@ void PixelStreamDispatcher::processFrameFinished(const QString uri, const size_t
     if (streamBuffers_[uri].isFirstFrame() && streamBuffers_[uri].hasFrameComplete())
     {
         QSize size = streamBuffers_[uri].getFrameSize();
-        emit openPixelStream(uri, size.width(), size.height());
+        emit openPixelStream(uri, size);
     }
 
 #ifdef USE_TIMER
@@ -138,46 +137,9 @@ void PixelStreamDispatcher::dispatchFrames()
         if (!segments.empty())
         {
             QSize size = it->second.computeFrameDimensions(segments);
-            g_displayGroupManager->adjustPixelStreamContentDimensions(it->first, size.width(), size.height(), false);
+            windowManager_.updateDimension(it->first, size);
 
-            sendPixelStreamSegments(segments, it->first);
+            g_mpiChannel->send(segments, it->first);
         }
     }
 }
-
-void PixelStreamDispatcher::sendPixelStreamSegments(const std::vector<PixelStreamSegment> & segments, const QString& uri)
-{
-    assert(!segments.empty() && "sendPixelStreamSegments() received an empty vector");
-
-    // serialize the vector
-    std::ostringstream oss(std::ostringstream::binary);
-
-    // brace this so destructor is called on archive before we use the stream
-    {
-        boost::archive::binary_oarchive oa(oss);
-        oa << segments;
-    }
-
-    // serialized data to string
-    std::string serializedString = oss.str();
-    int size = serializedString.size();
-
-    // send the header and the message
-    MessageHeader mh;
-    mh.size = size;
-    mh.type = MESSAGE_TYPE_PIXELSTREAM;
-
-    // add the truncated URI to the header
-    strncpy(mh.uri, uri.toLocal8Bit().constData(), MESSAGE_HEADER_URI_LENGTH-1);
-
-    // the header is sent via a send, so that we can probe it on the render processes
-    for(int i=1; i<g_mpiSize; i++)
-    {
-        MPI_Send((void *)&mh, sizeof(MessageHeader), MPI_BYTE, i, 0, MPI_COMM_WORLD);
-    }
-
-    // broadcast the message
-    MPI_Bcast((void *)serializedString.data(), size, MPI_BYTE, 0, MPI_COMM_WORLD);
-}
-
-

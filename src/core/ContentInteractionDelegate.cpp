@@ -63,13 +63,15 @@ void ContentInteractionDelegate::gestureEvent( QGestureEvent* event )
 {
     contentWindowManager_.moveToFront();
 
-    if( QGesture* gesture = event->gesture( Qt::TapAndHoldGesture ))
+    QGesture* gesture = 0;
+
+    if( ( gesture = event->gesture( Qt::TapAndHoldGesture )))
     {
         event->accept( Qt::TapAndHoldGesture );
         tapAndHoldUnselected( static_cast< QTapAndHoldGesture* >( gesture ));
     }
 
-    else if( QGesture* gesture = event->gesture( PanGestureRecognizer::type( )))
+    else if( ( gesture = event->gesture( PanGestureRecognizer::type( ))))
     {
         event->accept( PanGestureRecognizer::type( ));
         if( contentWindowManager_.selected() )
@@ -82,7 +84,7 @@ void ContentInteractionDelegate::gestureEvent( QGestureEvent* event )
         }
     }
 
-    else if( QGesture* gesture = event->gesture( PinchGestureRecognizer::type( )))
+    else if( ( gesture = event->gesture( PinchGestureRecognizer::type( ))))
     {
         event->accept( PinchGestureRecognizer::type( ));
         if( contentWindowManager_.selected() )
@@ -95,7 +97,7 @@ void ContentInteractionDelegate::gestureEvent( QGestureEvent* event )
         }
     }
 
-    else if( QGesture* gesture = event->gesture( DoubleTapGestureRecognizer::type( )))
+    else if( ( gesture = event->gesture( DoubleTapGestureRecognizer::type( ))))
     {
         event->accept( DoubleTapGestureRecognizer::type( ));
         if( contentWindowManager_.selected() )
@@ -108,7 +110,7 @@ void ContentInteractionDelegate::gestureEvent( QGestureEvent* event )
         }
     }
 
-    else if( QGesture* gesture = event->gesture( Qt::TapGesture ))
+    else if( ( gesture = event->gesture( Qt::TapGesture )))
     {
         event->accept( Qt::TapGesture );
         if( contentWindowManager_.selected() )
@@ -117,7 +119,7 @@ void ContentInteractionDelegate::gestureEvent( QGestureEvent* event )
         }
     }
 
-    else if( QGesture *gesture = event->gesture( Qt::SwipeGesture ))
+    else if( ( gesture = event->gesture( Qt::SwipeGesture )))
     {
         event->accept( Qt::SwipeGesture );
         if( contentWindowManager_.selected() )
@@ -131,17 +133,13 @@ void ContentInteractionDelegate::gestureEvent( QGestureEvent* event )
 void ContentInteractionDelegate::tapAndHoldUnselected(QTapAndHoldGesture *gesture)
 {
     if( gesture->state() == Qt::GestureFinished )
-    {
         contentWindowManager_.toggleWindowState();
-    }
 }
 
 void ContentInteractionDelegate::doubleTapUnselected(DoubleTapGesture *gesture)
 {
     if( gesture->state() == Qt::GestureFinished )
-    {
-        contentWindowManager_.adjustSize( contentWindowManager_.getSizeState() == SIZE_FULLSCREEN ? SIZE_1TO1 : SIZE_FULLSCREEN );
-    }
+        contentWindowManager_.toggleFullscreen();
 }
 
 void ContentInteractionDelegate::panUnselected(PanGesture *gesture)

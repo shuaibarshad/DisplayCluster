@@ -38,9 +38,9 @@
 
 #include "PixelStreamContent.h"
 #include "globals.h"
-#include "PixelStream.h"
 #include "MainWindow.h"
 #include "GLWindow.h"
+#include "ContentWindowManager.h"
 #include <boost/serialization/export.hpp>
 #include "serializationHelpers.h"
 
@@ -51,17 +51,24 @@ CONTENT_TYPE PixelStreamContent::getType()
     return CONTENT_TYPE_PIXEL_STREAM;
 }
 
+bool PixelStreamContent::readMetadata()
+{
+    return true;
+}
+
 void PixelStreamContent::getFactoryObjectDimensions(int &width, int &height)
 {
     g_mainWindow->getGLWindow()->getPixelStreamFactory().getObject(getURI())->getDimensions(width, height);
 }
 
-void PixelStreamContent::advance(ContentWindowManagerPtr)
+void PixelStreamContent::advance(ContentWindowManagerPtr window)
 {
-    g_mainWindow->getGLWindow()->getPixelStreamFactory().getObject(getURI())->preRenderUpdate();
+    const QRectF& windowRect = window->getCoordinates();
+    g_mainWindow->getGLWindow()->getPixelStreamFactory().getObject(getURI())->preRenderUpdate(windowRect);
 }
 
-void PixelStreamContent::renderFactoryObject(float tX, float tY, float tW, float tH)
+void PixelStreamContent::renderFactoryObject(ContentWindowManagerPtr window, const QRectF& texCoords)
 {
-    g_mainWindow->getGLWindow()->getPixelStreamFactory().getObject(getURI())->render(tX, tY, tW, tH);
+    const QRectF& windowRect = window->getCoordinates();
+    g_mainWindow->getGLWindow()->getPixelStreamFactory().getObject(getURI())->render(texCoords, windowRect);
 }

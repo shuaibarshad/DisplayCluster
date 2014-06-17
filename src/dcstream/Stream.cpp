@@ -49,6 +49,7 @@
 #include "PixelStreamSegmentParameters.h"
 
 #include <QDataStream>
+#include <boost/bind.hpp>
 
 namespace dc
 {
@@ -68,7 +69,7 @@ bool Stream::isConnected() const
     return impl_->dcSocket_.isConnected();
 }
 
-bool Stream::send(const ImageWrapper& image)
+bool Stream::send( const ImageWrapper& image )
 {
     if( image.compressionPolicy != COMPRESSION_ON &&
         image.pixelFormat != dc::RGBA )
@@ -77,17 +78,9 @@ bool Stream::send(const ImageWrapper& image)
         return false;
     }
 
-    const PixelStreamSegments segments =
-    impl_->imageSegmenter_.generateSegments( image );
-
-    bool allSuccess = true;
-    for( PixelStreamSegments::const_iterator it = segments.begin();
-         it!=segments.end(); it++)
-    {
-        if( !impl_->sendPixelStreamSegment( *it ))
-            allSuccess = false;
-    }
-    return allSuccess;
+    const ImageSegmenter::Handler sendFunc =
+        boost::bind( &StreamPrivate::sendPixelStreamSegment, impl_, _1 );
+    return impl_->imageSegmenter_.generate( image, sendFunc );
 }
 
 bool Stream::finishFrame()

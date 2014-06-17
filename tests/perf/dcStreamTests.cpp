@@ -43,10 +43,13 @@
 namespace ut = boost::unit_test;
 
 #include "DisplayGroupManager.h"
+#include "PixelStreamWindowManager.h"
 #include "MinimalGlobalQtApp.h"
 #include "NetworkListener.h"
 #include "configuration/MasterConfiguration.h"
 #include "dcstream/Stream.h"
+#include "globals.h"
+#include "MPIChannel.h"
 
 // Tests local throughput of the streaming library by sending raw as well as
 // blank and random images through dc::Stream. Baseline test for best-case
@@ -59,7 +62,7 @@ namespace ut = boost::unit_test;
 #define NIMAGES (100u)
 // #define NTHREADS 20 // QT default if not defined
 
-BOOST_GLOBAL_FIXTURE( MinimalGlobalQtApp );
+BOOST_GLOBAL_FIXTURE( MinimalGlobalQtApp )
 
 namespace
 {
@@ -68,18 +71,18 @@ class Timer
 public:
     void start()
     {
-	lastTime_ = boost::posix_time::microsec_clock::universal_time();
+        lastTime_ = boost::posix_time::microsec_clock::universal_time();
     }
 
     void restart()
     {
-	start();
+        start();
     }
 
     float elapsed()
     {
-	const boost::posix_time::ptime now = boost::posix_time::microsec_clock::universal_time();
-	return (float)(now - lastTime_).total_milliseconds();
+        const boost::posix_time::ptime now = boost::posix_time::microsec_clock::universal_time();
+        return (float)(now - lastTime_).total_milliseconds();
     }
 private:
     boost::posix_time::ptime lastTime_;
@@ -147,13 +150,15 @@ class DCThread : public QThread
 BOOST_AUTO_TEST_CASE( testSocketConnection )
 {
     ut::master_test_suite_t& testSuite = ut::framework::master_test_suite();
-    MPI_Init( &testSuite.argc, &testSuite.argv );
+    g_mpiChannel.reset(new MPIChannel(testSuite.argc, testSuite.argv));
 
     g_displayGroupManager.reset( new DisplayGroupManager );
     g_configuration =
         new MasterConfiguration( "configuration.xml",
                                  g_displayGroupManager->getOptions( ));
-    NetworkListener listener( *g_displayGroupManager );
+
+    PixelStreamWindowManager pixelStreamWindowManager( *g_displayGroupManager );
+    NetworkListener listener( pixelStreamWindowManager );
 #ifdef NTHREADS
     QThreadPool::globalInstance()->setMaxThreadCount( NTHREADS );
 #endif
@@ -162,6 +167,4 @@ BOOST_AUTO_TEST_CASE( testSocketConnection )
     thread.start();
     QApplication::instance()->exec();
     BOOST_CHECK( thread.wait( ));
-
-    MPI_Finalize();
 }
