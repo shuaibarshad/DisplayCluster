@@ -1,1 +1,1 @@
-config.eyescale https://github.com/Eyescale/config.git master
+config.arshadsu https://github.com/smadhueagle/config.git master
