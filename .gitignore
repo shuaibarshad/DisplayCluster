@@ -4,6 +4,11 @@ CMakeLists.txt.user*
 CMake/common/
 Makefile
 .DS_Store
-*~
 *#
 *.autosave
+*~
+*.[oa]
+doc/html
+cscope.out
+tags
+
