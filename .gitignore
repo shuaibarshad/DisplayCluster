@@ -11,4 +11,7 @@ Makefile
 doc/html
 cscope.out
 tags
-
+CMake/DisplayCluster.cmake.1
+CMake/FindPackages.cmake.1
+CMakeCache.txt
+CMakeFiles/
