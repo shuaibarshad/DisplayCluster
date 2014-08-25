@@ -113,6 +113,16 @@ else()
   find_package(FCGI  )
 endif()
 
+if(PKG_CONFIG_EXECUTABLE)
+  find_package(SDL )
+  if((NOT SDL_FOUND) AND (NOT SDL_FOUND))
+      pkg_check_modules(SDL SDL)
+  endif()
+else()
+    find_package(SDL  )
+endif()
+
+
 
 if(EXISTS ${CMAKE_SOURCE_DIR}/CMake/FindPackagesPost.cmake)
   include(${CMAKE_SOURCE_DIR}/CMake/FindPackagesPost.cmake)
@@ -294,9 +304,25 @@ if(FCGI_name)
   endif()
 endif()
 
+if(SDL_FOUND)
+    set(SDL_name SDL)
+    set(SDL_FOUND TRUE)
+elseif(SDL_FOUND)
+    set(SDL_name FCGI)
+    set(SDL_FOUND TRUE)
+endif()
+if(SDL_name)
+  list(APPEND FIND_PACKAGES_DEFINES DISPLAYCLUSTER_USE_SDL)
+  set(FIND_PACKAGES_FOUND "${FIND_PACKAGES_FOUND} SDL")
+  link_directories(${${SDL_name}_LIBRARY_DIRS})
+  if(NOT "${${SDL_name}_INCLUDE_DIRS}" MATCHES "-NOTFOUND")
+      include_directories(${${SDL_name}_INCLUDE_DIRS})
+  endif()
+endif()
+
 set(DISPLAYCLUSTER_BUILD_DEBS autoconf;automake;cmake;doxygen;freeglut3-dev;git;git-review;libavcodec-dev;libavformat-dev;libavutil-dev;libboost-date-time-dev;libboost-program-options-dev;libboost-regex-dev;libboost-serialization-dev;libboost-test-dev;libfcgi-dev;libjpeg-turbo8-dev;libopenmpi-dev;libpoppler-dev;libswscale-dev;libturbojpeg;libxmu-dev;openmpi-bin;pkg-config;subversion)
 
-set(DISPLAYCLUSTER_DEPENDS Boost;LibJpegTurbo;Qt4;MPI;Poppler;GLUT;OpenGL;TUIO;FFMPEG;OpenMP;FCGI)
+set(DISPLAYCLUSTER_DEPENDS Boost;LibJpegTurbo;Qt4;MPI;Poppler;GLUT;OpenGL;TUIO;FFMPEG;OpenMP;FCGI;SDL)
 
 # Write defines.h and options.cmake
 if(NOT PROJECT_INCLUDE_NAME)
