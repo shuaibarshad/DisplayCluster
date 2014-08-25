@@ -89,12 +89,15 @@ class Movie : public FactoryObject {
 
         // FFMPEG
         AVFormatContext * avFormatContext_;
-        AVCodecContext * avCodecContext_; // this is a member of AVFormatContext, saved for convenience; no need to free
+        AVCodecContext * vCodecContext_; // this is a member of AVFormatContext, saved for convenience; no need to free
+        AVCodecContext * aCodecContext_; // this is a member of AVFormatContext, saved for convenience; no need to free
         SwsContext * swsContext_;
         AVFrame * avFrame_;
         AVFrame * avFrameRGB_;
-        int streamIdx_;
+        int vStreamIdx_;
+        int aStreamIdx_;
         AVStream * videostream_;    // shortcut; no need to free
+        AVStream * audiostream_;    // shortcut; no need to free
 
         // used for seeking
         int64_t start_time_;

@@ -51,11 +51,13 @@ Movie::Movie(QString uri)
     , textureId_(0)
     // FFMPEG
     , avFormatContext_(NULL)
-    , avCodecContext_(NULL)
+    , vCodecContext_(NULL)
+    , aCodecContext_(NULL)
     , swsContext_(NULL)
     , avFrame_(NULL)
     , avFrameRGB_(NULL)
-    , streamIdx_(-1)
+    , vStreamIdx_(-1)
+    , aStreamIdx_(-1)
     , videostream_(NULL)
     // Internal
     , start_time_(0)
@@ -86,47 +88,69 @@ Movie::Movie(QString uri)
     // dump format information to stderr
     av_dump_format(avFormatContext_, 0, uri.toAscii(), 0);
 
-    // find the first video stream
-    streamIdx_ = -1;
+    // find the first video and audio streams
+    vStreamIdx_ = -1;
+    aStreamIdx_ = -1;
 
     for(unsigned int i=0; i<avFormatContext_->nb_streams; i++)
     {
         if(avFormatContext_->streams[i]->codec->codec_type == AVMEDIA_TYPE_VIDEO)
         {
-            streamIdx_ = i;
+            vStreamIdx_ = i;
+        }
+        if(avFormatContext_->streams[i]->codec->codec_type == AVMEDIA_TYPE_AUDIO)
+        {
+            aStreamIdx_ = i;
+        }
+        if ((vStreamIdx_ != -1) && (aStreamIdx_ != -1))
+        {
             break;
         }
     }
 
-    if(streamIdx_ == -1)
+    if(vStreamIdx_ == -1)
     {
         put_flog(LOG_ERROR, "could not find video stream");
         return;
     }
-
-    videostream_ = avFormatContext_->streams[streamIdx_];
-
-    // get a pointer to the codec context for the video stream
-    avCodecContext_ = videostream_->codec;
-
-    // find the decoder for the video stream
-    AVCodec * codec = avcodec_find_decoder(avCodecContext_->codec_id);
-
-    if(codec == NULL)
+    if(aStreamIdx_ == -1)
     {
-        put_flog(LOG_ERROR, "unsupported codec");
+        put_flog(LOG_ERROR, "could not find audio stream");
         return;
     }
 
-    // open codec
-    int ret = avcodec_open2(avCodecContext_, codec, NULL);
+
+    videostream_ = avFormatContext_->streams[vStreamIdx_];
+    audiostream_ = avFormatContext_->streams[aStreamIdx_];
+
+    // get a pointer to the codec context for the video and audio streams
+    vCodecContext_ = videostream_->codec;
+    aCodecContext_ = audiostream_->codec;
+
+    // find the decoder for the video and audio streams
+    AVCodec * vCodec = avcodec_find_decoder(vCodecContext_->codec_id);
+    AVCodec * aCodec = avcodec_find_decoder(aCodecContext_->codec_id);
+
+    if(vCodec == NULL)
+    {
+        put_flog(LOG_ERROR, "unsupported video codec");
+        return;
+    }
+    if(aCodec == NULL)
+    {
+        put_flog(LOG_ERROR, "unsupported audio codec");
+        return;
+    }
+
+    // open video codec
+    int ret = avcodec_open2(vCodecContext_, vCodec, NULL);
 
     if(ret < 0)
     {
         char errbuf[256];
         av_strerror(ret, errbuf, 256);
 
-        put_flog(LOG_ERROR, "could not open codec, error code %i: %s", ret, errbuf);
+        put_flog(LOG_ERROR, "could not open video codec, error code %i: %s", ret, errbuf);
         return;
     }
 
@@ -154,7 +178,7 @@ Movie::Movie(QString uri)
     put_flog(LOG_DEBUG, "seeking parameters: start_time = %i, duration_ = %i, num frames = %i", start_time_, duration_, num_frames_);
 
     // create texture for movie
-    QImage image(avCodecContext_->width, avCodecContext_->height, QImage::Format_RGB32);
+    QImage image(vCodecContext_->width, vCodecContext_->height, QImage::Format_RGB32);
     image.fill(0);
 
     textureId_ = g_mainWindow->getGLWindow()->bindTexture(image, GL_TEXTURE_2D, GL_RGBA, QGLContext::LinearFilteringBindOption);
@@ -163,10 +187,10 @@ Movie::Movie(QString uri)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
     // assign buffer to pFrameRGB
-    avpicture_alloc( (AVPicture *)avFrameRGB_, PIX_FMT_RGBA, avCodecContext_->width, avCodecContext_->height);
+    avpicture_alloc( (AVPicture *)avFrameRGB_, PIX_FMT_RGBA, vCodecContext_->width, vCodecContext_->height);
 
     // create sws scaler context
-    swsContext_ = sws_getContext(avCodecContext_->width, avCodecContext_->height, avCodecContext_->pix_fmt, avCodecContext_->width, avCodecContext_->height, PIX_FMT_RGBA, SWS_FAST_BILINEAR, NULL, NULL, NULL);
+    swsContext_ = sws_getContext(vCodecContext_->width, vCodecContext_->height, vCodecContext_->pix_fmt, vCodecContext_->width, vCodecContext_->height, PIX_FMT_RGBA, SWS_FAST_BILINEAR, NULL, NULL, NULL);
 }
 
 Movie::~Movie()
@@ -174,7 +198,7 @@ Movie::~Movie()
     if(textureId_)
         g_mainWindow->getGLWindow()->deleteTexture(textureId_);
 
-    avcodec_close( avCodecContext_ );
+    avcodec_close( vCodecContext_ );
 
     // close the format context
     avformat_close_input(&avFormatContext_);
@@ -201,8 +225,8 @@ void Movie::initFFMPEGGlobalState()
 
 void Movie::getDimensions(int &width, int &height)
 {
-    width = avCodecContext_->width;
-    height = avCodecContext_->height;
+    width = vCodecContext_->width;
+    height = vCodecContext_->height;
 }
 
 void Movie::render(const QRectF& texCoords)
@@ -281,13 +305,13 @@ void Movie::nextFrame(bool skip)
         desiredTimestamp = start_time_ + av_rescale(index, den2_, num2_);
 
         // seek to the nearest keyframe before desiredTimestamp and flush buffers
-        if(avformat_seek_file(avFormatContext_, streamIdx_, 0, desiredTimestamp, desiredTimestamp, 0) != 0)
+        if(avformat_seek_file(avFormatContext_, vStreamIdx_, 0, desiredTimestamp, desiredTimestamp, 0) != 0)
         {
             put_flog(LOG_ERROR, "seeking error");
             return;
         }
 
-        avcodec_flush_buffers(avCodecContext_);
+        avcodec_flush_buffers(vCodecContext_);
 
         skipped_frames_ = false;
     }
@@ -301,10 +325,10 @@ void Movie::nextFrame(bool skip)
     while((avReadStatus = av_read_frame(avFormatContext_, &packet)) >= 0)
     {
         // make sure packet is from video stream
-        if(packet.stream_index == streamIdx_)
+        if(packet.stream_index == vStreamIdx_)
         {
             // decode video frame
-            avcodec_decode_video2(avCodecContext_, avFrame_, &frameFinished, &packet);
+            avcodec_decode_video2(vCodecContext_, avFrame_, &frameFinished, &packet);
 
             // make sure we got a full video frame
             if(frameFinished)
@@ -315,12 +339,12 @@ void Movie::nextFrame(bool skip)
                 if(desiredTimestamp == 0 || (avFrame_->pkt_dts >= desiredTimestamp))
                 {
                     // convert the frame from its native format to RGB
-                    sws_scale(swsContext_, avFrame_->data, avFrame_->linesize, 0, avCodecContext_->height, avFrameRGB_->data, avFrameRGB_->linesize);
+                    sws_scale(swsContext_, avFrame_->data, avFrame_->linesize, 0, vCodecContext_->height, avFrameRGB_->data, avFrameRGB_->linesize);
 
                     // put the RGB image to the already-created texture
                     // glTexSubImage2D uses the existing texture and is more efficient than other means
                     glBindTexture(GL_TEXTURE_2D, textureId_);
-                    glTexSubImage2D(GL_TEXTURE_2D, 0, 0,0, avCodecContext_->width, avCodecContext_->height, GL_RGBA, GL_UNSIGNED_BYTE, avFrameRGB_->data[0]);
+                    glTexSubImage2D(GL_TEXTURE_2D, 0, 0,0, vCodecContext_->width, vCodecContext_->height, GL_RGBA, GL_UNSIGNED_BYTE, avFrameRGB_->data[0]);
 
                     // free the packet that was allocated by av_read_frame
                     av_free_packet(&packet);
@@ -337,7 +361,7 @@ void Movie::nextFrame(bool skip)
     // see if we need to loop
     if(avReadStatus < 0 && loop_)
     {
-        av_seek_frame(avFormatContext_, streamIdx_, 0, AVSEEK_FLAG_BACKWARD);
+        av_seek_frame(avFormatContext_, vStreamIdx_, 0, AVSEEK_FLAG_BACKWARD);
         frame_index_ = 0;
     }
 }
